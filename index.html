@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A UX design portfolio featuring case studies, research-driven process, and a playful experimentation lab."
+    />
+    <title>Alex Morgan | UX Design Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" data-header>
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="index.html" aria-label="Alex Morgan home">
+          <span class="brand-mark" aria-hidden="true">AM</span>
+          <span>Alex Morgan</span>
+        </a>
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="primary-menu"
+          data-nav-toggle
+        >
+          <span class="sr-only">Toggle navigation</span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <ul class="nav-links" id="primary-menu" data-nav-menu>
+          <li><a href="#work">Case studies</a></li>
+          <li><a href="#process">Process</a></li>
+          <li><a href="play.html">Play lab</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero section-shell">
+        <div class="hero-copy">
+          <p class="eyebrow">Product strategy, UX research, interaction design</p>
+          <h1>Designing calmer, smarter digital products for real human moments.</h1>
+          <p class="hero-text">
+            I am a senior UX designer who turns messy service problems into
+            clear product experiences. My work blends qualitative research,
+            systems thinking, and high-craft interface design.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#work">View case studies</a>
+            <a class="button button-secondary" href="play.html">Visit the play lab</a>
+          </div>
+        </div>
+        <div class="hero-card" aria-label="Portfolio highlights">
+          <div class="orb orb-one"></div>
+          <div class="orb orb-two"></div>
+          <p class="hero-card-label">Selected outcomes</p>
+          <div class="metric-grid">
+            <article>
+              <strong>38%</strong>
+              <span>faster onboarding completion</span>
+            </article>
+            <article>
+              <strong>4.8/5</strong>
+              <span>post-launch customer satisfaction</span>
+            </article>
+            <article>
+              <strong>22k</strong>
+              <span>monthly active users supported</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="logo-strip" aria-label="Areas of expertise">
+        <span>Discovery sprints</span>
+        <span>Journey mapping</span>
+        <span>Service design</span>
+        <span>Design systems</span>
+        <span>Usability testing</span>
+      </section>
+
+      <section class="section-shell intro-section">
+        <div>
+          <p class="eyebrow">Portfolio focus</p>
+          <h2>Evidence-led UX with enough personality to feel memorable.</h2>
+        </div>
+        <p>
+          Across fintech, health, and collaboration tools, I partner with
+          cross-functional teams to identify the right problem, prototype the
+          right behavior, and ship experiences that people can understand at a
+          glance.
+        </p>
+      </section>
+
+      <section class="section-shell" id="work">
+        <div class="section-heading">
+          <p class="eyebrow">Case studies</p>
+          <h2>Three stories from ambiguity to shipped impact.</h2>
+        </div>
+
+        <div class="case-study-grid">
+          <article class="case-card feature-card">
+            <div class="case-visual visual-aurora" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="case-content">
+              <p class="case-meta">Fintech onboarding / 12-week redesign</p>
+              <h3>Making business banking feel less like paperwork.</h3>
+              <p>
+                Reframed a compliance-heavy application flow around confidence,
+                progress, and save-for-later recovery.
+              </p>
+              <ul class="tag-list" aria-label="Methods used">
+                <li>Field interviews</li>
+                <li>Journey mapping</li>
+                <li>Prototype testing</li>
+              </ul>
+              <a href="#case-banking" class="text-link">Read the story</a>
+            </div>
+          </article>
+
+          <article class="case-card">
+            <div class="case-visual visual-health" aria-hidden="true">
+              <span></span>
+              <span></span>
+            </div>
+            <div class="case-content">
+              <p class="case-meta">Health platform / Mobile-first service</p>
+              <h3>Helping caregivers coordinate without overload.</h3>
+              <p>
+                Designed shared tasking, gentle alerts, and status summaries
+                for families managing care across households.
+              </p>
+              <ul class="tag-list" aria-label="Methods used">
+                <li>Diary study</li>
+                <li>IA testing</li>
+                <li>Design system</li>
+              </ul>
+              <a href="#case-care" class="text-link">Read the story</a>
+            </div>
+          </article>
+
+          <article class="case-card">
+            <div class="case-visual visual-team" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="case-content">
+              <p class="case-meta">SaaS collaboration / 0-to-1 product</p>
+              <h3>Turning weekly planning chaos into shared momentum.</h3>
+              <p>
+                Prototyped a planning workspace that blended decision logs,
+                team rituals, and async updates.
+              </p>
+              <ul class="tag-list" aria-label="Methods used">
+                <li>Concept testing</li>
+                <li>Interaction design</li>
+                <li>Metrics design</li>
+              </ul>
+              <a href="#case-planning" class="text-link">Read the story</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="case-detail-section section-shell" aria-label="Detailed case studies">
+        <article class="case-detail" id="case-banking">
+          <div class="case-detail-header">
+            <p class="eyebrow">Case study 01</p>
+            <h2>Business banking onboarding</h2>
+            <p>
+              A regional bank needed a digital application that reduced branch
+              handoffs while still meeting strict KYC and compliance needs.
+            </p>
+          </div>
+          <div class="case-detail-grid">
+            <div>
+              <h3>Problem</h3>
+              <p>
+                Applicants abandoned the process when legal language, document
+                requests, and unclear progress made them question whether they
+                were eligible.
+              </p>
+            </div>
+            <div>
+              <h3>Approach</h3>
+              <p>
+                I mapped the end-to-end service, interviewed branch associates,
+                ran moderated prototype tests, and created a modular form
+                system with contextual help.
+              </p>
+            </div>
+            <div>
+              <h3>Outcome</h3>
+              <p>
+                Completion time dropped by 38%, support calls decreased, and
+                the team gained a reusable pattern library for future account
+                products.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <article class="case-detail" id="case-care">
+          <div class="case-detail-header">
+            <p class="eyebrow">Case study 02</p>
+            <h2>Caregiver coordination app</h2>
+            <p>
+              Families needed a calmer way to coordinate appointments,
+              medications, and updates without turning every change into a group
+              chat emergency.
+            </p>
+          </div>
+          <div class="case-detail-grid">
+            <div>
+              <h3>Problem</h3>
+              <p>
+                Important tasks were scattered across text threads, calendars,
+                and paper notes, creating duplicate work and missed follow-up.
+              </p>
+            </div>
+            <div>
+              <h3>Approach</h3>
+              <p>
+                I led diary studies, co-designed task states with caregivers,
+                and tested notification tone to find a balance between urgency
+                and emotional load.
+              </p>
+            </div>
+            <div>
+              <h3>Outcome</h3>
+              <p>
+                The pilot improved weekly task clarity scores and established a
+                warm, trustworthy interaction model for the broader product.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <article class="case-detail" id="case-planning">
+          <div class="case-detail-header">
+            <p class="eyebrow">Case study 03</p>
+            <h2>Team planning workspace</h2>
+            <p>
+              A distributed product organization wanted planning rituals that
+              worked across time zones without adding another status meeting.
+            </p>
+          </div>
+          <div class="case-detail-grid">
+            <div>
+              <h3>Problem</h3>
+              <p>
+                Decisions lived in multiple tools, priorities shifted silently,
+                and teams lacked a single source of truth for tradeoffs.
+              </p>
+            </div>
+            <div>
+              <h3>Approach</h3>
+              <p>
+                I facilitated opportunity mapping, prototyped async planning
+                loops, and paired with engineering to define telemetry around
+                decision confidence.
+              </p>
+            </div>
+            <div>
+              <h3>Outcome</h3>
+              <p>
+                The beta reduced planning follow-up meetings and became the
+                foundation for a new collaboration product line.
+              </p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="process-section section-shell" id="process">
+        <div class="section-heading">
+          <p class="eyebrow">Process</p>
+          <h2>A flexible design loop for high-ambiguity product work.</h2>
+        </div>
+        <div class="process-steps">
+          <article>
+            <span>01</span>
+            <h3>Frame the tension</h3>
+            <p>
+              Align the team around the user problem, business constraint, and
+              riskiest assumption before jumping into solutions.
+            </p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Make behavior visible</h3>
+            <p>
+              Use journey maps, storyboards, and prototypes to turn fragmented
+              insights into shared product decisions.
+            </p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Test the moment</h3>
+            <p>
+              Validate the moments that carry trust, comprehension, and
+              momentum with representative users.
+            </p>
+          </article>
+          <article>
+            <span>04</span>
+            <h3>Ship the system</h3>
+            <p>
+              Document reusable patterns, accessibility expectations, and
+              success metrics so the work keeps improving after launch.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="play-preview section-shell" id="play">
+        <div class="play-preview-card">
+          <div>
+            <p class="eyebrow">Play lab</p>
+            <h2>Experiments, tiny tools, and design-adjacent mischief.</h2>
+            <p>
+              The play lab is where I explore delightful microinteractions,
+              workshop prompts, speculative UI, and the odd CSS creature.
+            </p>
+          </div>
+          <a class="button button-primary" href="play.html">Open the play lab</a>
+        </div>
+      </section>
+
+      <section class="section-shell contact-section" id="contact">
+        <div>
+          <p class="eyebrow">Contact</p>
+          <h2>Have a gnarly product moment to untangle?</h2>
+        </div>
+        <div class="contact-card">
+          <p>
+            I am available for senior product design roles, embedded UX
+            strategy, and research-led redesigns.
+          </p>
+          <a class="button button-primary" href="mailto:hello@example.com">hello@example.com</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; 2026 Alex Morgan. Designed with curiosity.</p>
+      <a href="#main">Back to top</a>
+    </footer>
+
+    <script src="scripts.js"></script>
+  </body>
+</html>

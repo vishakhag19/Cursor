@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="The playful side of a UX portfolio: creative prompts, interaction experiments, and small design explorations."
+    />
+    <title>Play Lab | Alex Morgan UX Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" data-header>
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="index.html" aria-label="Alex Morgan home">
+          <span class="brand-mark" aria-hidden="true">AM</span>
+          <span>Alex Morgan</span>
+        </a>
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="primary-menu"
+          data-nav-toggle
+        >
+          <span class="sr-only">Toggle navigation</span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <ul class="nav-links" id="primary-menu" data-nav-menu>
+          <li><a href="index.html#work">Case studies</a></li>
+          <li><a href="index.html#process">Process</a></li>
+          <li><a aria-current="page" href="play.html">Play lab</a></li>
+          <li><a href="index.html#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="play-hero section-shell">
+        <div class="play-hero-copy">
+          <p class="eyebrow">Play lab</p>
+          <h1>Where UX practice gets loose, weird, and useful.</h1>
+          <p>
+            Play keeps my design practice elastic. This page collects quick
+            experiments, facilitation prompts, and tiny interface ideas that
+            help teams see familiar problems from a fresh angle.
+          </p>
+        </div>
+        <div class="sticker-board" aria-label="Playful design stickers">
+          <span class="sticker sticker-one">microcopy karaoke</span>
+          <span class="sticker sticker-two">prototype party</span>
+          <span class="sticker sticker-three">delight audit</span>
+          <span class="sticker sticker-four">tiny tool club</span>
+        </div>
+      </section>
+
+      <section class="section-shell prompt-generator" aria-labelledby="prompt-title">
+        <div>
+          <p class="eyebrow">Try this</p>
+          <h2 id="prompt-title">Random UX warm-up prompt</h2>
+          <p>
+            A small generator for kickoff meetings, critique sessions, or
+            solo sketching when the blank page feels too blank.
+          </p>
+        </div>
+        <div class="prompt-card" data-prompt-card>
+          <p class="prompt-label">Your prompt</p>
+          <p class="prompt-text" data-prompt-text>
+            Redesign an error state as if it were a helpful museum guide.
+          </p>
+          <button class="button button-primary" type="button" data-prompt-button>
+            Shuffle prompt
+          </button>
+        </div>
+      </section>
+
+      <section class="section-shell">
+        <div class="section-heading">
+          <p class="eyebrow">Experiments</p>
+          <h2>Small projects that feed the serious work.</h2>
+        </div>
+        <div class="experiment-grid">
+          <article class="experiment-card">
+            <div class="experiment-icon orbit-icon" aria-hidden="true"></div>
+            <h3>Delight debt audit</h3>
+            <p>
+              A workshop format for finding tiny moments where product utility
+              is present but emotional clarity is missing.
+            </p>
+          </article>
+          <article class="experiment-card">
+            <div class="experiment-icon stack-icon" aria-hidden="true"></div>
+            <h3>One-screen stories</h3>
+            <p>
+              A weekly constraint exercise: explain a complex service journey
+              in a single responsive screen without losing the human stakes.
+            </p>
+          </article>
+          <article class="experiment-card">
+            <div class="experiment-icon spark-icon" aria-hidden="true"></div>
+            <h3>Microcopy remix</h3>
+            <p>
+              A playful critique game where teams rewrite system messages in
+              different tones to clarify voice, risk, and trust.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-shell fun-manifesto">
+        <div>
+          <p class="eyebrow">Fun principles</p>
+          <h2>Play has rules, too.</h2>
+        </div>
+        <ol class="manifesto-list">
+          <li>
+            <strong>Make the invisible visible.</strong>
+            Good play exposes assumptions without turning the room defensive.
+          </li>
+          <li>
+            <strong>Use constraints generously.</strong>
+            A small box can make teams bolder because the risk feels bounded.
+          </li>
+          <li>
+            <strong>Leave with a sharper question.</strong>
+            The best playful exercise creates momentum for the real product
+            decision waiting nearby.
+          </li>
+        </ol>
+      </section>
+
+      <section class="section-shell playlist-section">
+        <div class="playlist-card">
+          <p class="eyebrow">Mood board</p>
+          <h2>Current creative fuel</h2>
+          <ul>
+            <li>Ambient field recordings for research synthesis.</li>
+            <li>Vintage transit maps for hierarchy and constraint.</li>
+            <li>Children's museum exhibits for hands-on onboarding ideas.</li>
+            <li>Old recipe cards for compact instructional writing.</li>
+          </ul>
+          <a class="button button-secondary" href="index.html#work">Back to case studies</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>&copy; 2026 Alex Morgan. Designed with curiosity.</p>
+      <a href="index.html">Home</a>
+    </footer>
+
+    <script src="scripts.js"></script>
+  </body>
+</html>
