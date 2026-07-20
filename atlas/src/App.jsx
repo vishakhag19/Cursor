@@ -231,7 +231,7 @@ export default function App() {
     [invalidateCreateRoute, showStatus],
   );
 
-  const useCurrentAsFrom = useCallback(async () => {
+  const startFromMyLocation = useCallback(async () => {
     try {
       const loc = userLocation || (await refreshLocation());
       const place = toCurrentLocationPlace(loc);
@@ -247,7 +247,7 @@ export default function App() {
     }
   }, [userLocation, refreshLocation, geoError, showStatus]);
 
-  const useCurrentAsTo = useCallback(async () => {
+  const endAtMyLocation = useCallback(async () => {
     try {
       const loc = userLocation || (await refreshLocation());
       const place = toCurrentLocationPlace(loc);
@@ -439,7 +439,7 @@ export default function App() {
             setMode("directions");
             setDirTo(place);
             setToText(placeLabel(place));
-            await useCurrentAsFrom();
+            await startFromMyLocation();
           },
         },
         {
@@ -582,8 +582,8 @@ export default function App() {
               setDirGeometry(null);
               setDirError(null);
             }}
-            onUseCurrentFrom={useCurrentAsFrom}
-            onUseCurrentTo={useCurrentAsTo}
+            onUseCurrentFrom={startFromMyLocation}
+            onUseCurrentTo={endAtMyLocation}
             currentLocation={userLocation}
             geoStatus={geoStatus}
             summary={dirSummary}
