@@ -131,6 +131,9 @@ export default function MapView({
   onWaypointDrag,
   onLocateReady,
   onMarkerClick,
+  routeOptions = [],
+  selectedRouteId = null,
+  onSelectRoute,
 }) {
   const selectedGeometry =
     mode === "directions"
@@ -139,16 +142,12 @@ export default function MapView({
         ? createRoute?.geometry
         : null;
 
-  const altGeometries =
-    mode === "directions"
-      ? directions?.alternatives || []
-      : mode === "create"
-        ? createRoute?.alternatives || []
-        : [];
-
   const fitPositions = (() => {
     if (selectedGeometry?.length) return selectedGeometry;
     if (mode === "create" && createRoute?.waypoints?.length) {
+      return createRoute.waypoints.map((w) => [w.lat, w.lng]);
+    }
+    if (mode === "directions" && createRoute?.waypoints?.length) {
       return createRoute.waypoints.map((w) => [w.lat, w.lng]);
     }
     if (searchMarker) return [[searchMarker.lat, searchMarker.lng]];
@@ -284,34 +283,71 @@ export default function MapView({
           );
         })}
 
-      {altGeometries.map((geom) =>
-        geom?.length > 1 ? (
+      {routeOptions.map((opt) => {
+        if (!opt?.geometry?.length) return null;
+        const active = opt.id === selectedRouteId;
+        return (
           <Polyline
-            key={`alt-${geom[0]}-${geom.length}`}
-            positions={geom}
+            key={opt.id}
+            positions={opt.geometry}
             pathOptions={{
-              color: "#90CAF9",
-              weight: 4,
-              opacity: 0.55,
+              color: active ? "#1A73E8" : "#90CAF9",
+              weight: active ? 6 : 5,
+              opacity: active ? 0.95 : 0.55,
               lineJoin: "round",
               lineCap: "round",
+            }}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onSelectRoute?.(opt);
+              },
+              mouseover: (e) => {
+                if (!active) e.target.setStyle({ opacity: 0.85, weight: 6 });
+              },
+              mouseout: (e) => {
+                if (!active) e.target.setStyle({ opacity: 0.55, weight: 5 });
+              },
+            }}
+          />
+        );
+      })}
+
+      {/* Invisible wider hit targets so routes are easy to click */}
+      {routeOptions.map((opt) =>
+        opt?.geometry?.length ? (
+          <Polyline
+            key={`hit-${opt.id}`}
+            positions={opt.geometry}
+            pathOptions={{
+              color: "#000",
+              weight: 18,
+              opacity: 0,
+            }}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onSelectRoute?.(opt);
+              },
             }}
           />
         ) : null,
       )}
 
-      {selectedGeometry?.length > 1 && (
-        <Polyline
-          positions={selectedGeometry}
-          pathOptions={{
-            color: "#1A73E8",
-            weight: 6,
-            opacity: 0.95,
-            lineJoin: "round",
-            lineCap: "round",
-          }}
-        />
-      )}
+      {/* Keep selected on top visually if list order put it under alts */}
+      {selectedGeometry?.length > 1 &&
+        !routeOptions.some((o) => o.id === selectedRouteId) && (
+          <Polyline
+            positions={selectedGeometry}
+            pathOptions={{
+              color: "#1A73E8",
+              weight: 6,
+              opacity: 0.95,
+              lineJoin: "round",
+              lineCap: "round",
+            }}
+          />
+        )}
     </MapContainer>
   );
 }

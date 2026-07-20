@@ -6,6 +6,7 @@ import ContextMenu from "./components/ContextMenu";
 import { reverseGeocode } from "./api/geocode";
 import { fetchShortestRoutes } from "./api/routing";
 import { placeLabel } from "./utils/format";
+import { loadRecentSearches, pushRecentSearch } from "./utils/storage";
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
 import "./App.css";
 
@@ -26,6 +27,7 @@ export default function App() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState(null);
+  const [recentPlaces, setRecentPlaces] = useState(() => loadRecentSearches());
 
   const [stops, setStops] = useState(emptyStops);
   const [stopTexts, setStopTexts] = useState(["", ""]);
@@ -34,6 +36,7 @@ export default function App() {
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [routeLocked, setRouteLocked] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
 
@@ -91,7 +94,13 @@ export default function App() {
     setSelectedRouteId(null);
     setRouteGeometry(null);
     setRouteLocked(false);
+    setEditMode(false);
     setDirError(null);
+  }, []);
+
+  const rememberPlace = useCallback((place) => {
+    if (!place || place.isCurrentLocation) return;
+    setRecentPlaces((prev) => pushRecentSearch(place, prev));
   }, []);
 
   const selectRoute = useCallback((opt) => {
@@ -104,36 +113,18 @@ export default function App() {
 
   const runDirections = useCallback(
     async (nextStops = stops, mode = travelMode) => {
-      // Resolve any null slots that still say "Your location" in the text field.
+      // Only resolve an explicit "Your location" choice — never auto-fill GPS.
       const resolved = nextStops.map((s, i) => {
         if (s) return s;
         const text = (stopTexts[i] || "").trim().toLowerCase();
         if (
           userLocation &&
-          (text === "your location" || text === "my location" || text === "")
+          (text === "your location" || text === "my location")
         ) {
-          // Only auto-fill the first empty "your location" intent for start.
-          if (i === 0 || text.includes("location")) {
-            return toCurrentLocationPlace(userLocation);
-          }
+          return toCurrentLocationPlace(userLocation);
         }
         return s;
       });
-
-      // If start is empty but we have GPS, use it.
-      if (!resolved[0] && userLocation) {
-        resolved[0] = toCurrentLocationPlace(userLocation);
-        setStops((prev) => {
-          const next = [...prev];
-          next[0] = resolved[0];
-          return next;
-        });
-        setStopTexts((prev) => {
-          const next = [...prev];
-          next[0] = "Your location";
-          return next;
-        });
-      }
 
       const filled = resolved.filter(Boolean);
       if (filled.length < 2) {
@@ -147,8 +138,7 @@ export default function App() {
         let options;
         try {
           options = await fetchShortestRoutes(filled, mode, { limit: 5 });
-        } catch (firstErr) {
-          // One retry — public OSRM can be briefly unavailable.
+        } catch {
           await new Promise((r) => setTimeout(r, 600));
           options = await fetchShortestRoutes(filled, mode, { limit: 5 });
         }
@@ -178,17 +168,12 @@ export default function App() {
 
   const openDirections = useCallback(
     ({ from = null, to = null } = {}) => {
+      // Do not auto-fill Your location — user picks it from the start field.
       const nextStops = [from, to];
       const nextTexts = [
         from ? (from.isCurrentLocation ? "Your location" : from.name) : "",
         to ? (to.isCurrentLocation ? "Your location" : to.name) : "",
       ];
-      // Default start to current location when opening "directions to"
-      if (!from && userLocation && to) {
-        const me = toCurrentLocationPlace(userLocation);
-        nextStops[0] = me;
-        nextTexts[0] = "Your location";
-      }
       setStops(nextStops);
       setStopTexts(nextTexts);
       clearRoutes();
@@ -198,36 +183,59 @@ export default function App() {
         runDirections(nextStops, travelMode);
       }
     },
-    [userLocation, clearRoutes, runDirections, travelMode],
+    [clearRoutes, runDirections, travelMode],
   );
 
   const selectSearchPlace = useCallback(
     (place) => {
       setSearchQuery(place.name);
       setSelectedPlace(place);
+      rememberPlace(place);
       setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 14 });
       setView("search");
       setPanelOpen(true);
       showStatus(placeLabel(place));
     },
-    [showStatus],
+    [showStatus, rememberPlace],
   );
 
   const handleMapClick = useCallback(
     async (latlng) => {
       setCtx(null);
+
+      // Edit route: pin a via point the path must go through.
+      if (view === "directions" && editMode) {
+        try {
+          const place = await reverseGeocode(latlng.lat, latlng.lng);
+          rememberPlace(place);
+          if (stops.length < 2 || !stops[0] || !stops[stops.length - 1]) {
+            showStatus("Set start and destination before editing");
+            return;
+          }
+          const nextStops = [...stops];
+          nextStops.splice(nextStops.length - 1, 0, place);
+          const nextTexts = [...stopTexts];
+          nextTexts.splice(nextTexts.length - 1, 0, place.name);
+          setStops(nextStops);
+          setStopTexts(nextTexts);
+          setEditMode(false);
+          showStatus(`Via ${place.name} — rebuilding…`);
+          await runDirections(nextStops, travelMode);
+        } catch {
+          showStatus("Could not pin that point");
+        }
+        return;
+      }
+
       if (view === "directions") {
-        // In directions, map click sets the first empty stop.
         const emptyIdx = stops.findIndex((s) => !s);
         if (emptyIdx === -1) {
-          showStatus("All stops set — use Add destination for more");
+          showStatus("Use Add Stops or Edit route to change the path");
           return;
-        }
-        if (routeLocked) {
-          showStatus("Unlock isn’t needed — clear routes to edit stops");
         }
         try {
           const place = await reverseGeocode(latlng.lat, latlng.lng);
+          rememberPlace(place);
           setStops((prev) => {
             const next = [...prev];
             next[emptyIdx] = place;
@@ -251,6 +259,7 @@ export default function App() {
         const place = await reverseGeocode(latlng.lat, latlng.lng);
         setSelectedPlace(place);
         setSearchQuery(place.name);
+        rememberPlace(place);
         showStatus(placeLabel(place));
       } catch {
         const place = {
@@ -264,7 +273,17 @@ export default function App() {
         setSearchQuery(place.name);
       }
     },
-    [view, stops, routeLocked, showStatus, clearRoutes],
+    [
+      view,
+      editMode,
+      stops,
+      stopTexts,
+      showStatus,
+      clearRoutes,
+      rememberPlace,
+      runDirections,
+      travelMode,
+    ],
   );
 
   const setStopText = useCallback(
@@ -402,7 +421,8 @@ export default function App() {
             onQueryChange={setSearchQuery}
             onSelectPlace={selectSearchPlace}
             place={selectedPlace}
-            currentLocation={userLocation}
+            recentPlaces={recentPlaces}
+            near={userLocation}
             onClear={() => {
               setSearchQuery("");
               setSelectedPlace(null);
@@ -417,20 +437,7 @@ export default function App() {
             }}
             onAddToRoute={() => {
               if (!selectedPlace) return;
-              openDirections({
-                from: userLocation
-                  ? toCurrentLocationPlace(userLocation)
-                  : null,
-                to: selectedPlace,
-              });
-              // Ensure destination is set even if from was null
-              setTimeout(() => {
-                setStops((prev) => {
-                  const next = [...prev];
-                  if (!next[1]) next[1] = selectedPlace;
-                  return next;
-                });
-              }, 0);
+              openDirections({ to: selectedPlace });
             }}
           />
         )}
@@ -440,7 +447,10 @@ export default function App() {
             stops={stops}
             stopTexts={stopTexts}
             onStopText={setStopText}
-            onStopSelect={setStopPlace}
+            onStopSelect={(i, place) => {
+              setStopPlace(i, place);
+              rememberPlace(place);
+            }}
             onAddStop={addStop}
             onRemoveStop={removeStop}
             onSwap={swapStops}
@@ -465,6 +475,15 @@ export default function App() {
             loading={dirLoading}
             error={dirError}
             currentLocation={userLocation}
+            near={userLocation}
+            editMode={editMode}
+            onToggleEdit={() => {
+              setEditMode((v) => {
+                const next = !v;
+                if (next) showStatus("Click the map to pin a via point");
+                return next;
+              });
+            }}
           />
         )}
       </aside>
@@ -491,14 +510,17 @@ export default function App() {
             from: filledStops[0] || null,
             to: filledStops[filledStops.length - 1] || null,
             geometry: routeGeometry,
-            alternatives: routeOptions
-              .filter((o) => o.id !== selectedRouteId)
-              .map((o) => o.geometry),
           }}
           createRoute={{
             waypoints: view === "directions" ? filledStops : [],
             geometry: null,
             alternatives: [],
+          }}
+          routeOptions={view === "directions" ? routeOptions : []}
+          selectedRouteId={selectedRouteId}
+          onSelectRoute={(opt) => {
+            selectRoute(opt);
+            showStatus(`Selected: ${opt.badge || opt.label}`);
           }}
           flyTarget={flyTarget}
           fitKey={fitKey}
@@ -508,6 +530,7 @@ export default function App() {
             try {
               const place = await reverseGeocode(lat, lng);
               setStopPlace(index, place);
+              rememberPlace(place);
             } catch {
               setStopPlace(index, {
                 id: uid(),

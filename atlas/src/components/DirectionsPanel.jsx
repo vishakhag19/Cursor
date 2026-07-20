@@ -8,8 +8,8 @@ const TRAVEL = [
 ];
 
 /**
- * Google Maps–style directions panel:
- * travel modes, A/B (+ optional stops), top shortest route options.
+ * Google Maps–style directions panel.
+ * "Your location" is only offered on the starting-point field.
  */
 export default function DirectionsPanel({
   stops,
@@ -29,8 +29,12 @@ export default function DirectionsPanel({
   loading,
   error,
   currentLocation,
+  near = null,
+  editMode = false,
+  onToggleEdit,
 }) {
   const canRoute = stops.filter(Boolean).length >= 2;
+  const hasRoutes = routeOptions.length > 0;
 
   return (
     <section className="mode-panel directions-panel">
@@ -69,7 +73,13 @@ export default function DirectionsPanel({
             <div className="dir-stop-row" key={`stop-${i}`}>
               <SuggestInput
                 id={`dir-stop-${i}`}
-                label={i === 0 ? "Starting point" : i === stops.length - 1 ? "Destination" : `Stop ${i}`}
+                label={
+                  i === 0
+                    ? "Starting point"
+                    : i === stops.length - 1
+                      ? "Destination"
+                      : `Stop ${i}`
+                }
                 value={stopTexts[i] || ""}
                 onChange={(v) => onStopText(i, v)}
                 onSelect={(place) => onStopSelect(i, place)}
@@ -81,6 +91,8 @@ export default function DirectionsPanel({
                       : "Add stop"
                 }
                 currentLocation={currentLocation}
+                allowCurrentLocation={i === 0}
+                near={near}
               />
               {stops.length > 2 && (
                 <md-icon-button
@@ -107,14 +119,35 @@ export default function DirectionsPanel({
 
       <button type="button" className="dir-add-stop" onClick={onAddStop}>
         <md-icon>add</md-icon>
-        <span className="md-typescale-body-medium">Add destination</span>
+        <span className="md-typescale-body-medium">Add Stops</span>
       </button>
 
-      <div className="btn-row">
-        <md-filled-button type="button" onClick={onSearch} disabled={!canRoute || loading || undefined}>
+      <div className="btn-row wrap">
+        <md-filled-button
+          type="button"
+          onClick={onSearch}
+          disabled={!canRoute || loading || undefined}
+        >
           {loading ? "Finding routes…" : "Get directions"}
         </md-filled-button>
+        {hasRoutes && (
+          <md-filled-tonal-button
+            type="button"
+            onClick={onToggleEdit}
+            class={editMode ? "is-edit-active" : ""}
+          >
+            <md-icon slot="icon">{editMode ? "close" : "edit_location_alt"}</md-icon>
+            {editMode ? "Done editing" : "Edit route"}
+          </md-filled-tonal-button>
+        )}
       </div>
+
+      {editMode && (
+        <p className="hint md-typescale-body-small edit-hint">
+          Click the map to pin a place the route must go through. Atlas will
+          rebuild the shortest options through that point.
+        </p>
+      )}
 
       {error && (
         <p className="error-msg md-typescale-body-medium" role="alert">
@@ -124,6 +157,9 @@ export default function DirectionsPanel({
 
       {routeOptions.length > 0 && (
         <div className="dir-route-list">
+          <p className="hint tight md-typescale-body-small">
+            Tap a route below or click its line on the map.
+          </p>
           {routeOptions.map((opt, index) => {
             const active = opt.id === selectedRouteId;
             return (
@@ -136,7 +172,10 @@ export default function DirectionsPanel({
                 {active && <span className="dir-route-bar" aria-hidden />}
                 <div className="dir-route-body">
                   <div className="dir-route-title-row">
-                    <md-icon class="dir-route-mode">{TRAVEL.find((t) => t.id === travelMode)?.icon || "directions_car"}</md-icon>
+                    <md-icon class="dir-route-mode">
+                      {TRAVEL.find((t) => t.id === travelMode)?.icon ||
+                        "directions_car"}
+                    </md-icon>
                     <div>
                       <div className="md-typescale-title-small">{opt.label}</div>
                       {opt.badge && (
@@ -168,17 +207,17 @@ export default function DirectionsPanel({
 
       {!routeOptions.length && !error && !loading && (
         <p className="hint md-typescale-body-medium">
-          Enter start and destination to see the {5} shortest route options.
-          {stops[0] ? "" : " Tip: type “Your location” in Starting point."}
+          Enter start and destination to see the shortest route options.
+          {stops[0]
+            ? ""
+            : " Tap Starting point to use Your location or pick a place."}
         </p>
       )}
 
       {stops.some(Boolean) && (
         <p className="hint tight md-typescale-body-small">
           Stops:{" "}
-          {stops
-            .map((s) => (s ? placeLabel(s) : "…"))
-            .join(" → ")}
+          {stops.map((s) => (s ? placeLabel(s) : "…")).join(" → ")}
         </p>
       )}
     </section>

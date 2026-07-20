@@ -1,7 +1,7 @@
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 
-/** Search-only panel (no tabs). */
+/** Search-only panel (no tabs). Landing dropdown = recent searches only. */
 export default function SearchPanel({
   query,
   onQueryChange,
@@ -11,7 +11,8 @@ export default function SearchPanel({
   onDirectionsTo,
   onDirectionsFrom,
   onAddToRoute,
-  currentLocation,
+  recentPlaces = [],
+  near = null,
 }) {
   return (
     <section className="mode-panel search-panel">
@@ -23,7 +24,9 @@ export default function SearchPanel({
           onChange={onQueryChange}
           onSelect={onSelectPlace}
           placeholder="Search places"
-          currentLocation={currentLocation}
+          allowCurrentLocation={false}
+          recentPlaces={recentPlaces}
+          near={near}
         />
         {query && (
           <md-icon-button
@@ -46,8 +49,9 @@ export default function SearchPanel({
         />
       ) : (
         <p className="hint md-typescale-body-medium">
-          Search for a place or click the map. Open Directions from a place
-          card to see the shortest route options.
+          {recentPlaces.length
+            ? "Focus the search field to see recent places, or type to find somewhere new."
+            : "Search for a place or click the map. Results are ordered nearest first."}
         </p>
       )}
     </section>

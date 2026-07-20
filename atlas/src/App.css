@@ -254,8 +254,21 @@
   font-weight: 700;
 }
 
-.dir-route-dist {
-  color: var(--md-sys-color-on-surface-variant);
+.edit-hint {
+  padding: 8px 10px;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+md-filled-tonal-button.is-edit-active {
+  --md-filled-tonal-button-container-color: var(--md-sys-color-tertiary-container);
+  --md-filled-tonal-button-label-text-color: var(--md-sys-color-on-tertiary-container);
+  --md-filled-tonal-button-icon-color: var(--md-sys-color-on-tertiary-container);
+}
+
+.leaflet-interactive {
+  cursor: pointer;
 }
 
 .mode-panel {
