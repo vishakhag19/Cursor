@@ -22,3 +22,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 ## Stack
 
 React + Vite + Leaflet + react-leaflet. Routing: [OSRM](https://project-osrm.org/). Geocoding: [Nominatim](https://nominatim.openstreetmap.org/).
+
+## Theme
+
+UI uses the [Catppuccin](https://21st.dev/@serafimcloud/themes/catppuccin) Mocha + Mauve preset (shadcn CSS variables).

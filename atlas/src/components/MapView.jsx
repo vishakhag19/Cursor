@@ -16,23 +16,23 @@ const DEFAULT_ZOOM = 13;
 
 function pinIcon(kind = "default", label = "") {
   const colors = {
-    default: "#EA4335",
-    start: "#34A853",
-    end: "#EA4335",
-    stop: "#1A73E8",
-    search: "#1A73E8",
+    default: "#f38ba8", // red
+    start: "#a6e3a1", // green
+    end: "#f38ba8", // red
+    stop: "#cba6f7", // mauve
+    search: "#89b4fa", // blue/sky
   };
   const color = colors[kind] || colors.default;
   const badge =
     label !== ""
-      ? `<span style="position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#202124;color:#fff;font:700 10px/16px 'Plus Jakarta Sans',sans-serif;text-align:center">${label}</span>`
+      ? `<span style="position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#11111b;color:#cdd6f4;font:700 10px/16px 'Plus Jakarta Sans',sans-serif;text-align:center">${label}</span>`
       : "";
   return L.divIcon({
     className: "atlas-pin",
     html: `<div style="position:relative;width:28px;height:36px">
       <svg viewBox="0 0 28 36" width="28" height="36">
         <path d="M14 0C6.3 0 0 6.1 0 13.6 0 23.5 14 36 14 36s14-12.5 14-22.4C28 6.1 21.7 0 14 0z" fill="${color}"/>
-        <circle cx="14" cy="13" r="5.5" fill="#fff"/>
+        <circle cx="14" cy="13" r="5.5" fill="#1e1e2e"/>
       </svg>${badge}
     </div>`,
     iconSize: [28, 36],
@@ -170,11 +170,11 @@ export default function MapView({
             center={[userLocation.lat, userLocation.lng]}
             radius={Math.max(userLocation.accuracy || 40, 25)}
             pathOptions={{
-              color: "#1A73E8",
+              color: "#89b4fa",
               weight: 1,
-              fillColor: "#1A73E8",
-              fillOpacity: 0.12,
-              opacity: 0.35,
+              fillColor: "#89b4fa",
+              fillOpacity: 0.14,
+              opacity: 0.4,
             }}
           />
           <Marker
@@ -236,9 +236,9 @@ export default function MapView({
         <Polyline
           positions={routeLine}
           pathOptions={{
-            color: mode === "create" ? "#1A73E8" : "#4285F4",
+            color: mode === "create" ? "#cba6f7" : "#89b4fa",
             weight: 5,
-            opacity: 0.9,
+            opacity: 0.92,
             lineJoin: "round",
             lineCap: "round",
           }}
