@@ -70,6 +70,28 @@ export async function fetchShortestRoutes(
 
   let routes = data.routes.map((r, i) => normalizeRoute(r, i));
 
+  // If we still want more options, ask again avoiding motorways (often yields a
+  // meaningfully different shorter/local alternative).
+  if (coords.length === 2 && routes.length < limit) {
+    try {
+      const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&exclude=motorway`;
+      const localRes = await fetch(localUrl);
+      if (localRes.ok) {
+        const localData = await localRes.json();
+        if (localData.code === "Ok" && localData.routes?.length) {
+          localData.routes.forEach((r, i) => {
+            routes.push({
+              ...normalizeRoute(r, `local-${i}`),
+              label: viaLabel(r),
+            });
+          });
+        }
+      }
+    } catch {
+      /* optional enrichment */
+    }
+  }
+
   // For multi-stop, also try leg-by-leg shortest and merge as an extra option.
   if (coords.length > 2) {
     try {
