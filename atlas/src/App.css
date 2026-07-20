@@ -70,6 +70,194 @@
   --md-primary-tab-container-color: transparent;
 }
 
+/* —— Directions (Google Maps–style) —— */
+.dir-modes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+.dir-mode {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+
+.dir-mode.is-active {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.dir-modes-spacer {
+  flex: 1;
+}
+
+.dir-stops {
+  display: grid;
+  grid-template-columns: 16px 1fr 40px;
+  gap: 4px 8px;
+  align-items: stretch;
+}
+
+.dir-stops-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  padding: 22px 0;
+  background-image: linear-gradient(
+    var(--md-sys-color-outline-variant),
+    var(--md-sys-color-outline-variant)
+  );
+  background-size: 2px calc(100% - 44px);
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.dir-rail-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--md-sys-color-outline);
+  z-index: 1;
+}
+
+.dir-rail-dot.start {
+  background: var(--md-sys-color-on-surface-variant);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-on-surface-variant) 20%, transparent);
+}
+
+.dir-rail-dot.end {
+  background: #ea4335;
+  border-radius: 2px 2px 50% 50%;
+  height: 12px;
+}
+
+.dir-rail-dot.mid {
+  background: var(--md-sys-color-primary);
+}
+
+.dir-stops-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dir-stop-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.dir-stop-row .suggest-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.dir-swap {
+  align-self: center;
+}
+
+.dir-add-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  padding: 8px 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dir-add-stop:hover {
+  color: var(--md-sys-color-primary);
+}
+
+.dir-route-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 4px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.dir-route-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  background: transparent;
+  padding: 14px 12px 14px 16px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.dir-route-card:hover {
+  background: var(--md-sys-color-surface-container);
+}
+
+.dir-route-card.is-active {
+  background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+}
+
+.dir-route-bar {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--md-sys-color-primary);
+}
+
+.dir-route-title-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.dir-route-mode {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.dir-route-badge {
+  color: var(--md-sys-color-on-surface-variant);
+  margin-top: 2px;
+}
+
+.dir-route-badge.muted {
+  opacity: 0.8;
+}
+
+.dir-route-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 34px;
+}
+
+.dir-route-time {
+  color: #188038;
+  font-weight: 700;
+}
+
+.dir-route-dist {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
 .mode-panel {
   flex: 1;
   overflow: auto;

@@ -10,10 +10,26 @@ function toGeometry(route) {
   return route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
 }
 
-function normalizeRoute(route, label, index) {
+/** Pick a readable "via …" label from OSRM step road names. */
+function viaLabel(route) {
+  const names = [];
+  const legs = route.legs || [];
+  for (const leg of legs) {
+    for (const step of leg.steps || []) {
+      const name = (step.name || "").trim();
+      if (name && name !== "-" && !names.includes(name)) names.push(name);
+    }
+  }
+  if (!names.length) return "Best available roads";
+  if (names.length === 1) return `via ${names[0]}`;
+  if (names.length === 2) return `via ${names[0]} and ${names[1]}`;
+  return `via ${names[0]} and ${names[1]}`;
+}
+
+function normalizeRoute(route, index) {
   return {
     id: `route-${index}-${Math.round(route.distance)}-${Math.round(route.duration)}`,
-    label,
+    label: viaLabel(route),
     distance: route.distance,
     duration: route.duration,
     geometry: toGeometry(route),
@@ -22,23 +38,26 @@ function normalizeRoute(route, label, index) {
 }
 
 /**
- * Fetch one or more road routes between ordered stops.
- * @param {{ lat: number, lng: number }[]} coords
- * @param {"driving"|"walking"|"cycling"} travelMode
- * @param {{ alternatives?: boolean, prefer?: "time"|"distance" }} options
+ * Return up to `limit` shortest driving/walking/cycling options between stops.
+ * Always ranked by distance (shortest first).
  */
-export async function fetchRouteOptions(
+export async function fetchShortestRoutes(
   coords,
   travelMode = "driving",
-  { alternatives = true, prefer = "time" } = {},
+  { limit = 5 } = {},
 ) {
   if (!coords || coords.length < 2) {
     throw new Error("Need at least two stops");
   }
   const profile = PROFILE[travelMode] || "driving";
   const path = coords.map((c) => `${c.lng},${c.lat}`).join(";");
-  const alt = alternatives && coords.length === 2 ? "true" : "false";
-  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=false&alternatives=${alt}`;
+
+  // Ask OSRM for as many alternatives as it can offer (A→B only).
+  const altCount = coords.length === 2 ? Math.max(limit - 1, 1) : false;
+  const altParam =
+    altCount === false ? "false" : String(Math.min(altCount, 4));
+
+  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${altParam}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("Routing service unavailable");
   const data = await res.json();
@@ -46,173 +65,90 @@ export async function fetchRouteOptions(
     throw new Error(data.message || "No route found between these stops");
   }
 
-  const routes = data.routes.map((r, i) => normalizeRoute(r, `Option ${i + 1}`, i));
-  return rankRoutes(routes, prefer);
+  let routes = data.routes.map((r, i) => normalizeRoute(r, i));
+
+  // For multi-stop, also try leg-by-leg shortest and merge as an extra option.
+  if (coords.length > 2) {
+    try {
+      const legs = await routeLegByLegShortest(coords, travelMode);
+      routes.push({
+        ...legs,
+        id: `legs-${Math.round(legs.distance)}`,
+        label: "Via your stops (shortest legs)",
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return rankShortest(routes).slice(0, limit);
 }
 
-/** Back-compat single-route helper. */
-export async function fetchRoute(coords, travelMode = "driving", prefer = "time") {
-  const options = await fetchRouteOptions(coords, travelMode, {
-    alternatives: true,
-    prefer,
-  });
-  return options[0];
-}
-
-/**
- * Build a custom multi-stop route leg-by-leg so each segment prefers
- * shorter/faster per the user's choice, then concatenate geometries.
- * This gives stronger stop-order control than one mega-request.
- */
-export async function buildCustomRouteOptions(
-  coords,
-  travelMode = "driving",
-  { prefer = "distance", snapToRoads = true } = {},
-) {
-  if (!coords || coords.length < 2) {
-    throw new Error("Need at least two stops");
-  }
-
-  if (!snapToRoads) {
-    const straight = straightLineRoute(coords);
-    return [
-      {
-        ...straight,
-        id: "custom-straight",
-        label: "Your path (straight lines)",
-      },
-    ];
-  }
-
-  // A→B only: ask OSRM for alternatives and rank them.
-  if (coords.length === 2) {
-    return fetchRouteOptions(coords, travelMode, {
-      alternatives: true,
-      prefer,
-    });
-  }
-
-  // Multi-stop: build three candidates —
-  // 1) leg-by-leg with prefer
-  // 2) single OSRM request through all stops
-  // 3) leg-by-leg with the opposite prefer (so user can compare)
-  const [legPreferred, throughAll, legAlt] = await Promise.all([
-    routeLegByLeg(coords, travelMode, prefer).catch(() => null),
-    fetchRouteOptions(coords, travelMode, {
-      alternatives: false,
-      prefer,
-    })
-      .then((opts) => opts[0])
-      .catch(() => null),
-    routeLegByLeg(
-      coords,
-      travelMode,
-      prefer === "distance" ? "time" : "distance",
-    ).catch(() => null),
-  ]);
-
-  const candidates = [];
-  if (legPreferred) {
-    candidates.push({
-      ...legPreferred,
-      id: "legs-preferred",
-      label: prefer === "distance" ? "Shortest (via your stops)" : "Fastest (via your stops)",
-    });
-  }
-  if (throughAll) {
-    candidates.push({
-      ...throughAll,
-      id: "through-all",
-      label: "Recommended via roads",
-    });
-  }
-  if (legAlt) {
-    candidates.push({
-      ...legAlt,
-      id: "legs-alt",
-      label:
-        prefer === "distance"
-          ? "Fastest (via your stops)"
-          : "Shortest (via your stops)",
-    });
-  }
-
-  if (!candidates.length) {
-    const fallback = straightLineRoute(coords);
-    return [
-      {
-        ...fallback,
-        id: "fallback-straight",
-        label: "Straight lines (routing unavailable)",
-      },
-    ];
-  }
-
-  return dedupeRoutes(rankRoutes(candidates, prefer));
-}
-
-async function routeLegByLeg(coords, travelMode, prefer) {
+async function routeLegByLegShortest(coords, travelMode) {
   const legs = [];
   for (let i = 0; i < coords.length - 1; i++) {
-    const options = await fetchRouteOptions(
-      [coords[i], coords[i + 1]],
-      travelMode,
-      { alternatives: true, prefer },
-    );
+    const options = await fetchShortestRoutes([coords[i], coords[i + 1]], travelMode, {
+      limit: 1,
+    });
     legs.push(options[0]);
   }
 
   let distance = 0;
   let duration = 0;
   const geometry = [];
+  const viaParts = [];
   legs.forEach((leg, idx) => {
     distance += leg.distance;
     duration += leg.duration;
+    if (leg.label?.startsWith("via ")) viaParts.push(leg.label.slice(4));
     const pts = leg.geometry;
     if (idx === 0) geometry.push(...pts);
     else geometry.push(...pts.slice(1));
   });
 
-  return { distance, duration, geometry };
+  return {
+    distance,
+    duration,
+    geometry,
+    label: viaParts.length
+      ? `via ${viaParts.slice(0, 2).join(" and ")}`
+      : "Via your stops",
+  };
 }
 
-function rankRoutes(routes, prefer = "time") {
-  const sorted = [...routes].sort((a, b) => {
-    if (prefer === "distance") {
-      return a.distance - b.distance || a.duration - b.duration;
-    }
-    return a.duration - b.duration || a.distance - b.distance;
-  });
-
-  return sorted.map((r, i) => {
-    let label = r.label;
-    if (i === 0) {
-      label = prefer === "distance" ? "Shortest" : "Fastest";
-    } else if (sorted.length > 1 && i === 1) {
-      const other = prefer === "distance" ? "Fastest" : "Shortest";
-      const isOther =
-        prefer === "distance"
-          ? r.duration <= sorted[0].duration
-          : r.distance <= sorted[0].distance;
-      label = isOther ? other : `Alternative ${i}`;
-    } else {
-      label = `Alternative ${i}`;
-    }
-    return { ...r, label };
-  });
-}
-
-function dedupeRoutes(routes) {
+function rankShortest(routes) {
+  const sorted = [...routes].sort(
+    (a, b) => a.distance - b.distance || a.duration - b.duration,
+  );
   const seen = new Set();
-  return routes.filter((r) => {
-    const key = `${Math.round(r.distance / 25)}:${Math.round(r.duration / 15)}`;
-    if (seen.has(key)) return false;
+  const unique = [];
+  for (const r of sorted) {
+    const key = `${Math.round(r.distance / 20)}:${Math.round(r.duration / 10)}`;
+    if (seen.has(key)) continue;
     seen.add(key);
-    return true;
-  });
+    unique.push(r);
+  }
+  return unique.map((r, i) => ({
+    ...r,
+    rank: i + 1,
+    badge: i === 0 ? "Shortest route" : null,
+  }));
 }
 
-/** Straight-line fallback when road routing fails or user chooses freehand. */
+/** @deprecated use fetchShortestRoutes */
+export async function fetchRouteOptions(coords, travelMode = "driving") {
+  return fetchShortestRoutes(coords, travelMode, { limit: 5 });
+}
+
+export async function fetchRoute(coords, travelMode = "driving") {
+  const options = await fetchShortestRoutes(coords, travelMode, { limit: 1 });
+  return options[0];
+}
+
+export async function buildCustomRouteOptions(coords, travelMode = "driving") {
+  return fetchShortestRoutes(coords, travelMode, { limit: 5 });
+}
+
 export function straightLineRoute(coords) {
   let distance = 0;
   for (let i = 1; i < coords.length; i++) {
@@ -223,6 +159,9 @@ export function straightLineRoute(coords) {
     distance,
     duration,
     geometry: coords.map((c) => [c.lat, c.lng]),
+    label: "Straight lines",
+    badge: null,
+    rank: 1,
   };
 }
 

@@ -1,69 +1,46 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import MapView from "./components/MapView";
-import ExplorePanel from "./components/ExplorePanel";
+import SearchPanel from "./components/SearchPanel";
 import DirectionsPanel from "./components/DirectionsPanel";
-import CreateRoutePanel from "./components/CreateRoutePanel";
 import ContextMenu from "./components/ContextMenu";
-import MdTabs from "./components/MdTabs";
 import { reverseGeocode } from "./api/geocode";
-import { fetchRouteOptions, buildCustomRouteOptions } from "./api/routing";
+import { fetchShortestRoutes } from "./api/routing";
 import { placeLabel } from "./utils/format";
-import { loadSavedRoutes, persistSavedRoutes } from "./utils/storage";
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
 import "./App.css";
-
-const MODES = [
-  { id: "explore", label: "Explore" },
-  { id: "directions", label: "Directions" },
-  { id: "create", label: "Create route" },
-];
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function emptyStops() {
+  return [null, null];
+}
+
 export default function App() {
-  const [mode, setMode] = useState("explore");
+  const [view, setView] = useState("search"); // search | directions
   const [panelOpen, setPanelOpen] = useState(true);
   const [layer, setLayer] = useState("map");
   const [status, setStatus] = useState(null);
   const statusTimer = useRef(null);
 
-  const [exploreQuery, setExploreQuery] = useState("");
-  const [searchMarker, setSearchMarker] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState(null);
 
-  const [fromText, setFromText] = useState("");
-  const [toText, setToText] = useState("");
-  const [dirFrom, setDirFrom] = useState(null);
-  const [dirTo, setDirTo] = useState(null);
-  const [dirSummary, setDirSummary] = useState(null);
-  const [dirGeometry, setDirGeometry] = useState(null);
-  const [dirOptions, setDirOptions] = useState([]);
-  const [dirSelectedId, setDirSelectedId] = useState(null);
-  const [dirLocked, setDirLocked] = useState(false);
-  const [dirPrefer, setDirPrefer] = useState("time");
+  const [stops, setStops] = useState(emptyStops);
+  const [stopTexts, setStopTexts] = useState(["", ""]);
+  const [travelMode, setTravelMode] = useState("driving");
+  const [routeOptions, setRouteOptions] = useState([]);
+  const [selectedRouteId, setSelectedRouteId] = useState(null);
+  const [routeGeometry, setRouteGeometry] = useState(null);
+  const [routeLocked, setRouteLocked] = useState(false);
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
-
-  const [routeName, setRouteName] = useState("");
-  const [waypoints, setWaypoints] = useState([]);
-  const [travelMode, setTravelMode] = useState("driving");
-  const [snapToRoads, setSnapToRoads] = useState(true);
-  const [createPrefer, setCreatePrefer] = useState("distance");
-  const [createSummary, setCreateSummary] = useState(null);
-  const [createGeometry, setCreateGeometry] = useState(null);
-  const [createOptions, setCreateOptions] = useState([]);
-  const [createSelectedId, setCreateSelectedId] = useState(null);
-  const [createLocked, setCreateLocked] = useState(false);
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState(null);
-  const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
 
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
   const locateFn = useRef(null);
-  const prefilledFromLocation = useRef(false);
 
   const {
     location: userLocation,
@@ -84,11 +61,6 @@ export default function App() {
   useEffect(() => () => clearTimeout(statusTimer.current), []);
 
   useEffect(() => {
-    persistSavedRoutes(savedRoutes);
-  }, [savedRoutes]);
-
-  // Center map on the user once when location first becomes available.
-  useEffect(() => {
     if (!userLocation) return;
     if (!takeCenteredOnce()) return;
     setFlyTarget({
@@ -99,333 +71,213 @@ export default function App() {
     showStatus("Centered on your location");
   }, [userLocation, takeCenteredOnce, showStatus]);
 
-  // Prefill directions "from" with current location the first time we get it.
+  // Sync "Your location" stop pins only when route is unlocked.
   useEffect(() => {
-    if (!userLocation || prefilledFromLocation.current) return;
-    prefilledFromLocation.current = true;
+    if (!userLocation || routeLocked) return;
     const place = toCurrentLocationPlace(userLocation);
-    setDirFrom(place);
-    setFromText(place.name);
-  }, [userLocation]);
-
-  // Keep live "Your location" points in sync — but never while a route is locked
-  // (avoids mid-trip redirects against the user's will).
-  useEffect(() => {
-    if (!userLocation) return;
-    if (dirLocked || createLocked) return;
-    const place = toCurrentLocationPlace(userLocation);
-
-    setDirFrom((prev) => (prev?.isCurrentLocation ? { ...place } : prev));
-    setDirTo((prev) => (prev?.isCurrentLocation ? { ...place } : prev));
-    setWaypoints((prev) => {
+    setStops((prev) => {
       let changed = false;
-      const next = prev.map((wp) => {
-        if (!wp.isCurrentLocation) return wp;
+      const next = prev.map((s) => {
+        if (!s?.isCurrentLocation) return s;
         changed = true;
-        return {
-          ...wp,
-          lat: place.lat,
-          lng: place.lng,
-          accuracy: place.accuracy,
-        };
+        return { ...place };
       });
       return changed ? next : prev;
     });
-  }, [userLocation, dirLocked, createLocked]);
+  }, [userLocation, routeLocked]);
 
-  const invalidateCreateRoute = useCallback(() => {
-    setCreateSummary(null);
-    setCreateGeometry(null);
-    setCreateError(null);
-    setCreateOptions([]);
-    setCreateSelectedId(null);
-    setCreateLocked(false);
-  }, []);
-
-  const clearDirRoute = useCallback(() => {
-    setDirSummary(null);
-    setDirGeometry(null);
-    setDirOptions([]);
-    setDirSelectedId(null);
-    setDirLocked(false);
+  const clearRoutes = useCallback(() => {
+    setRouteOptions([]);
+    setSelectedRouteId(null);
+    setRouteGeometry(null);
+    setRouteLocked(false);
     setDirError(null);
   }, []);
 
-  const applySelectedRoute = useCallback((opt, kind) => {
+  const selectRoute = useCallback((opt) => {
     if (!opt) return;
-    if (kind === "directions") {
-      setDirSelectedId(opt.id);
-      setDirGeometry(opt.geometry);
-      setDirSummary({ distance: opt.distance, duration: opt.duration });
-      setFitKey((k) => k + 1);
-    } else {
-      setCreateSelectedId(opt.id);
-      setCreateGeometry(opt.geometry);
-      setCreateSummary({ distance: opt.distance, duration: opt.duration });
-      setFitKey((k) => k + 1);
-    }
+    setSelectedRouteId(opt.id);
+    setRouteGeometry(opt.geometry);
+    setRouteLocked(true);
+    setFitKey((k) => k + 1);
   }, []);
 
-  const selectExplorePlace = useCallback(
-    (place) => {
-      setExploreQuery(place.name);
-      setSearchMarker(place);
-      setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 14 });
-      showStatus(placeLabel(place));
-    },
-    [showStatus],
-  );
-
   const runDirections = useCallback(
-    async (from = dirFrom, to = dirTo, prefer = dirPrefer) => {
-      if (!from || !to) {
-        setDirError("Choose a start and destination");
+    async (nextStops = stops, mode = travelMode) => {
+      const filled = nextStops.filter(Boolean);
+      if (filled.length < 2) {
+        setDirError("Choose a starting point and destination");
         return;
       }
       setDirLoading(true);
       setDirError(null);
-      showStatus("Finding route options…", 0);
+      showStatus("Finding shortest routes…", 0);
       try {
-        const options = await fetchRouteOptions([from, to], "driving", {
-          alternatives: true,
-          prefer,
-        });
-        setDirOptions(options);
-        applySelectedRoute(options[0], "directions");
-        setDirLocked(true);
-        showStatus(`${options.length} route option${options.length === 1 ? "" : "s"} ready — pick one`);
+        const options = await fetchShortestRoutes(filled, mode, { limit: 5 });
+        setRouteOptions(options);
+        selectRoute(options[0]);
+        showStatus(
+          `${options.length} shortest option${options.length === 1 ? "" : "s"}`,
+        );
       } catch (err) {
-        clearDirRoute();
+        clearRoutes();
         setDirError(err.message || "Could not find a route");
         showStatus(err.message || "Could not find a route");
       } finally {
         setDirLoading(false);
       }
     },
-    [dirFrom, dirTo, dirPrefer, showStatus, applySelectedRoute, clearDirRoute],
+    [stops, travelMode, showStatus, selectRoute, clearRoutes],
   );
 
-  const buildCustomRoute = useCallback(
-    async (wps = waypoints) => {
-      if (wps.length < 2) {
-        setCreateError("Add at least two stops");
-        return;
+  const openDirections = useCallback(
+    ({ from = null, to = null } = {}) => {
+      const nextStops = [from, to];
+      const nextTexts = [
+        from ? (from.isCurrentLocation ? "Your location" : from.name) : "",
+        to ? (to.isCurrentLocation ? "Your location" : to.name) : "",
+      ];
+      // Default start to current location when opening "directions to"
+      if (!from && userLocation && to) {
+        const me = toCurrentLocationPlace(userLocation);
+        nextStops[0] = me;
+        nextTexts[0] = "Your location";
       }
-      setCreateLoading(true);
-      setCreateError(null);
-      showStatus("Building your route options…", 0);
-      try {
-        const options = await buildCustomRouteOptions(wps, travelMode, {
-          prefer: createPrefer,
-          snapToRoads,
-        });
-        setCreateOptions(options);
-        applySelectedRoute(options[0], "create");
-        setCreateLocked(true);
-        showStatus(
-          `${options.length} custom option${options.length === 1 ? "" : "s"} — locked until you change it`,
-        );
-      } catch (err) {
-        setCreateError(err.message || "Could not build route");
-        showStatus(err.message || "Could not build route");
-      } finally {
-        setCreateLoading(false);
+      setStops(nextStops);
+      setStopTexts(nextTexts);
+      clearRoutes();
+      setView("directions");
+      setPanelOpen(true);
+      if (nextStops[0] && nextStops[1]) {
+        runDirections(nextStops, travelMode);
       }
     },
-    [waypoints, snapToRoads, travelMode, createPrefer, showStatus, applySelectedRoute],
+    [userLocation, clearRoutes, runDirections, travelMode],
   );
 
-  const addWaypoint = useCallback(
-    async (lat, lng, placeHint = null) => {
-      let place = placeHint;
-      if (!place) {
-        try {
-          place = await reverseGeocode(lat, lng);
-        } catch {
-          place = {
-            id: uid(),
-            name: "Dropped pin",
-            display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
-            lat,
-            lng,
-          };
-        }
-      }
-      const wp = {
-        id: place.isCurrentLocation ? `current-${uid()}` : uid(),
-        name: place.name,
-        display_name: place.display_name,
-        lat: place.lat ?? lat,
-        lng: place.lng ?? lng,
-        isCurrentLocation: Boolean(place.isCurrentLocation),
-      };
-      setWaypoints((prev) => [...prev, wp]);
-      invalidateCreateRoute();
-      showStatus(`Stop added: ${placeLabel(wp)}`);
+  const selectSearchPlace = useCallback(
+    (place) => {
+      setSearchQuery(place.name);
+      setSelectedPlace(place);
+      setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 14 });
+      setView("search");
+      setPanelOpen(true);
+      showStatus(placeLabel(place));
     },
-    [invalidateCreateRoute, showStatus],
+    [showStatus],
   );
-
-  const startFromMyLocation = useCallback(async () => {
-    try {
-      const loc = userLocation || (await refreshLocation());
-      const place = toCurrentLocationPlace(loc);
-      if (!place) throw new Error("no location");
-      setDirFrom(place);
-      setFromText(place.name);
-      clearDirRoute();
-      setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 15 });
-      showStatus("Starting from your location");
-    } catch {
-      showStatus(geoError || "Could not get your location");
-    }
-  }, [userLocation, refreshLocation, geoError, showStatus, clearDirRoute]);
-
-  const endAtMyLocation = useCallback(async () => {
-    try {
-      const loc = userLocation || (await refreshLocation());
-      const place = toCurrentLocationPlace(loc);
-      if (!place) throw new Error("no location");
-      setDirTo(place);
-      setToText(place.name);
-      clearDirRoute();
-      showStatus("Destination set to your location");
-    } catch {
-      showStatus(geoError || "Could not get your location");
-    }
-  }, [userLocation, refreshLocation, geoError, showStatus, clearDirRoute]);
-
-  const addCurrentLocationStop = useCallback(async () => {
-    try {
-      const loc = userLocation || (await refreshLocation());
-      const place = toCurrentLocationPlace(loc);
-      if (!place) throw new Error("no location");
-      await addWaypoint(place.lat, place.lng, place);
-      setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 15 });
-    } catch {
-      showStatus(geoError || "Could not get your location");
-    }
-  }, [userLocation, refreshLocation, addWaypoint, geoError, showStatus]);
 
   const handleMapClick = useCallback(
     async (latlng) => {
       setCtx(null);
-      if (mode === "explore") {
-        setPanelOpen(true);
+      if (view === "directions") {
+        // In directions, map click sets the first empty stop.
+        const emptyIdx = stops.findIndex((s) => !s);
+        if (emptyIdx === -1) {
+          showStatus("All stops set — use Add destination for more");
+          return;
+        }
+        if (routeLocked) {
+          showStatus("Unlock isn’t needed — clear routes to edit stops");
+        }
         try {
           const place = await reverseGeocode(latlng.lat, latlng.lng);
-          setSearchMarker(place);
-          setExploreQuery(place.name);
-          showStatus(placeLabel(place));
+          setStops((prev) => {
+            const next = [...prev];
+            next[emptyIdx] = place;
+            return next;
+          });
+          setStopTexts((prev) => {
+            const next = [...prev];
+            next[emptyIdx] = place.name;
+            return next;
+          });
+          clearRoutes();
         } catch {
-          const place = {
-            id: uid(),
-            name: "Dropped pin",
-            display_name: `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`,
-            lat: latlng.lat,
-            lng: latlng.lng,
-          };
-          setSearchMarker(place);
-          setExploreQuery(place.name);
+          showStatus("Could not identify that place");
         }
         return;
       }
-      if (mode === "create") {
-        if (createLocked) {
-          showStatus("Route is locked — unlock it to edit stops");
-          return;
-        }
-        await addWaypoint(latlng.lat, latlng.lng);
-      }
-    },
-    [mode, addWaypoint, showStatus, createLocked],
-  );
 
-  const handleWaypointDrag = useCallback(
-    async (index, lat, lng) => {
-      let label;
+      setPanelOpen(true);
+      setView("search");
       try {
-        label = await reverseGeocode(lat, lng);
+        const place = await reverseGeocode(latlng.lat, latlng.lng);
+        setSelectedPlace(place);
+        setSearchQuery(place.name);
+        showStatus(placeLabel(place));
       } catch {
-        label = {
-          name: "Moved pin",
-          display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+        const place = {
+          id: uid(),
+          name: "Dropped pin",
+          display_name: `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`,
+          lat: latlng.lat,
+          lng: latlng.lng,
         };
+        setSelectedPlace(place);
+        setSearchQuery(place.name);
       }
-      setWaypoints((prev) =>
-        prev.map((wp, i) =>
-          i === index
-            ? {
-                ...wp,
-                lat,
-                lng,
-                name: label.name,
-                display_name: label.display_name,
-                isCurrentLocation: false,
-              }
-            : wp,
-        ),
-      );
-      invalidateCreateRoute();
     },
-    [invalidateCreateRoute],
+    [view, stops, routeLocked, showStatus, clearRoutes],
   );
 
-  const saveRoute = useCallback(() => {
-    if (!createGeometry || waypoints.length < 2) return;
-    const name = routeName.trim() || `Route ${savedRoutes.length + 1}`;
-    const entry = {
-      id: uid(),
-      name,
-      waypoints,
-      geometry: createGeometry,
-      stats: createSummary,
-      travelMode,
-      snapToRoads,
-      savedAt: Date.now(),
-    };
-    setSavedRoutes((prev) => [entry, ...prev]);
-    showStatus(`Saved “${name}”`);
-  }, [
-    createGeometry,
-    waypoints,
-    routeName,
-    savedRoutes.length,
-    createSummary,
-    travelMode,
-    snapToRoads,
-    showStatus,
-  ]);
-
-  const loadSaved = useCallback(
-    (route) => {
-      setWaypoints(route.waypoints || []);
-      setCreateGeometry(route.geometry || null);
-      setCreateSummary(route.stats || null);
-      setRouteName(route.name || "");
-      setTravelMode(route.travelMode || "driving");
-      setSnapToRoads(route.snapToRoads !== false);
-      setCreateError(null);
-      setCreateOptions(
-        route.geometry
-          ? [
-              {
-                id: route.id || "saved",
-                label: route.name || "Saved route",
-                distance: route.stats?.distance,
-                duration: route.stats?.duration,
-                geometry: route.geometry,
-              },
-            ]
-          : [],
-      );
-      setCreateSelectedId(route.id || "saved");
-      setCreateLocked(true);
-      setFitKey((k) => k + 1);
-      showStatus(`Loaded “${route.name}” (locked)`);
+  const setStopText = useCallback(
+    (index, value) => {
+      setStopTexts((prev) => {
+        const next = [...prev];
+        next[index] = value;
+        return next;
+      });
     },
-    [showStatus],
+    [],
   );
+
+  const setStopPlace = useCallback(
+    (index, place) => {
+      setStops((prev) => {
+        const next = [...prev];
+        next[index] = place;
+        return next;
+      });
+      setStopTexts((prev) => {
+        const next = [...prev];
+        next[index] = place.isCurrentLocation ? "Your location" : place.name;
+        return next;
+      });
+      clearRoutes();
+      if (!place.isCurrentLocation) {
+        setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 13 });
+      }
+    },
+    [clearRoutes],
+  );
+
+  const addStop = useCallback(() => {
+    setStops((prev) => [...prev, null]);
+    setStopTexts((prev) => [...prev, ""]);
+    clearRoutes();
+  }, [clearRoutes]);
+
+  const removeStop = useCallback(
+    (index) => {
+      setStops((prev) => {
+        if (prev.length <= 2) return prev;
+        return prev.filter((_, i) => i !== index);
+      });
+      setStopTexts((prev) => {
+        if (prev.length <= 2) return prev;
+        return prev.filter((_, i) => i !== index);
+      });
+      clearRoutes();
+    },
+    [clearRoutes],
+  );
+
+  const swapStops = useCallback(() => {
+    setStops((prev) => [...prev].reverse());
+    setStopTexts((prev) => [...prev].reverse());
+    clearRoutes();
+  }, [clearRoutes]);
 
   const goToMyLocation = useCallback(async () => {
     showStatus("Locating…", 0);
@@ -441,24 +293,6 @@ export default function App() {
   const ctxActions = ctx
     ? [
         {
-          id: "directions-from",
-          label: "Directions from here",
-          onClick: async () => {
-            const place = await reverseGeocode(
-              ctx.latlng.lat,
-              ctx.latlng.lng,
-            ).catch(() => ({
-              name: "Point",
-              display_name: "Selected point",
-              lat: ctx.latlng.lat,
-              lng: ctx.latlng.lng,
-            }));
-            setDirFrom(place);
-            setFromText(placeLabel(place));
-            setMode("directions");
-          },
-        },
-        {
           id: "directions-to",
           label: "Directions to here",
           onClick: async () => {
@@ -471,14 +305,12 @@ export default function App() {
               lat: ctx.latlng.lat,
               lng: ctx.latlng.lng,
             }));
-            setDirTo(place);
-            setToText(placeLabel(place));
-            setMode("directions");
+            openDirections({ to: place });
           },
         },
         {
-          id: "directions-from-me",
-          label: "Directions from my location",
+          id: "directions-from",
+          label: "Directions from here",
           onClick: async () => {
             const place = await reverseGeocode(
               ctx.latlng.lat,
@@ -489,22 +321,14 @@ export default function App() {
               lat: ctx.latlng.lat,
               lng: ctx.latlng.lng,
             }));
-            setMode("directions");
-            setDirTo(place);
-            setToText(placeLabel(place));
-            await startFromMyLocation();
-          },
-        },
-        {
-          id: "add-stop",
-          label: "Add stop to route",
-          onClick: async () => {
-            setMode("create");
-            await addWaypoint(ctx.latlng.lat, ctx.latlng.lng);
+            openDirections({ from: place });
           },
         },
       ]
     : [];
+
+  const mapMode = view === "directions" ? "directions" : "explore";
+  const filledStops = stops.filter(Boolean);
 
   return (
     <div className={`app ${panelOpen ? "" : "panel-collapsed"}`}>
@@ -526,180 +350,75 @@ export default function App() {
           </md-icon-button>
         </header>
 
-        <MdTabs
-          className="mode-tabs"
-          aria-label="Map modes"
-          activeIndex={MODES.findIndex((m) => m.id === mode)}
-          onChange={(index) => {
-            const next = MODES[index]?.id;
-            if (!next) return;
-            setMode(next);
-            if (next === "create") {
-              showStatus("Create route: click the map to add stops", 3500);
-            }
-          }}
-        >
-          {MODES.map((m) => (
-            <md-primary-tab key={m.id}>{m.label}</md-primary-tab>
-          ))}
-        </MdTabs>
-
-        {mode === "explore" && (
-          <ExplorePanel
-            query={exploreQuery}
-            onQueryChange={setExploreQuery}
-            onSelectPlace={selectExplorePlace}
-            place={searchMarker}
+        {view === "search" && (
+          <SearchPanel
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            onSelectPlace={selectSearchPlace}
+            place={selectedPlace}
             currentLocation={userLocation}
             onClear={() => {
-              setExploreQuery("");
-              setSearchMarker(null);
-            }}
-            onDirectionsFrom={() => {
-              if (!searchMarker) return;
-              setDirFrom(searchMarker);
-              setFromText(placeLabel(searchMarker));
-              setMode("directions");
+              setSearchQuery("");
+              setSelectedPlace(null);
             }}
             onDirectionsTo={() => {
-              if (!searchMarker) return;
-              setDirTo(searchMarker);
-              setToText(placeLabel(searchMarker));
-              setMode("directions");
+              if (!selectedPlace) return;
+              openDirections({ to: selectedPlace });
+            }}
+            onDirectionsFrom={() => {
+              if (!selectedPlace) return;
+              openDirections({ from: selectedPlace });
             }}
             onAddToRoute={() => {
-              if (!searchMarker) return;
-              setMode("create");
-              addWaypoint(searchMarker.lat, searchMarker.lng, searchMarker);
+              if (!selectedPlace) return;
+              openDirections({
+                from: userLocation
+                  ? toCurrentLocationPlace(userLocation)
+                  : null,
+                to: selectedPlace,
+              });
+              // Ensure destination is set even if from was null
+              setTimeout(() => {
+                setStops((prev) => {
+                  const next = [...prev];
+                  if (!next[1]) next[1] = selectedPlace;
+                  return next;
+                });
+              }, 0);
             }}
           />
         )}
 
-        {mode === "directions" && (
+        {view === "directions" && (
           <DirectionsPanel
-            fromText={fromText}
-            toText={toText}
-            onFromText={setFromText}
-            onToText={setToText}
-            onFromSelect={(p) => {
-              setDirFrom(p);
-              setFromText(p.name);
-              if (!p.isCurrentLocation) {
-                setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
-              }
-              clearDirRoute();
-            }}
-            onToSelect={(p) => {
-              setDirTo(p);
-              setToText(p.name);
-              if (!p.isCurrentLocation) {
-                setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
-              }
-              clearDirRoute();
-            }}
-            onSwap={() => {
-              setDirFrom(dirTo);
-              setDirTo(dirFrom);
-              setFromText(toText);
-              setToText(fromText);
-              clearDirRoute();
-            }}
-            onSubmit={() => runDirections()}
-            onClear={() => {
-              setFromText("");
-              setToText("");
-              setDirFrom(null);
-              setDirTo(null);
-              clearDirRoute();
-            }}
-            onUseCurrentFrom={startFromMyLocation}
-            onUseCurrentTo={endAtMyLocation}
-            currentLocation={userLocation}
-            geoStatus={geoStatus}
-            prefer={dirPrefer}
-            onPrefer={(p) => {
-              setDirPrefer(p);
-              clearDirRoute();
-            }}
-            routeOptions={dirOptions}
-            selectedRouteId={dirSelectedId}
-            onSelectRoute={(opt) => {
-              applySelectedRoute(opt, "directions");
-              setDirLocked(true);
-              showStatus(`Using ${opt.label}`);
-            }}
-            routeLocked={dirLocked}
-            onToggleLock={() => setDirLocked((v) => !v)}
-            summary={dirSummary}
-            loading={dirLoading}
-            error={dirError}
-          />
-        )}
-
-        {mode === "create" && (
-          <CreateRoutePanel
-            routeName={routeName}
-            onRouteName={setRouteName}
-            waypoints={waypoints}
+            stops={stops}
+            stopTexts={stopTexts}
+            onStopText={setStopText}
+            onStopSelect={setStopPlace}
+            onAddStop={addStop}
+            onRemoveStop={removeStop}
+            onSwap={swapStops}
             travelMode={travelMode}
             onTravelMode={(m) => {
               setTravelMode(m);
-              invalidateCreateRoute();
+              clearRoutes();
+              const filled = stops.filter(Boolean);
+              if (filled.length >= 2) runDirections(stops, m);
             }}
-            snapToRoads={snapToRoads}
-            onSnapToRoads={(v) => {
-              setSnapToRoads(v);
-              invalidateCreateRoute();
+            onClose={() => {
+              setView("search");
+              clearRoutes();
             }}
-            prefer={createPrefer}
-            onPrefer={(p) => {
-              setCreatePrefer(p);
-              invalidateCreateRoute();
-            }}
-            routeOptions={createOptions}
-            selectedRouteId={createSelectedId}
+            onSearch={() => runDirections()}
+            routeOptions={routeOptions}
+            selectedRouteId={selectedRouteId}
             onSelectRoute={(opt) => {
-              applySelectedRoute(opt, "create");
-              setCreateLocked(true);
-              showStatus(`Using ${opt.label}`);
+              selectRoute(opt);
+              showStatus(opt.badge || opt.label);
             }}
-            routeLocked={createLocked}
-            onToggleLock={() => setCreateLocked((v) => !v)}
-            summary={createSummary}
-            loading={createLoading}
-            error={createError}
-            savedRoutes={savedRoutes}
+            loading={dirLoading}
+            error={dirError}
             currentLocation={userLocation}
-            onAddPlace={(place) => addWaypoint(place.lat, place.lng, place)}
-            onAddCurrentLocation={addCurrentLocationStop}
-            onRemoveWaypoint={(i) => {
-              setWaypoints((prev) => prev.filter((_, idx) => idx !== i));
-              invalidateCreateRoute();
-            }}
-            onMoveWaypoint={(from, to) => {
-              setWaypoints((prev) => {
-                const next = [...prev];
-                const [item] = next.splice(from, 1);
-                next.splice(to, 0, item);
-                return next;
-              });
-              invalidateCreateRoute();
-            }}
-            onUndo={() => {
-              setWaypoints((prev) => prev.slice(0, -1));
-              invalidateCreateRoute();
-            }}
-            onClear={() => {
-              setWaypoints([]);
-              setRouteName("");
-              invalidateCreateRoute();
-            }}
-            onBuild={() => buildCustomRoute()}
-            onSave={saveRoute}
-            onLoadSaved={loadSaved}
-            onDeleteSaved={(id) =>
-              setSavedRoutes((prev) => prev.filter((r) => r.id !== id))
-            }
           />
         )}
       </aside>
@@ -718,38 +437,49 @@ export default function App() {
 
       <main className="map-stage">
         <MapView
-          mode={mode}
+          mode={mapMode}
           layer={layer}
-          searchMarker={searchMarker}
+          searchMarker={view === "search" ? selectedPlace : null}
           userLocation={userLocation}
           directions={{
-            from: dirFrom,
-            to: dirTo,
-            geometry: dirGeometry,
-            alternatives: dirOptions
-              .filter((o) => o.id !== dirSelectedId)
+            from: filledStops[0] || null,
+            to: filledStops[filledStops.length - 1] || null,
+            geometry: routeGeometry,
+            alternatives: routeOptions
+              .filter((o) => o.id !== selectedRouteId)
               .map((o) => o.geometry),
           }}
           createRoute={{
-            waypoints,
-            geometry: createGeometry,
-            alternatives: createOptions
-              .filter((o) => o.id !== createSelectedId)
-              .map((o) => o.geometry),
+            waypoints: view === "directions" ? filledStops : [],
+            geometry: null,
+            alternatives: [],
           }}
           flyTarget={flyTarget}
           fitKey={fitKey}
           onMapClick={handleMapClick}
           onContextMenu={(latlng, pos) => setCtx({ latlng, ...pos })}
-          onWaypointDrag={handleWaypointDrag}
+          onWaypointDrag={async (index, lat, lng) => {
+            try {
+              const place = await reverseGeocode(lat, lng);
+              setStopPlace(index, place);
+            } catch {
+              setStopPlace(index, {
+                id: uid(),
+                name: "Moved pin",
+                display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                lat,
+                lng,
+              });
+            }
+          }}
           onLocateReady={(fn) => {
             locateFn.current = fn;
           }}
           onMarkerClick={(place) => {
-            setMode("explore");
+            setView("search");
             setPanelOpen(true);
-            setSearchMarker(place);
-            setExploreQuery(place.name || placeLabel(place));
+            setSelectedPlace(place);
+            setSearchQuery(place.name || placeLabel(place));
             setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 15 });
           }}
         />

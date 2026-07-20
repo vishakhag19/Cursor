@@ -68,8 +68,8 @@ export default function PlaceDetailsCard({
           From here
         </md-outlined-button>
         <md-text-button type="button" onClick={onAddToRoute}>
-          Add to route
-        </md-text-button>
+        Add stop
+      </md-text-button>
       </div>
     </div>
   );

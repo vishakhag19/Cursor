@@ -241,6 +241,22 @@ export default function MapView({
           />
         )}
 
+      {mode === "directions" &&
+        createRoute?.waypoints?.length > 2 &&
+        createRoute.waypoints.slice(1, -1).map((wp, i) => {
+          if (wp.isCurrentLocation) return null;
+          return (
+            <Marker
+              key={wp.id || `mid-${i}`}
+              position={[wp.lat, wp.lng]}
+              icon={pinIcon("stop", String(i + 2))}
+              eventHandlers={{
+                click: () => onMarkerClick?.(wp),
+              }}
+            />
+          );
+        })}
+
       {mode === "create" &&
         createRoute?.waypoints?.map((wp, i) => {
           if (wp.isCurrentLocation) return null;
