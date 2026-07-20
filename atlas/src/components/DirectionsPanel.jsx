@@ -35,10 +35,11 @@ export default function DirectionsPanel({
           <span className="stop-dot start" aria-hidden />
           <SuggestInput
             id="dir-from"
+            label="Starting point"
             value={fromText}
             onChange={onFromText}
             onSelect={onFromSelect}
-            placeholder="Starting point or Your location"
+            placeholder="Address or Your location"
             currentLocation={currentLocation}
           />
         </div>
@@ -46,78 +47,79 @@ export default function DirectionsPanel({
           <span className="stop-dot end" aria-hidden />
           <SuggestInput
             id="dir-to"
+            label="Destination"
             value={toText}
             onChange={onToText}
             onSelect={onToSelect}
-            placeholder="Destination"
+            placeholder="Where to?"
             currentLocation={currentLocation}
           />
         </div>
 
-        <div className="btn-row wrap">
-          <button
-            className="btn btn-ghost loc-btn"
-            type="button"
-            onClick={onUseCurrentFrom}
+        <md-chip-set class="loc-chips">
+          <md-assist-chip
+            label="Start from my location"
             disabled={!hasLocation && geoStatus !== "locating"}
-            title={
-              hasLocation
-                ? "Start from your current location"
-                : "Waiting for location…"
-            }
+            onClick={onUseCurrentFrom}
           >
-            Start from my location
-          </button>
-          <button
-            className="btn btn-ghost loc-btn"
-            type="button"
-            onClick={onUseCurrentTo}
+            <md-icon slot="icon">my_location</md-icon>
+          </md-assist-chip>
+          <md-assist-chip
+            label="End at my location"
             disabled={!hasLocation}
-            title="Set destination to your current location"
+            onClick={onUseCurrentTo}
           >
-            End at my location
-          </button>
-        </div>
+            <md-icon slot="icon">near_me</md-icon>
+          </md-assist-chip>
+        </md-chip-set>
 
         <div className="btn-row">
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <md-filled-button type="submit" disabled={loading || undefined}>
             {loading ? "Routing…" : "Get directions"}
-          </button>
-          <button
-            className="btn btn-ghost"
+          </md-filled-button>
+          <md-icon-button
             type="button"
             onClick={onSwap}
-            title="Swap"
             aria-label="Swap start and destination"
+            title="Swap"
           >
-            ↕
-          </button>
-          <button className="btn btn-ghost" type="button" onClick={onClear}>
+            <md-icon>swap_vert</md-icon>
+          </md-icon-button>
+          <md-text-button type="button" onClick={onClear}>
             Clear
-          </button>
+          </md-text-button>
         </div>
       </form>
 
       {geoStatus === "denied" && (
-        <p className="hint tight">
-          Location access is blocked. Allow it in your browser to use “Your location”.
+        <p className="hint md-typescale-body-small">
+          Location access is blocked. Allow it in your browser to use “Your
+          location”.
         </p>
       )}
 
-      {error && <p className="error-msg">{error}</p>}
+      {error && (
+        <p className="error-msg md-typescale-body-medium" role="alert">
+          {error}
+        </p>
+      )}
 
       {summary && (
-        <div className="route-summary">
-          <strong>
-            {formatDuration(summary.duration)} · {formatDistance(summary.distance)}
+        <div className="route-summary m3-card tonal">
+          <strong className="md-typescale-title-medium">
+            {formatDuration(summary.duration)} ·{" "}
+            {formatDistance(summary.distance)}
           </strong>
-          <span>Fastest driving route via OpenStreetMap roads</span>
+          <span className="md-typescale-body-small">
+            Fastest driving route via OpenStreetMap roads
+          </span>
         </div>
       )}
 
       {!summary && !error && (
-        <p className="hint">
-          Enter a start and destination, pick “Your location”, or right-click the map.
+        <p className="hint md-typescale-body-medium">
+          Enter a start and destination, pick “Your location”, or right-click
+          the map.
         </p>
       )}
     </section>

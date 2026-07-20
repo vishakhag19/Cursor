@@ -4,6 +4,7 @@ import ExplorePanel from "./components/ExplorePanel";
 import DirectionsPanel from "./components/DirectionsPanel";
 import CreateRoutePanel from "./components/CreateRoutePanel";
 import ContextMenu from "./components/ContextMenu";
+import MdTabs from "./components/MdTabs";
 import { reverseGeocode } from "./api/geocode";
 import { fetchRoute, straightLineRoute } from "./api/routing";
 import { placeLabel } from "./utils/format";
@@ -455,59 +456,41 @@ export default function App() {
 
   return (
     <div className={`app ${panelOpen ? "" : "panel-collapsed"}`}>
-      <aside className="panel" aria-label="Map tools">
+      <aside className="panel m3-surface" aria-label="Map tools">
         <header className="panel-header">
           <div className="brand">
             <span className="brand-mark" aria-hidden>
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path
-                  d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-                  fill="currentColor"
-                />
-                <circle cx="12" cy="9" r="2.5" fill="#1e1e2e" />
-              </svg>
+              <md-icon>location_on</md-icon>
             </span>
-            <span className="brand-name">Atlas</span>
+            <span className="brand-name md-typescale-title-large">Atlas</span>
           </div>
-          <button
-            className="icon-btn"
+          <md-icon-button
             type="button"
             onClick={() => setPanelOpen(false)}
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
+            <md-icon>chevron_left</md-icon>
+          </md-icon-button>
         </header>
 
-        <div className="mode-tabs" role="tablist" aria-label="Map modes">
+        <MdTabs
+          className="mode-tabs"
+          aria-label="Map modes"
+          activeIndex={MODES.findIndex((m) => m.id === mode)}
+          onChange={(index) => {
+            const next = MODES[index]?.id;
+            if (!next) return;
+            setMode(next);
+            if (next === "create") {
+              showStatus("Create route: click the map to add stops", 3500);
+            }
+          }}
+        >
           {MODES.map((m) => (
-            <button
-              key={m.id}
-              className={`mode-tab ${mode === m.id ? "is-active" : ""}`}
-              type="button"
-              role="tab"
-              aria-selected={mode === m.id}
-              onClick={() => {
-                setMode(m.id);
-                if (m.id === "create") {
-                  showStatus("Create route: click the map to add stops", 3500);
-                }
-              }}
-            >
-              {m.label}
-            </button>
+            <md-primary-tab key={m.id}>{m.label}</md-primary-tab>
           ))}
-        </div>
+        </MdTabs>
 
         {mode === "explore" && (
           <ExplorePanel
@@ -649,22 +632,15 @@ export default function App() {
       </aside>
 
       {!panelOpen && (
-        <button
-          className="expand-panel"
-          type="button"
-          onClick={() => setPanelOpen(true)}
+        <md-fab
+          class="expand-panel"
+          variant="primary"
+          size="medium"
           aria-label="Open panel"
+          onClick={() => setPanelOpen(true)}
         >
-          <span className="brand-mark" aria-hidden>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-              <path
-                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-                fill="currentColor"
-              />
-              <circle cx="12" cy="9" r="2.5" fill="#1e1e2e" />
-            </svg>
-          </span>
-        </button>
+          <md-icon slot="icon">menu</md-icon>
+        </md-fab>
       )}
 
       <main className="map-stage">
@@ -693,45 +669,36 @@ export default function App() {
         />
 
         <div className="map-controls">
-          <div className="layer-toggle" role="group" aria-label="Map type">
-            <button
-              type="button"
-              className={layer === "map" ? "is-active" : ""}
+          <md-chip-set class="layer-toggle" role="group" aria-label="Map type">
+            <md-filter-chip
+              label="Map"
+              selected={layer === "map" || undefined}
               onClick={() => setLayer("map")}
             >
-              Map
-            </button>
-            <button
-              type="button"
-              className={layer === "satellite" ? "is-active" : ""}
+              <md-icon slot="icon">map</md-icon>
+            </md-filter-chip>
+            <md-filter-chip
+              label="Satellite"
+              selected={layer === "satellite" || undefined}
               onClick={() => setLayer("satellite")}
             >
-              Satellite
-            </button>
-          </div>
-          <button
-            className={`fab ${geoStatus === "ready" ? "is-located" : ""} ${geoStatus === "locating" ? "is-busy" : ""}`}
-            type="button"
-            title="My location"
+              <md-icon slot="icon">satellite_alt</md-icon>
+            </md-filter-chip>
+          </md-chip-set>
+          <md-fab
+            class={`locate-fab ${geoStatus === "ready" ? "is-located" : ""}`}
+            variant="surface"
+            size="medium"
             aria-label="My location"
+            title="My location"
             onClick={goToMyLocation}
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-            </svg>
-          </button>
+            <md-icon slot="icon">my_location</md-icon>
+          </md-fab>
         </div>
 
         {status && (
-          <div className="map-status" role="status">
+          <div className="map-status md-typescale-label-large" role="status">
             {status}
           </div>
         )}

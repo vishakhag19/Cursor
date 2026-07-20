@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { searchPlaces } from "../api/geocode";
+import MdTextField from "./MdTextField";
 
 const LOCATION_QUERY = /^(your|my|current)?\s*loc/i;
 
@@ -8,6 +9,7 @@ export default function SuggestInput({
   onChange,
   onSelect,
   placeholder,
+  label = "Search",
   id,
   disabled = false,
   currentLocation = null,
@@ -33,7 +35,9 @@ export default function SuggestInput({
 
     const showCurrent =
       currentLocation &&
-      (q.length === 0 || LOCATION_QUERY.test(q) || "your location".startsWith(q.toLowerCase()));
+      (q.length === 0 ||
+        LOCATION_QUERY.test(q) ||
+        "your location".startsWith(q.toLowerCase()));
 
     if (q.length < 2) {
       if (showCurrent) {
@@ -63,7 +67,8 @@ export default function SuggestInput({
         const merged = [];
         if (
           currentLocation &&
-          (LOCATION_QUERY.test(q) || "your location".includes(q.toLowerCase()))
+          (LOCATION_QUERY.test(q) ||
+            "your location".includes(q.toLowerCase()))
         ) {
           merged.push({
             id: "current-location",
@@ -89,19 +94,13 @@ export default function SuggestInput({
 
   return (
     <div className="suggest-wrap" ref={wrapRef}>
-      <input
+      <MdTextField
         id={id}
-        type="search"
+        label={label}
         value={value}
         disabled={disabled}
         placeholder={placeholder}
-        autoComplete="off"
-        spellCheck={false}
-        role="combobox"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         onFocus={() => {
           if (suggestions.length > 0) setOpen(true);
           else if (currentLocation && !value.trim()) {
@@ -120,31 +119,37 @@ export default function SuggestInput({
           }
         }}
       />
-      {loading && <span className="suggest-spinner" aria-hidden />}
+      {loading && (
+        <md-circular-progress
+          class="suggest-spinner"
+          indeterminate
+          aria-label="Searching"
+        />
+      )}
       {open && suggestions.length > 0 && (
-        <ul className="suggestions" id={listId} role="listbox">
+        <md-list class="suggestions" id={listId} role="listbox">
           {suggestions.map((s) => (
-            <li key={s.id} role="option">
-              <button
-                type="button"
-                className={s.isCurrentLocation ? "is-current" : ""}
-                onClick={() => {
-                  onSelect(s);
-                  setOpen(false);
-                  setSuggestions([]);
-                }}
-              >
-                <span className="suggest-name">
-                  {s.isCurrentLocation && (
-                    <span className="suggest-loc-icon" aria-hidden />
-                  )}
-                  {s.name}
-                </span>
-                <span className="suggest-meta">{s.display_name}</span>
-              </button>
-            </li>
+            <md-list-item
+              key={s.id}
+              type="button"
+              role="option"
+              class={s.isCurrentLocation ? "is-current" : ""}
+              onClick={() => {
+                onSelect(s);
+                setOpen(false);
+                setSuggestions([]);
+              }}
+            >
+              {s.isCurrentLocation ? (
+                <md-icon slot="start">my_location</md-icon>
+              ) : (
+                <md-icon slot="start">place</md-icon>
+              )}
+              <div slot="headline">{s.name}</div>
+              <div slot="supporting-text">{s.display_name}</div>
+            </md-list-item>
           ))}
-        </ul>
+        </md-list>
       )}
     </div>
   );

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import SuggestInput from "./SuggestInput";
+import MdTextField from "./MdTextField";
+import MdCheckbox from "./MdCheckbox";
 import { formatDistance, formatDuration, placeLabel } from "../utils/format";
 
 const MODES = [
-  { id: "driving", label: "Drive" },
-  { id: "walking", label: "Walk" },
-  { id: "cycling", label: "Bike" },
+  { id: "driving", label: "Drive", icon: "directions_car" },
+  { id: "walking", label: "Walk", icon: "directions_walk" },
+  { id: "cycling", label: "Bike", icon: "directions_bike" },
 ];
 
 export default function CreateRoutePanel({
@@ -36,165 +38,154 @@ export default function CreateRoutePanel({
 
   return (
     <section className="mode-panel create-panel">
-      <div className="create-intro">
-        <p className="hint tight">
-          Click the map to add stops, or start from your current location.
-        </p>
-      </div>
+      <p className="hint tight md-typescale-body-medium">
+        Click the map to add stops, or start from your current location.
+      </p>
 
-      <label className="field-label" htmlFor="route-name">
-        Route name
-      </label>
-      <input
+      <MdTextField
         id="route-name"
-        className="text-input"
-        type="text"
+        label="Route name"
         value={routeName}
-        onChange={(e) => onRouteName(e.target.value)}
+        onChange={onRouteName}
         placeholder="My custom route"
         maxLength={80}
       />
 
-      <div className="travel-modes" role="group" aria-label="Travel mode">
+      <md-chip-set
+        class="travel-chips"
+        role="group"
+        aria-label="Travel mode"
+      >
         {MODES.map((m) => (
-          <button
+          <md-filter-chip
             key={m.id}
-            type="button"
-            className={`chip ${travelMode === m.id ? "is-active" : ""}`}
+            label={m.label}
+            selected={travelMode === m.id || undefined}
             onClick={() => onTravelMode(m.id)}
           >
-            {m.label}
-          </button>
+            <md-icon slot="icon">{m.icon}</md-icon>
+          </md-filter-chip>
         ))}
-      </div>
+      </md-chip-set>
 
-      <label className="toggle-row">
-        <input
-          type="checkbox"
+      <label className="toggle-row md-typescale-body-medium">
+        <MdCheckbox
           checked={snapToRoads}
-          onChange={(e) => onSnapToRoads(e.target.checked)}
+          onChange={onSnapToRoads}
+          aria-label="Snap to roads"
         />
         <span>Snap to roads</span>
       </label>
 
-      <label className="field-label" htmlFor="add-stop">
-        Add a stop
-      </label>
-      <div className="search-field compact">
-        <SuggestInput
-          id="add-stop"
-          value={addQuery}
-          onChange={setAddQuery}
-          onSelect={(place) => {
-            onAddPlace(place);
-            setAddQuery("");
-          }}
-          placeholder="Search or Your location"
-          currentLocation={currentLocation}
-        />
-      </div>
-      <button
-        className="btn btn-secondary"
+      <SuggestInput
+        id="add-stop"
+        label="Add a stop"
+        value={addQuery}
+        onChange={setAddQuery}
+        onSelect={(place) => {
+          onAddPlace(place);
+          setAddQuery("");
+        }}
+        placeholder="Search or Your location"
+        currentLocation={currentLocation}
+      />
+
+      <md-filled-tonal-button
         type="button"
         onClick={onAddCurrentLocation}
-        disabled={!currentLocation}
+        disabled={!currentLocation || undefined}
       >
+        <md-icon slot="icon">my_location</md-icon>
         Add my current location
-      </button>
+      </md-filled-tonal-button>
 
-      <div className="waypoint-header">
-        <span>
-          {waypoints.length} stop{waypoints.length === 1 ? "" : "s"}
-        </span>
+      <div className="waypoint-header md-typescale-label-large">
+        {waypoints.length} stop{waypoints.length === 1 ? "" : "s"}
       </div>
 
-      <ul className="waypoint-list">
+      <md-list class="waypoint-list">
         {waypoints.map((wp, i) => (
-          <li key={wp.id}>
-            <span className={`wp-badge ${i === 0 ? "start" : i === waypoints.length - 1 ? "end" : ""}`}>
+          <md-list-item key={wp.id}>
+            <div slot="start" className={`wp-badge ${i === 0 ? "start" : i === waypoints.length - 1 ? "end" : ""}`}>
               {i + 1}
-            </span>
-            <span className="wp-label" title={wp.display_name || placeLabel(wp)}>
-              {placeLabel(wp)}
-            </span>
-            <div className="wp-actions">
-              <button
+            </div>
+            <div slot="headline">{placeLabel(wp)}</div>
+            <div slot="supporting-text">
+              {wp.isCurrentLocation ? "Live GPS" : wp.display_name || ""}
+            </div>
+            <div slot="end" className="wp-actions">
+              <md-icon-button
                 type="button"
-                className="icon-btn sm"
-                disabled={i === 0}
+                disabled={i === 0 || undefined}
                 onClick={() => onMoveWaypoint(i, i - 1)}
                 aria-label="Move up"
-                title="Move up"
               >
-                ↑
-              </button>
-              <button
+                <md-icon>arrow_upward</md-icon>
+              </md-icon-button>
+              <md-icon-button
                 type="button"
-                className="icon-btn sm"
-                disabled={i === waypoints.length - 1}
+                disabled={i === waypoints.length - 1 || undefined}
                 onClick={() => onMoveWaypoint(i, i + 1)}
                 aria-label="Move down"
-                title="Move down"
               >
-                ↓
-              </button>
-              <button
+                <md-icon>arrow_downward</md-icon>
+              </md-icon-button>
+              <md-icon-button
                 type="button"
-                className="icon-btn sm danger"
                 onClick={() => onRemoveWaypoint(i)}
                 aria-label="Remove stop"
-                title="Remove"
               >
-                ×
-              </button>
+                <md-icon>close</md-icon>
+              </md-icon-button>
             </div>
-          </li>
+          </md-list-item>
         ))}
-      </ul>
+      </md-list>
 
       <div className="btn-row wrap">
-        <button
-          className="btn btn-primary"
+        <md-filled-button
           type="button"
           onClick={onBuild}
-          disabled={waypoints.length < 2 || loading}
+          disabled={waypoints.length < 2 || loading || undefined}
         >
           {loading ? "Building…" : "Build route"}
-        </button>
-        <button
-          className="btn btn-secondary"
+        </md-filled-button>
+        <md-filled-tonal-button
           type="button"
           onClick={onSave}
-          disabled={!summary}
+          disabled={!summary || undefined}
         >
           Save route
-        </button>
-        <button
-          className="btn btn-ghost"
+        </md-filled-tonal-button>
+        <md-text-button
           type="button"
           onClick={onUndo}
-          disabled={!waypoints.length}
+          disabled={!waypoints.length || undefined}
         >
           Undo
-        </button>
-        <button
-          className="btn btn-ghost"
+        </md-text-button>
+        <md-text-button
           type="button"
           onClick={onClear}
-          disabled={!waypoints.length}
+          disabled={!waypoints.length || undefined}
         >
           Clear
-        </button>
+        </md-text-button>
       </div>
 
-      {error && <p className="error-msg">{error}</p>}
+      {error && (
+        <p className="error-msg md-typescale-body-medium" role="alert">
+          {error}
+        </p>
+      )}
 
       {summary && (
-        <div className="route-summary">
-          <strong>
-            {formatDuration(summary.duration)} · {formatDistance(summary.distance)}
+        <div className="route-summary m3-card tonal">
+          <strong className="md-typescale-title-medium">
+            {formatDuration(summary.duration)} ·{" "}
+            {formatDistance(summary.distance)}
           </strong>
-          <span>
+          <span className="md-typescale-body-small">
             {snapToRoads ? "Snapped to roads" : "Straight-line path"} ·{" "}
             {travelMode}
           </span>
@@ -202,37 +193,36 @@ export default function CreateRoutePanel({
       )}
 
       <div className="saved-section">
-        <h3>Saved routes</h3>
+        <md-divider />
+        <h3 className="md-typescale-title-medium">Saved routes</h3>
         {savedRoutes.length === 0 ? (
-          <p className="hint tight">No saved routes yet. Build one and hit Save.</p>
+          <p className="hint tight md-typescale-body-medium">
+            No saved routes yet. Build one and hit Save.
+          </p>
         ) : (
-          <ul className="saved-list">
+          <md-list class="saved-list">
             {savedRoutes.map((r) => (
-              <li key={r.id}>
-                <button
+              <md-list-item key={r.id} type="button" onClick={() => onLoadSaved(r)}>
+                <md-icon slot="start">route</md-icon>
+                <div slot="headline">{r.name}</div>
+                <div slot="supporting-text">
+                  {r.waypoints?.length || 0} stops
+                  {r.stats ? ` · ${formatDistance(r.stats.distance)}` : ""}
+                </div>
+                <md-icon-button
+                  slot="end"
                   type="button"
-                  className="saved-item"
-                  onClick={() => onLoadSaved(r)}
-                >
-                  <span className="saved-name">{r.name}</span>
-                  <span className="saved-meta">
-                    {r.waypoints?.length || 0} stops
-                    {r.stats
-                      ? ` · ${formatDistance(r.stats.distance)}`
-                      : ""}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn sm danger"
-                  onClick={() => onDeleteSaved(r.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteSaved(r.id);
+                  }}
                   aria-label={`Delete ${r.name}`}
                 >
-                  ×
-                </button>
-              </li>
+                  <md-icon>delete</md-icon>
+                </md-icon-button>
+              </md-list-item>
             ))}
-          </ul>
+          </md-list>
         )}
       </div>
     </section>

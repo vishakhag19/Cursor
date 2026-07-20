@@ -1,13 +1,13 @@
 # Atlas
 
-Google Maps–style web app with place search, turn-by-turn directions, and **custom route creation**.
+Google Maps–style web app built with **Material Design 3** ([Material Web](https://github.com/material-components/material-web)) — place search, directions, custom route creation, and live geolocation.
 
 ## Features
 
-- **Explore** — search places (OpenStreetMap / Nominatim), drop pins, open context actions
-- **Directions** — A→B driving routes via OSRM
-- **Create route** — click the map (or search) to add stops, drag pins, reorder, snap to roads (drive / walk / bike), save & reload routes from local storage
-- Map / Satellite layers and geolocation
+- **Explore** — search places (Nominatim), drop pins, context actions
+- **Directions** — A→B driving routes via OSRM, start/end from your location
+- **Create route** — multi-stop routes, snap to roads (drive / walk / bike), save & reload
+- **Material 3 UI** — `@material/web` buttons, tabs, chips, text fields, FAB, lists, icons
 
 ## Run
 
@@ -17,12 +17,6 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`).
-
 ## Stack
 
-React + Vite + Leaflet + react-leaflet. Routing: [OSRM](https://project-osrm.org/). Geocoding: [Nominatim](https://nominatim.openstreetmap.org/).
-
-## Theme
-
-UI uses the [Catppuccin](https://21st.dev/@serafimcloud/themes/catppuccin) Mocha + Mauve preset (shadcn CSS variables).
+React + Vite + Leaflet + [@material/web](https://github.com/material-components/material-web) (Material Design 3).
