@@ -314,6 +314,84 @@ input {
 .suggest-name {
   font-weight: 600;
   font-size: 0.92rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.suggest-loc-icon {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.25);
+  flex-shrink: 0;
+}
+
+.suggestions button.is-current {
+  background: #f8fbff;
+}
+
+.loc-btn {
+  font-size: 0.8rem !important;
+  padding: 8px 12px !important;
+}
+
+.fab.is-located {
+  color: var(--blue);
+}
+
+.fab.is-busy {
+  animation: pulse-fab 1s ease-in-out infinite;
+}
+
+@keyframes pulse-fab {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.atlas-user-loc {
+  background: transparent !important;
+  border: none !important;
+}
+
+.user-loc-dot {
+  position: relative;
+  width: 22px;
+  height: 22px;
+}
+
+.user-loc-core {
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #1a73e8;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.user-loc-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(26, 115, 232, 0.35);
+  animation: loc-pulse 2s ease-out infinite;
+}
+
+@keyframes loc-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
 }
 
 .suggest-meta {

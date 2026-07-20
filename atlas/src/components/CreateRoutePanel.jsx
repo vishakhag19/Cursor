@@ -20,7 +20,9 @@ export default function CreateRoutePanel({
   loading,
   error,
   savedRoutes,
+  currentLocation,
   onAddPlace,
+  onAddCurrentLocation,
   onRemoveWaypoint,
   onMoveWaypoint,
   onUndo,
@@ -36,7 +38,7 @@ export default function CreateRoutePanel({
     <section className="mode-panel create-panel">
       <div className="create-intro">
         <p className="hint tight">
-          Click the map to add stops, or search below. Drag pins to fine-tune.
+          Click the map to add stops, or start from your current location.
         </p>
       </div>
 
@@ -87,9 +89,18 @@ export default function CreateRoutePanel({
             onAddPlace(place);
             setAddQuery("");
           }}
-          placeholder="Search to add a stop"
+          placeholder="Search or Your location"
+          currentLocation={currentLocation}
         />
       </div>
+      <button
+        className="btn btn-secondary"
+        type="button"
+        onClick={onAddCurrentLocation}
+        disabled={!currentLocation}
+      >
+        Add my current location
+      </button>
 
       <div className="waypoint-header">
         <span>

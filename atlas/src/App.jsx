@@ -8,6 +8,7 @@ import { reverseGeocode } from "./api/geocode";
 import { fetchRoute, straightLineRoute } from "./api/routing";
 import { placeLabel } from "./utils/format";
 import { loadSavedRoutes, persistSavedRoutes } from "./utils/storage";
+import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
 import "./App.css";
 
 const MODES = [
@@ -53,6 +54,15 @@ export default function App() {
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
   const locateFn = useRef(null);
+  const prefilledFromLocation = useRef(false);
+
+  const {
+    location: userLocation,
+    status: geoStatus,
+    error: geoError,
+    refresh: refreshLocation,
+    takeCenteredOnce,
+  } = useGeolocation({ autoStart: true });
 
   const showStatus = useCallback((message, ms = 2800) => {
     setStatus(message);
@@ -67,6 +77,50 @@ export default function App() {
   useEffect(() => {
     persistSavedRoutes(savedRoutes);
   }, [savedRoutes]);
+
+  // Center map on the user once when location first becomes available.
+  useEffect(() => {
+    if (!userLocation) return;
+    if (!takeCenteredOnce()) return;
+    setFlyTarget({
+      lat: userLocation.lat,
+      lng: userLocation.lng,
+      zoom: 15,
+    });
+    showStatus("Centered on your location");
+  }, [userLocation, takeCenteredOnce, showStatus]);
+
+  // Prefill directions "from" with current location the first time we get it.
+  useEffect(() => {
+    if (!userLocation || prefilledFromLocation.current) return;
+    prefilledFromLocation.current = true;
+    const place = toCurrentLocationPlace(userLocation);
+    setDirFrom(place);
+    setFromText(place.name);
+  }, [userLocation]);
+
+  // Keep live "Your location" points in sync as GPS updates.
+  useEffect(() => {
+    if (!userLocation) return;
+    const place = toCurrentLocationPlace(userLocation);
+
+    setDirFrom((prev) => (prev?.isCurrentLocation ? { ...place } : prev));
+    setDirTo((prev) => (prev?.isCurrentLocation ? { ...place } : prev));
+    setWaypoints((prev) => {
+      let changed = false;
+      const next = prev.map((wp) => {
+        if (!wp.isCurrentLocation) return wp;
+        changed = true;
+        return {
+          ...wp,
+          lat: place.lat,
+          lng: place.lng,
+          accuracy: place.accuracy,
+        };
+      });
+      return changed ? next : prev;
+    });
+  }, [userLocation]);
 
   const invalidateCreateRoute = useCallback(() => {
     setCreateSummary(null);
@@ -84,29 +138,32 @@ export default function App() {
     [showStatus],
   );
 
-  const runDirections = useCallback(async (from = dirFrom, to = dirTo) => {
-    if (!from || !to) {
-      setDirError("Choose a start and destination");
-      return;
-    }
-    setDirLoading(true);
-    setDirError(null);
-    showStatus("Finding the best route…", 0);
-    try {
-      const route = await fetchRoute([from, to], "driving");
-      setDirGeometry(route.geometry);
-      setDirSummary({ distance: route.distance, duration: route.duration });
-      setFitKey((k) => k + 1);
-      showStatus("Route ready");
-    } catch (err) {
-      setDirGeometry(null);
-      setDirSummary(null);
-      setDirError(err.message || "Could not find a route");
-      showStatus(err.message || "Could not find a route");
-    } finally {
-      setDirLoading(false);
-    }
-  }, [dirFrom, dirTo, showStatus]);
+  const runDirections = useCallback(
+    async (from = dirFrom, to = dirTo) => {
+      if (!from || !to) {
+        setDirError("Choose a start and destination");
+        return;
+      }
+      setDirLoading(true);
+      setDirError(null);
+      showStatus("Finding the best route…", 0);
+      try {
+        const route = await fetchRoute([from, to], "driving");
+        setDirGeometry(route.geometry);
+        setDirSummary({ distance: route.distance, duration: route.duration });
+        setFitKey((k) => k + 1);
+        showStatus("Route ready");
+      } catch (err) {
+        setDirGeometry(null);
+        setDirSummary(null);
+        setDirError(err.message || "Could not find a route");
+        showStatus(err.message || "Could not find a route");
+      } finally {
+        setDirLoading(false);
+      }
+    },
+    [dirFrom, dirTo, showStatus],
+  );
 
   const buildCustomRoute = useCallback(
     async (wps = waypoints) => {
@@ -160,11 +217,12 @@ export default function App() {
         }
       }
       const wp = {
-        id: uid(),
+        id: place.isCurrentLocation ? `current-${uid()}` : uid(),
         name: place.name,
         display_name: place.display_name,
         lat: place.lat ?? lat,
         lng: place.lng ?? lng,
+        isCurrentLocation: Boolean(place.isCurrentLocation),
       };
       setWaypoints((prev) => [...prev, wp]);
       invalidateCreateRoute();
@@ -172,6 +230,49 @@ export default function App() {
     },
     [invalidateCreateRoute, showStatus],
   );
+
+  const useCurrentAsFrom = useCallback(async () => {
+    try {
+      const loc = userLocation || (await refreshLocation());
+      const place = toCurrentLocationPlace(loc);
+      if (!place) throw new Error("no location");
+      setDirFrom(place);
+      setFromText(place.name);
+      setDirSummary(null);
+      setDirGeometry(null);
+      setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 15 });
+      showStatus("Starting from your location");
+    } catch {
+      showStatus(geoError || "Could not get your location");
+    }
+  }, [userLocation, refreshLocation, geoError, showStatus]);
+
+  const useCurrentAsTo = useCallback(async () => {
+    try {
+      const loc = userLocation || (await refreshLocation());
+      const place = toCurrentLocationPlace(loc);
+      if (!place) throw new Error("no location");
+      setDirTo(place);
+      setToText(place.name);
+      setDirSummary(null);
+      setDirGeometry(null);
+      showStatus("Destination set to your location");
+    } catch {
+      showStatus(geoError || "Could not get your location");
+    }
+  }, [userLocation, refreshLocation, geoError, showStatus]);
+
+  const addCurrentLocationStop = useCallback(async () => {
+    try {
+      const loc = userLocation || (await refreshLocation());
+      const place = toCurrentLocationPlace(loc);
+      if (!place) throw new Error("no location");
+      await addWaypoint(place.lat, place.lng, place);
+      setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 15 });
+    } catch {
+      showStatus(geoError || "Could not get your location");
+    }
+  }, [userLocation, refreshLocation, addWaypoint, geoError, showStatus]);
 
   const handleMapClick = useCallback(
     async (latlng) => {
@@ -222,6 +323,7 @@ export default function App() {
                 lng,
                 name: label.name,
                 display_name: label.display_name,
+                isCurrentLocation: false,
               }
             : wp,
         ),
@@ -272,20 +374,32 @@ export default function App() {
     [showStatus],
   );
 
+  const goToMyLocation = useCallback(async () => {
+    showStatus("Locating…", 0);
+    try {
+      const loc = await refreshLocation();
+      locateFn.current?.([loc.lat, loc.lng], 16);
+      showStatus("Location found");
+    } catch {
+      showStatus(geoError || "Could not get your location");
+    }
+  }, [refreshLocation, geoError, showStatus]);
+
   const ctxActions = ctx
     ? [
         {
           id: "directions-from",
           label: "Directions from here",
           onClick: async () => {
-            const place = await reverseGeocode(ctx.latlng.lat, ctx.latlng.lng).catch(
-              () => ({
-                name: "Point",
-                display_name: "Selected point",
-                lat: ctx.latlng.lat,
-                lng: ctx.latlng.lng,
-              }),
-            );
+            const place = await reverseGeocode(
+              ctx.latlng.lat,
+              ctx.latlng.lng,
+            ).catch(() => ({
+              name: "Point",
+              display_name: "Selected point",
+              lat: ctx.latlng.lat,
+              lng: ctx.latlng.lng,
+            }));
             setDirFrom(place);
             setFromText(placeLabel(place));
             setMode("directions");
@@ -295,17 +409,37 @@ export default function App() {
           id: "directions-to",
           label: "Directions to here",
           onClick: async () => {
-            const place = await reverseGeocode(ctx.latlng.lat, ctx.latlng.lng).catch(
-              () => ({
-                name: "Point",
-                display_name: "Selected point",
-                lat: ctx.latlng.lat,
-                lng: ctx.latlng.lng,
-              }),
-            );
+            const place = await reverseGeocode(
+              ctx.latlng.lat,
+              ctx.latlng.lng,
+            ).catch(() => ({
+              name: "Point",
+              display_name: "Selected point",
+              lat: ctx.latlng.lat,
+              lng: ctx.latlng.lng,
+            }));
             setDirTo(place);
             setToText(placeLabel(place));
             setMode("directions");
+          },
+        },
+        {
+          id: "directions-from-me",
+          label: "Directions from my location",
+          onClick: async () => {
+            const place = await reverseGeocode(
+              ctx.latlng.lat,
+              ctx.latlng.lng,
+            ).catch(() => ({
+              name: "Point",
+              display_name: "Selected point",
+              lat: ctx.latlng.lat,
+              lng: ctx.latlng.lng,
+            }));
+            setMode("directions");
+            setDirTo(place);
+            setToText(placeLabel(place));
+            await useCurrentAsFrom();
           },
         },
         {
@@ -342,7 +476,14 @@ export default function App() {
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
@@ -374,6 +515,7 @@ export default function App() {
             onQueryChange={setExploreQuery}
             onSelectPlace={selectExplorePlace}
             place={searchMarker}
+            currentLocation={userLocation}
             onClear={() => {
               setExploreQuery("");
               setSearchMarker(null);
@@ -407,12 +549,20 @@ export default function App() {
             onFromSelect={(p) => {
               setDirFrom(p);
               setFromText(p.name);
-              setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
+              if (!p.isCurrentLocation) {
+                setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
+              }
+              setDirSummary(null);
+              setDirGeometry(null);
             }}
             onToSelect={(p) => {
               setDirTo(p);
               setToText(p.name);
-              setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
+              if (!p.isCurrentLocation) {
+                setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
+              }
+              setDirSummary(null);
+              setDirGeometry(null);
             }}
             onSwap={() => {
               setDirFrom(dirTo);
@@ -432,6 +582,10 @@ export default function App() {
               setDirGeometry(null);
               setDirError(null);
             }}
+            onUseCurrentFrom={useCurrentAsFrom}
+            onUseCurrentTo={useCurrentAsTo}
+            currentLocation={userLocation}
+            geoStatus={geoStatus}
             summary={dirSummary}
             loading={dirLoading}
             error={dirError}
@@ -457,7 +611,9 @@ export default function App() {
             loading={createLoading}
             error={createError}
             savedRoutes={savedRoutes}
+            currentLocation={userLocation}
             onAddPlace={(place) => addWaypoint(place.lat, place.lng, place)}
+            onAddCurrentLocation={addCurrentLocationStop}
             onRemoveWaypoint={(i) => {
               setWaypoints((prev) => prev.filter((_, idx) => idx !== i));
               invalidateCreateRoute();
@@ -516,6 +672,7 @@ export default function App() {
           mode={mode}
           layer={layer}
           searchMarker={searchMarker}
+          userLocation={userLocation}
           directions={{
             from: dirFrom,
             to: dirTo,
@@ -553,28 +710,20 @@ export default function App() {
             </button>
           </div>
           <button
-            className="fab"
+            className={`fab ${geoStatus === "ready" ? "is-located" : ""} ${geoStatus === "locating" ? "is-busy" : ""}`}
             type="button"
             title="My location"
             aria-label="My location"
-            onClick={() => {
-              if (!navigator.geolocation) {
-                showStatus("Geolocation not available");
-                return;
-              }
-              showStatus("Locating…", 0);
-              navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                  const coords = [pos.coords.latitude, pos.coords.longitude];
-                  locateFn.current?.(coords);
-                  showStatus("Location found");
-                },
-                () => showStatus("Could not get your location"),
-                { enableHighAccuracy: true, timeout: 10000 },
-              );
-            }}
+            onClick={goToMyLocation}
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <circle cx="12" cy="12" r="3" />
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
             </svg>
@@ -588,7 +737,11 @@ export default function App() {
         )}
       </main>
 
-      <ContextMenu position={ctx} onClose={() => setCtx(null)} actions={ctxActions} />
+      <ContextMenu
+        position={ctx}
+        onClose={() => setCtx(null)}
+        actions={ctxActions}
+      />
     </div>
   );
 }

@@ -11,10 +11,16 @@ export default function DirectionsPanel({
   onSwap,
   onSubmit,
   onClear,
+  onUseCurrentFrom,
+  onUseCurrentTo,
+  currentLocation,
+  geoStatus,
   summary,
   loading,
   error,
 }) {
+  const hasLocation = Boolean(currentLocation);
+
   return (
     <section className="mode-panel">
       <form
@@ -32,7 +38,8 @@ export default function DirectionsPanel({
             value={fromText}
             onChange={onFromText}
             onSelect={onFromSelect}
-            placeholder="Starting point"
+            placeholder="Starting point or Your location"
+            currentLocation={currentLocation}
           />
         </div>
         <div className="stop-row">
@@ -43,8 +50,35 @@ export default function DirectionsPanel({
             onChange={onToText}
             onSelect={onToSelect}
             placeholder="Destination"
+            currentLocation={currentLocation}
           />
         </div>
+
+        <div className="btn-row wrap">
+          <button
+            className="btn btn-ghost loc-btn"
+            type="button"
+            onClick={onUseCurrentFrom}
+            disabled={!hasLocation && geoStatus !== "locating"}
+            title={
+              hasLocation
+                ? "Start from your current location"
+                : "Waiting for location…"
+            }
+          >
+            Start from my location
+          </button>
+          <button
+            className="btn btn-ghost loc-btn"
+            type="button"
+            onClick={onUseCurrentTo}
+            disabled={!hasLocation}
+            title="Set destination to your current location"
+          >
+            End at my location
+          </button>
+        </div>
+
         <div className="btn-row">
           <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? "Routing…" : "Get directions"}
@@ -64,6 +98,12 @@ export default function DirectionsPanel({
         </div>
       </form>
 
+      {geoStatus === "denied" && (
+        <p className="hint tight">
+          Location access is blocked. Allow it in your browser to use “Your location”.
+        </p>
+      )}
+
       {error && <p className="error-msg">{error}</p>}
 
       {summary && (
@@ -77,7 +117,7 @@ export default function DirectionsPanel({
 
       {!summary && !error && (
         <p className="hint">
-          Enter a start and destination, or right-click the map to set points.
+          Enter a start and destination, pick “Your location”, or right-click the map.
         </p>
       )}
     </section>

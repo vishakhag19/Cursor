@@ -3,6 +3,7 @@ import {
   MapContainer,
   TileLayer,
   Marker,
+  Circle,
   Polyline,
   ZoomControl,
   useMap,
@@ -37,6 +38,18 @@ function pinIcon(kind = "default", label = "") {
     iconSize: [28, 36],
     iconAnchor: [14, 36],
     popupAnchor: [0, -32],
+  });
+}
+
+function userLocationIcon() {
+  return L.divIcon({
+    className: "atlas-user-loc",
+    html: `<div class="user-loc-dot" aria-hidden="true">
+      <span class="user-loc-pulse"></span>
+      <span class="user-loc-core"></span>
+    </div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
   });
 }
 
@@ -82,8 +95,8 @@ function FlyTo({ target }) {
 function LocateControl({ onLocate }) {
   const map = useMap();
   useEffect(() => {
-    onLocate?.((coords) => {
-      map.flyTo(coords, 15, { duration: 0.8 });
+    onLocate?.((coords, zoom = 15) => {
+      map.flyTo(coords, zoom, { duration: 0.8 });
     });
   }, [map, onLocate]);
   return null;
@@ -93,6 +106,7 @@ export default function MapView({
   mode,
   layer,
   searchMarker,
+  userLocation,
   directions,
   createRoute,
   flyTarget,
@@ -130,7 +144,7 @@ export default function MapView({
       <ZoomControl position="bottomright" />
       {layer === "satellite" ? (
         <TileLayer
-          attribution='Tiles &copy; Esri'
+          attribution="Tiles &copy; Esri"
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           maxZoom={19}
         />
@@ -150,6 +164,28 @@ export default function MapView({
       <FlyTo target={flyTarget} />
       <LocateControl onLocate={onLocateReady} />
 
+      {userLocation && (
+        <>
+          <Circle
+            center={[userLocation.lat, userLocation.lng]}
+            radius={Math.max(userLocation.accuracy || 40, 25)}
+            pathOptions={{
+              color: "#1A73E8",
+              weight: 1,
+              fillColor: "#1A73E8",
+              fillOpacity: 0.12,
+              opacity: 0.35,
+            }}
+          />
+          <Marker
+            position={[userLocation.lat, userLocation.lng]}
+            icon={userLocationIcon()}
+            zIndexOffset={1000}
+            interactive={false}
+          />
+        </>
+      )}
+
       {searchMarker && mode === "explore" && (
         <Marker
           position={[searchMarker.lat, searchMarker.lng]}
@@ -157,13 +193,13 @@ export default function MapView({
         />
       )}
 
-      {mode === "directions" && directions?.from && (
+      {mode === "directions" && directions?.from && !directions.from.isCurrentLocation && (
         <Marker
           position={[directions.from.lat, directions.from.lng]}
           icon={pinIcon("start", "A")}
         />
       )}
-      {mode === "directions" && directions?.to && (
+      {mode === "directions" && directions?.to && !directions.to.isCurrentLocation && (
         <Marker
           position={[directions.to.lat, directions.to.lng]}
           icon={pinIcon("end", "B")}
@@ -172,6 +208,7 @@ export default function MapView({
 
       {mode === "create" &&
         createRoute?.waypoints?.map((wp, i) => {
+          if (wp.isCurrentLocation) return null;
           const kind =
             i === 0
               ? "start"

@@ -9,6 +9,7 @@ export default function ExplorePanel({
   onDirectionsFrom,
   onDirectionsTo,
   onAddToRoute,
+  currentLocation,
 }) {
   return (
     <section className="mode-panel">
@@ -40,6 +41,7 @@ export default function ExplorePanel({
             onChange={onQueryChange}
             onSelect={onSelectPlace}
             placeholder="Search places"
+            currentLocation={currentLocation}
           />
           {query && (
             <button
@@ -59,20 +61,33 @@ export default function ExplorePanel({
           <h2>{place.name}</h2>
           <p>{place.display_name}</p>
           <div className="place-actions">
-            <button type="button" className="btn btn-primary" onClick={onDirectionsTo}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onDirectionsTo}
+            >
               Directions
             </button>
-            <button type="button" className="btn btn-ghost" onClick={onDirectionsFrom}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={onDirectionsFrom}
+            >
               From here
             </button>
-            <button type="button" className="btn btn-ghost" onClick={onAddToRoute}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={onAddToRoute}
+            >
               Add to route
             </button>
           </div>
         </div>
       ) : (
         <p className="hint">
-          Search for a city, street, or landmark. Click the map to drop a pin.
+          Search for a city, street, or landmark. Allow location access to center
+          on you. Click the map to drop a pin.
         </p>
       )}
     </section>
