@@ -270,7 +270,7 @@ md-list.suggestions {
   position: absolute;
   top: 16px;
   left: 16px;
-  z-index: 6;
+  z-index: 1100;
 }
 
 .map-stage {
@@ -294,11 +294,16 @@ md-list.suggestions {
   position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 4;
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
+  pointer-events: none;
+}
+
+.map-controls > * {
+  pointer-events: auto;
 }
 
 .layer-toggle {
@@ -318,7 +323,7 @@ md-list.suggestions {
   left: 50%;
   bottom: 28px;
   transform: translateX(-50%);
-  z-index: 4;
+  z-index: 1100;
   max-width: min(420px, calc(100% - 32px));
   padding: 12px 20px;
   border-radius: var(--md-sys-shape-corner-extra-large);
