@@ -28,6 +28,11 @@ function dedupe(list) {
   });
 }
 
+function labelForPlace(place) {
+  if (!place) return "";
+  return place.isCurrentLocation ? "Your location" : place.name || "";
+}
+
 /**
  * @param {object} props
  * @param {boolean} [props.allowCurrentLocation] Only for directions start — never on landing search.
@@ -53,6 +58,9 @@ export default function SuggestInput({
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef(null);
   const wrapRef = useRef(null);
+  /** When set, value matches a chosen place — do not keep searching. */
+  const committedRef = useRef(null);
+  const requestSeq = useRef(0);
 
   useEffect(() => {
     function onDocClick(e) {
@@ -80,31 +88,61 @@ export default function SuggestInput({
     return dedupe(items);
   }
 
+  function choosePlace(place) {
+    committedRef.current = labelForPlace(place);
+    requestSeq.current += 1;
+    clearTimeout(debounceRef.current);
+    setLoading(false);
+    setOpen(false);
+    setSuggestions([]);
+    onSelect(place);
+  }
+
   useEffect(() => {
     clearTimeout(debounceRef.current);
     const q = value.trim();
+
+    // Value still matches the place the user picked — stop spinner / search.
+    if (
+      committedRef.current != null &&
+      q.toLowerCase() === committedRef.current.toLowerCase()
+    ) {
+      setLoading(false);
+      setSuggestions([]);
+      setOpen(false);
+      return undefined;
+    }
+
+    // User edited the field after a selection — allow search again.
+    if (committedRef.current != null) {
+      committedRef.current = null;
+    }
 
     // Don't re-query when the field already shows the selected "Your location".
     if (allowCurrentLocation && q.toLowerCase() === "your location") {
       setSuggestions([]);
       setOpen(false);
+      setLoading(false);
       return undefined;
     }
 
     if (q.length < 2) {
       const items = emptySuggestions();
       setSuggestions(items);
-      // Keep closed until focus — focus handler opens.
+      setLoading(false);
       return undefined;
     }
 
+    const seq = ++requestSeq.current;
     debounceRef.current = setTimeout(async () => {
+      if (seq !== requestSeq.current) return;
       setLoading(true);
       try {
         const results = await searchPlaces(q, {
           near: near || currentLocation,
           limit: 8,
         });
+        if (seq !== requestSeq.current) return;
         const merged = [];
         if (
           allowCurrentLocation &&
@@ -118,12 +156,19 @@ export default function SuggestInput({
         setSuggestions(unique);
         setOpen(unique.length > 0);
       } catch {
+        if (seq !== requestSeq.current) return;
         setSuggestions([]);
       } finally {
-        setLoading(false);
+        if (seq === requestSeq.current) setLoading(false);
       }
     }, 280);
-    return () => clearTimeout(debounceRef.current);
+
+    return () => {
+      clearTimeout(debounceRef.current);
+      // Drop stale in-flight work and clear spinner until the next search starts.
+      requestSeq.current += 1;
+      setLoading(false);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, currentLocation, allowCurrentLocation, recentPlaces, near]);
 
@@ -135,9 +180,24 @@ export default function SuggestInput({
         value={value}
         disabled={disabled}
         placeholder={placeholder}
-        onChange={onChange}
+        onChange={(v) => {
+          if (
+            committedRef.current != null &&
+            v.trim().toLowerCase() !== committedRef.current.toLowerCase()
+          ) {
+            committedRef.current = null;
+          }
+          onChange(v);
+        }}
         onFocus={() => {
           const q = value.trim();
+          if (
+            committedRef.current != null &&
+            q.toLowerCase() === committedRef.current.toLowerCase()
+          ) {
+            setOpen(false);
+            return;
+          }
           if (q.toLowerCase() === "your location") {
             setOpen(false);
             return;
@@ -166,11 +226,7 @@ export default function SuggestInput({
               type="button"
               role="option"
               class={s.isCurrentLocation ? "is-current" : ""}
-              onClick={() => {
-                onSelect(s);
-                setOpen(false);
-                setSuggestions([]);
-              }}
+              onClick={() => choosePlace(s)}
             >
               {s.isCurrentLocation ? (
                 <md-icon slot="start">my_location</md-icon>

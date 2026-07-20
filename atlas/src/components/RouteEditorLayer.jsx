@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Marker, Polyline, CircleMarker, useMap, useMapEvents } from "react-leaflet";
+import { Marker, Polyline, CircleMarker, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
   closestPointOnPolyline,
@@ -58,57 +58,110 @@ export default function RouteEditorLayer({
   const dragRef = useRef(null);
   const snapTimer = useRef(null);
   const previewSeq = useRef(0);
+  const dragSession = useRef(0);
+  const listenersRef = useRef(null);
+  const geometryRef = useRef(geometry);
+  const viasRef = useRef(vias);
+  const originRef = useRef(origin);
+  const destinationRef = useRef(destination);
+  const travelModeRef = useRef(travelMode);
+
+  geometryRef.current = geometry;
+  viasRef.current = vias;
+  originRef.current = origin;
+  destinationRef.current = destination;
+  travelModeRef.current = travelMode;
+
+  function clearDocListeners() {
+    const L = listenersRef.current;
+    if (!L) return;
+    document.removeEventListener("pointermove", L.move);
+    document.removeEventListener("pointerup", L.up);
+    document.removeEventListener("pointercancel", L.up);
+    document.removeEventListener("mousemove", L.moveMouse);
+    document.removeEventListener("mouseup", L.up);
+    listenersRef.current = null;
+  }
+
+  function endDragVisual() {
+    clearTimeout(snapTimer.current);
+    previewSeq.current += 1;
+    dragRef.current = null;
+    setDragState(null);
+    onPreview?.(null);
+    map.dragging.enable();
+    map.getContainer().classList.remove("is-route-dragging");
+    clearDocListeners();
+  }
 
   useEffect(() => {
-    if (!enabled) {
-      setDragState(null);
-      dragRef.current = null;
-      map.dragging.enable();
-      map.getContainer().classList.remove("is-route-dragging");
-      onPreview?.(null);
-    }
-  }, [enabled, map, onPreview]);
+    if (!enabled) endDragVisual();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, map]);
 
   useEffect(
     () => () => {
       clearTimeout(snapTimer.current);
+      previewSeq.current += 1;
+      clearDocListeners();
+      map.dragging.enable();
+      map.getContainer().classList.remove("is-route-dragging");
     },
-    [],
+    [map],
   );
 
-  async function runPreview(lat, lng, segmentIndex, viaId) {
-    if (!origin || !destination) return;
+  async function runPreview(lat, lng, segmentIndex, viaId, session) {
+    const originNow = originRef.current;
+    const destinationNow = destinationRef.current;
+    if (!originNow || !destinationNow) return;
+    if (session !== dragSession.current) return;
+    if (!dragRef.current?.active) return;
+
     const seq = ++previewSeq.current;
     try {
-      const snapped = await nearestRoadPoint(lat, lng, travelMode);
+      const snapped = await nearestRoadPoint(
+        lat,
+        lng,
+        travelModeRef.current,
+      );
+      if (session !== dragSession.current) return;
       if (seq !== previewSeq.current) return;
+      if (!dragRef.current?.active) return;
 
       let nextVias;
       if (viaId) {
-        nextVias = vias.map((v) =>
+        nextVias = viasRef.current.map((v) =>
           v.id === viaId
             ? { ...v, lat: snapped.lat, lng: snapped.lng, name: snapped.name }
             : v,
         );
       } else {
-        nextVias = orderedViasWithInsert(vias, geometry, segmentIndex, {
-          id: "preview",
-          lat: snapped.lat,
-          lng: snapped.lng,
-          name: snapped.name,
-        });
+        nextVias = orderedViasWithInsert(
+          viasRef.current,
+          geometryRef.current,
+          segmentIndex,
+          {
+            id: "preview",
+            lat: snapped.lat,
+            lng: snapped.lng,
+            name: snapped.name,
+          },
+        );
       }
 
       const route = await rebuildEditedRoute(
-        origin,
+        originNow,
         nextVias.map((v) => ({ lat: v.lat, lng: v.lng })),
-        destination,
-        travelMode,
+        destinationNow,
+        travelModeRef.current,
       );
+      if (session !== dragSession.current) return;
       if (seq !== previewSeq.current) return;
+      if (!dragRef.current?.active) return;
 
       const next = {
         active: true,
+        session,
         lat: snapped.lat,
         lng: snapped.lng,
         snapLat: snapped.lat,
@@ -126,7 +179,9 @@ export default function RouteEditorLayer({
       setDragState(next);
       onPreview?.(next);
     } catch (err) {
+      if (session !== dragSession.current) return;
       if (seq !== previewSeq.current) return;
+      if (!dragRef.current?.active) return;
       setDragState((prev) =>
         prev
           ? {
@@ -144,17 +199,70 @@ export default function RouteEditorLayer({
     }
   }
 
-  function schedulePreview(lat, lng, segmentIndex, viaId) {
+  function schedulePreview(lat, lng, segmentIndex, viaId, session) {
     clearTimeout(snapTimer.current);
     snapTimer.current = setTimeout(() => {
-      runPreview(lat, lng, segmentIndex, viaId);
+      runPreview(lat, lng, segmentIndex, viaId, session);
     }, 100);
   }
 
-  useMapEvents({
-    mousemove(e) {
-      if (!enabled || !dragRef.current?.active) return;
-      const { lat, lng } = e.latlng;
+  async function finishDrag(session) {
+    if (session !== dragSession.current) return;
+    clearTimeout(snapTimer.current);
+    const state = dragRef.current;
+    // Invalidate any in-flight preview so it cannot re-stick to the cursor.
+    previewSeq.current += 1;
+    dragRef.current = null;
+    setDragState(null);
+    onPreview?.(null);
+    map.dragging.enable();
+    map.getContainer().classList.remove("is-route-dragging");
+    clearDocListeners();
+
+    if (!state?.active) return;
+
+    try {
+      const snapped =
+        state.snapped && state.snapLat != null && state.snapLng != null
+          ? {
+              lat: state.snapLat,
+              lng: state.snapLng,
+              name: state.name || "Via point",
+              snapDistance: state.snapDistance || 0,
+            }
+          : await nearestRoadPoint(
+              state.lat,
+              state.lng,
+              travelModeRef.current,
+            );
+
+      if (session !== dragSession.current) return;
+
+      if (state.viaId) onMoveVia?.(state.viaId, snapped);
+      else onCommitVia?.(snapped, state.segmentIndex);
+    } catch (err) {
+      onError?.(err.message || "No road nearby");
+    }
+  }
+
+  function bindDocListeners(session) {
+    clearDocListeners();
+
+    const onMove = (ev) => {
+      if (session !== dragSession.current) return;
+      if (!dragRef.current?.active) return;
+      // Avoid double-handling when both pointer and mouse events fire.
+      if (ev.type === "mousemove" && ev.pointerType != null) return;
+      let latlng;
+      try {
+        latlng = map.mouseEventToLatLng(ev);
+      } catch {
+        const rect = map.getContainer().getBoundingClientRect();
+        latlng = map.containerPointToLatLng(
+          L.point(ev.clientX - rect.left, ev.clientY - rect.top),
+        );
+      }
+      const { lat, lng } = latlng;
       dragRef.current = {
         ...dragRef.current,
         lat,
@@ -169,54 +277,39 @@ export default function RouteEditorLayer({
         lng,
         dragRef.current.segmentIndex,
         dragRef.current.viaId || null,
+        session,
       );
-    },
-    mouseup() {
-      if (!enabled || !dragRef.current?.active) return;
-      finishDrag();
-    },
-  });
+    };
 
-  async function finishDrag() {
-    clearTimeout(snapTimer.current);
-    const state = dragRef.current;
-    dragRef.current = null;
-    map.dragging.enable();
-    map.getContainer().classList.remove("is-route-dragging");
+    let finished = false;
+    const onUp = (ev) => {
+      if (finished) return;
+      if (ev?.type === "mouseup" && window.PointerEvent) return;
+      finished = true;
+      finishDrag(session);
+    };
 
-    if (!state?.active) {
-      setDragState(null);
-      onPreview?.(null);
-      return;
-    }
-
-    try {
-      const snapped =
-        state.snapped && state.snapLat != null && state.snapLng != null
-          ? {
-              lat: state.snapLat,
-              lng: state.snapLng,
-              name: state.name || "Via point",
-              snapDistance: state.snapDistance || 0,
-            }
-          : await nearestRoadPoint(state.lat, state.lng, travelMode);
-
-      if (state.viaId) onMoveVia?.(state.viaId, snapped);
-      else onCommitVia?.(snapped, state.segmentIndex);
-    } catch (err) {
-      onError?.(err.message || "No road nearby");
-    } finally {
-      setDragState(null);
-      onPreview?.(null);
-    }
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    listenersRef.current = {
+      move: onMove,
+      moveMouse: onMove,
+      up: onUp,
+    };
   }
 
-  function beginPolylineDrag(latlng, segmentIndex) {
-    if (!enabled || !origin || !destination) return;
+  function beginPolylineDrag(latlng, segmentIndex, originalEvent) {
+    if (!enabled || !originRef.current || !destinationRef.current) return;
+    const session = ++dragSession.current;
+    previewSeq.current += 1;
     map.dragging.disable();
     map.getContainer().classList.add("is-route-dragging");
     const start = {
       active: true,
+      session,
       lat: latlng.lat,
       lng: latlng.lng,
       snapped: false,
@@ -226,15 +319,26 @@ export default function RouteEditorLayer({
     };
     dragRef.current = start;
     setDragState(start);
-    schedulePreview(latlng.lat, latlng.lng, segmentIndex, null);
+    bindDocListeners(session);
+    if (originalEvent?.pointerId != null) {
+      try {
+        map.getContainer().setPointerCapture?.(originalEvent.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    schedulePreview(latlng.lat, latlng.lng, segmentIndex, null, session);
   }
 
   function beginViaDrag(via, latlng) {
     if (!enabled) return;
+    const session = ++dragSession.current;
+    previewSeq.current += 1;
     map.dragging.disable();
     map.getContainer().classList.add("is-route-dragging");
     const start = {
       active: true,
+      session,
       lat: latlng.lat,
       lng: latlng.lng,
       snapped: false,
@@ -244,7 +348,8 @@ export default function RouteEditorLayer({
     };
     dragRef.current = start;
     setDragState(start);
-    schedulePreview(latlng.lat, latlng.lng, 0, via.id);
+    bindDocListeners(session);
+    schedulePreview(latlng.lat, latlng.lng, 0, via.id, session);
   }
 
   if (!enabled || !geometry?.length) return null;
@@ -267,7 +372,11 @@ export default function RouteEditorLayer({
               { lat: e.latlng.lat, lng: e.latlng.lng },
               geometry,
             );
-            beginPolylineDrag(e.latlng, closest?.segmentIndex ?? 0);
+            beginPolylineDrag(
+              e.latlng,
+              closest?.segmentIndex ?? 0,
+              e.originalEvent,
+            );
           },
         }}
       />
@@ -307,6 +416,7 @@ export default function RouteEditorLayer({
           eventHandlers={{
             mousedown: (e) => {
               L.DomEvent.stopPropagation(e);
+              L.DomEvent.preventDefault(e);
               beginViaDrag(via, e.latlng);
             },
           }}
