@@ -52,14 +52,17 @@ export async function fetchShortestRoutes(
   const profile = PROFILE[travelMode] || "driving";
   const path = coords.map((c) => `${c.lng},${c.lat}`).join(";");
 
-  // Ask OSRM for as many alternatives as it can offer (A→B only).
-  const altCount = coords.length === 2 ? Math.max(limit - 1, 1) : false;
-  const altParam =
-    altCount === false ? "false" : String(Math.min(altCount, 4));
+  // OSRM public server allows at most 3 alternatives (≤4 total routes).
+  const altCount = coords.length === 2 ? Math.min(limit - 1, 3) : false;
+  const altParam = altCount === false ? "false" : String(Math.max(altCount, 1));
 
   const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${altParam}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Routing service unavailable");
+  if (!res.ok) {
+    throw new Error(
+      `Routing service unavailable (${res.status}). Try again in a moment.`,
+    );
+  }
   const data = await res.json();
   if (data.code !== "Ok" || !data.routes?.length) {
     throw new Error(data.message || "No route found between these stops");

@@ -104,7 +104,38 @@ export default function App() {
 
   const runDirections = useCallback(
     async (nextStops = stops, mode = travelMode) => {
-      const filled = nextStops.filter(Boolean);
+      // Resolve any null slots that still say "Your location" in the text field.
+      const resolved = nextStops.map((s, i) => {
+        if (s) return s;
+        const text = (stopTexts[i] || "").trim().toLowerCase();
+        if (
+          userLocation &&
+          (text === "your location" || text === "my location" || text === "")
+        ) {
+          // Only auto-fill the first empty "your location" intent for start.
+          if (i === 0 || text.includes("location")) {
+            return toCurrentLocationPlace(userLocation);
+          }
+        }
+        return s;
+      });
+
+      // If start is empty but we have GPS, use it.
+      if (!resolved[0] && userLocation) {
+        resolved[0] = toCurrentLocationPlace(userLocation);
+        setStops((prev) => {
+          const next = [...prev];
+          next[0] = resolved[0];
+          return next;
+        });
+        setStopTexts((prev) => {
+          const next = [...prev];
+          next[0] = "Your location";
+          return next;
+        });
+      }
+
+      const filled = resolved.filter(Boolean);
       if (filled.length < 2) {
         setDirError("Choose a starting point and destination");
         return;
@@ -113,7 +144,14 @@ export default function App() {
       setDirError(null);
       showStatus("Finding shortest routes…", 0);
       try {
-        const options = await fetchShortestRoutes(filled, mode, { limit: 5 });
+        let options;
+        try {
+          options = await fetchShortestRoutes(filled, mode, { limit: 5 });
+        } catch (firstErr) {
+          // One retry — public OSRM can be briefly unavailable.
+          await new Promise((r) => setTimeout(r, 600));
+          options = await fetchShortestRoutes(filled, mode, { limit: 5 });
+        }
         setRouteOptions(options);
         selectRoute(options[0]);
         showStatus(
@@ -127,7 +165,15 @@ export default function App() {
         setDirLoading(false);
       }
     },
-    [stops, travelMode, showStatus, selectRoute, clearRoutes],
+    [
+      stops,
+      stopTexts,
+      travelMode,
+      userLocation,
+      showStatus,
+      selectRoute,
+      clearRoutes,
+    ],
   );
 
   const openDirections = useCallback(
