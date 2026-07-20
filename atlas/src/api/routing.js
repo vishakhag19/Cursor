@@ -6,6 +6,10 @@ const PROFILE = {
   cycling: "bike",
 };
 
+function profileOf(travelMode) {
+  return PROFILE[travelMode] || "driving";
+}
+
 function toGeometry(route) {
   return route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
 }
@@ -38,6 +42,64 @@ function normalizeRoute(route, index) {
 }
 
 /**
+ * Snap a lat/lng to the nearest drivable (or walk/bike) road.
+ * Returns null when nothing is within a reasonable radius.
+ */
+export async function nearestRoadPoint(lat, lng, travelMode = "driving") {
+  const profile = profileOf(travelMode);
+  const url = `${OSRM}/nearest/v1/${profile}/${lng},${lat}?number=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Could not snap to a road");
+  const data = await res.json();
+  if (data.code !== "Ok" || !data.waypoints?.[0]) {
+    throw new Error("No road nearby — try a point closer to a street");
+  }
+  const wp = data.waypoints[0];
+  // OSRM distance is meters from the query point to the snapped location.
+  if (wp.distance != null && wp.distance > 250) {
+    throw new Error("No drivable road nearby — try closer to a street");
+  }
+  const [snapLng, snapLat] = wp.location;
+  return {
+    lat: snapLat,
+    lng: snapLng,
+    name: wp.name || "Road",
+    snapDistance: wp.distance ?? 0,
+  };
+}
+
+/** Single A→B (or multi-stop) route without alternatives — for live edit preview. */
+export async function fetchSingleRoute(coords, travelMode = "driving") {
+  if (!coords || coords.length < 2) {
+    throw new Error("Need at least two points");
+  }
+  const profile = profileOf(travelMode);
+  const path = coords.map((c) => `${c.lng},${c.lat}`).join(";");
+  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=false`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Routing service unavailable");
+  const data = await res.json();
+  if (data.code !== "Ok" || !data.routes?.[0]) {
+    throw new Error(data.message || "No route found");
+  }
+  return normalizeRoute(data.routes[0], "edit");
+}
+
+/**
+ * Rebuild a route through origin → vias… → destination.
+ * Used after drag commits and for live preview.
+ */
+export async function rebuildEditedRoute(
+  origin,
+  vias,
+  destination,
+  travelMode = "driving",
+) {
+  const coords = [origin, ...(vias || []), destination].filter(Boolean);
+  return fetchSingleRoute(coords, travelMode);
+}
+
+/**
  * Return up to `limit` shortest driving/walking/cycling options between stops.
  * Always ranked by distance (shortest first).
  */
@@ -49,10 +111,9 @@ export async function fetchShortestRoutes(
   if (!coords || coords.length < 2) {
     throw new Error("Need at least two stops");
   }
-  const profile = PROFILE[travelMode] || "driving";
+  const profile = profileOf(travelMode);
   const path = coords.map((c) => `${c.lng},${c.lat}`).join(";");
 
-  // OSRM public server allows at most 3 alternatives (≤4 total routes).
   const altCount = coords.length === 2 ? Math.min(limit - 1, 3) : false;
   const altParam = altCount === false ? "false" : String(Math.max(altCount, 1));
 
@@ -70,8 +131,6 @@ export async function fetchShortestRoutes(
 
   let routes = data.routes.map((r, i) => normalizeRoute(r, i));
 
-  // If we still want more options, ask again avoiding motorways (often yields a
-  // meaningfully different shorter/local alternative).
   if (coords.length === 2 && routes.length < limit) {
     try {
       const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&exclude=motorway`;
@@ -92,7 +151,6 @@ export async function fetchShortestRoutes(
     }
   }
 
-  // For multi-stop, also try leg-by-leg shortest and merge as an extra option.
   if (coords.length > 2) {
     try {
       const legs = await routeLegByLegShortest(coords, travelMode);
@@ -112,9 +170,11 @@ export async function fetchShortestRoutes(
 async function routeLegByLegShortest(coords, travelMode) {
   const legs = [];
   for (let i = 0; i < coords.length - 1; i++) {
-    const options = await fetchShortestRoutes([coords[i], coords[i + 1]], travelMode, {
-      limit: 1,
-    });
+    const options = await fetchShortestRoutes(
+      [coords[i], coords[i + 1]],
+      travelMode,
+      { limit: 1 },
+    );
     legs.push(options[0]);
   }
 
@@ -160,7 +220,6 @@ function rankShortest(routes) {
   }));
 }
 
-/** @deprecated use fetchShortestRoutes */
 export async function fetchRouteOptions(coords, travelMode = "driving") {
   return fetchShortestRoutes(coords, travelMode, { limit: 5 });
 }
@@ -201,4 +260,37 @@ function haversine(a, b) {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** Closest point on a polyline ([lat,lng][]) to a query latlng. */
+export function closestPointOnPolyline(latlng, geometry) {
+  if (!geometry?.length) return null;
+  let best = null;
+  for (let i = 0; i < geometry.length - 1; i++) {
+    const a = { lat: geometry[i][0], lng: geometry[i][1] };
+    const b = { lat: geometry[i + 1][0], lng: geometry[i + 1][1] };
+    const p = projectPointOnSegment(latlng, a, b);
+    const d = haversine(latlng, p);
+    if (!best || d < best.distance) {
+      best = { ...p, distance: d, segmentIndex: i };
+    }
+  }
+  return best;
+}
+
+function projectPointOnSegment(p, a, b) {
+  const ax = a.lng;
+  const ay = a.lat;
+  const bx = b.lng;
+  const by = b.lat;
+  const px = p.lng;
+  const py = p.lat;
+  const dx = bx - ax;
+  const dy = by - ay;
+  if (dx === 0 && dy === 0) return { lat: ay, lng: ax };
+  const t = Math.max(
+    0,
+    Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)),
+  );
+  return { lat: ay + t * dy, lng: ax + t * dx };
 }

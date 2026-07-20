@@ -4,8 +4,16 @@ import SearchPanel from "./components/SearchPanel";
 import DirectionsPanel from "./components/DirectionsPanel";
 import ContextMenu from "./components/ContextMenu";
 import { reverseGeocode } from "./api/geocode";
-import { fetchShortestRoutes } from "./api/routing";
+import {
+  closestPointOnPolyline,
+  fetchShortestRoutes,
+  rebuildEditedRoute,
+} from "./api/routing";
 import { placeLabel } from "./utils/format";
+import {
+  comparisonVsSuggested,
+  seedViasFromStops,
+} from "./utils/routeEdit";
 import { loadRecentSearches, pushRecentSearch } from "./utils/storage";
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
 import "./App.css";
@@ -16,6 +24,17 @@ function uid() {
 
 function emptyStops() {
   return [null, null];
+}
+
+function orderViasAlongGeometry(vias, geometry) {
+  if (!vias.length) return [];
+  return [...vias]
+    .map((v) => {
+      const c = closestPointOnPolyline({ lat: v.lat, lng: v.lng }, geometry);
+      return { via: v, seg: c?.segmentIndex ?? 0 };
+    })
+    .sort((a, b) => a.seg - b.seg)
+    .map((x) => x.via);
 }
 
 export default function App() {
@@ -37,6 +56,11 @@ export default function App() {
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [routeLocked, setRouteLocked] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [baselineRoute, setBaselineRoute] = useState(null);
+  const [editVias, setEditVias] = useState([]);
+  const [editHistory, setEditHistory] = useState([]);
+  const [editPreview, setEditPreview] = useState(null);
+  const [editBusy, setEditBusy] = useState(false);
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
 
@@ -89,19 +113,63 @@ export default function App() {
     });
   }, [userLocation, routeLocked]);
 
+  const clearEditState = useCallback(() => {
+    setEditMode(false);
+    setBaselineRoute(null);
+    setEditVias([]);
+    setEditHistory([]);
+    setEditPreview(null);
+    setEditBusy(false);
+  }, []);
+
   const clearRoutes = useCallback(() => {
     setRouteOptions([]);
     setSelectedRouteId(null);
     setRouteGeometry(null);
     setRouteLocked(false);
-    setEditMode(false);
+    clearEditState();
     setDirError(null);
-  }, []);
+  }, [clearEditState]);
 
   const rememberPlace = useCallback((place) => {
     if (!place || place.isCurrentLocation) return;
     setRecentPlaces((prev) => pushRecentSearch(place, prev));
   }, []);
+
+  const applyEditedRoute = useCallback((route, vias, { pushHistory = true } = {}) => {
+    const edited = {
+      ...route,
+      id: `edited-${Math.round(route.distance)}-${Math.round(route.duration)}-${vias.length}`,
+      label: vias.length
+        ? `Custom · ${vias.length} drag point${vias.length === 1 ? "" : "s"}`
+        : route.label || "Custom route",
+      badge: "Edited route",
+      rank: 0,
+      edited: true,
+    };
+
+    if (pushHistory) {
+      setEditHistory((prev) => [
+        ...prev,
+        {
+          vias: editVias,
+          routeId: selectedRouteId,
+          geometry: routeGeometry,
+          options: routeOptions,
+        },
+      ]);
+    }
+
+    setEditVias(vias);
+    setRouteOptions((prev) => {
+      const withoutEdited = prev.filter((r) => !r.edited);
+      return [edited, ...withoutEdited];
+    });
+    setSelectedRouteId(edited.id);
+    setRouteGeometry(edited.geometry);
+    setRouteLocked(true);
+    setFitKey((k) => k + 1);
+  }, [editVias, selectedRouteId, routeGeometry, routeOptions]);
 
   const selectRoute = useCallback((opt) => {
     if (!opt) return;
@@ -109,11 +177,16 @@ export default function App() {
     setRouteGeometry(opt.geometry);
     setRouteLocked(true);
     setFitKey((k) => k + 1);
+    if (!opt.edited) {
+      setBaselineRoute(opt);
+      setEditVias([]);
+      setEditHistory([]);
+      setEditPreview(null);
+    }
   }, []);
 
   const runDirections = useCallback(
     async (nextStops = stops, mode = travelMode) => {
-      // Only resolve an explicit "Your location" choice — never auto-fill GPS.
       const resolved = nextStops.map((s, i) => {
         if (s) return s;
         const text = (stopTexts[i] || "").trim().toLowerCase();
@@ -133,6 +206,7 @@ export default function App() {
       }
       setDirLoading(true);
       setDirError(null);
+      clearEditState();
       showStatus("Finding shortest routes…", 0);
       try {
         let options;
@@ -143,6 +217,7 @@ export default function App() {
           options = await fetchShortestRoutes(filled, mode, { limit: 5 });
         }
         setRouteOptions(options);
+        setBaselineRoute(options[0]);
         selectRoute(options[0]);
         showStatus(
           `${options.length} shortest option${options.length === 1 ? "" : "s"}`,
@@ -163,12 +238,12 @@ export default function App() {
       showStatus,
       selectRoute,
       clearRoutes,
+      clearEditState,
     ],
   );
 
   const openDirections = useCallback(
     ({ from = null, to = null } = {}) => {
-      // Do not auto-fill Your location — user picks it from the start field.
       const nextStops = [from, to];
       const nextTexts = [
         from ? (from.isCurrentLocation ? "Your location" : from.name) : "",
@@ -203,27 +278,8 @@ export default function App() {
     async (latlng) => {
       setCtx(null);
 
-      // Edit route: pin a via point the path must go through.
+      // Edit mode uses drag-to-reshape — ignore plain clicks on the map.
       if (view === "directions" && editMode) {
-        try {
-          const place = await reverseGeocode(latlng.lat, latlng.lng);
-          rememberPlace(place);
-          if (stops.length < 2 || !stops[0] || !stops[stops.length - 1]) {
-            showStatus("Set start and destination before editing");
-            return;
-          }
-          const nextStops = [...stops];
-          nextStops.splice(nextStops.length - 1, 0, place);
-          const nextTexts = [...stopTexts];
-          nextTexts.splice(nextTexts.length - 1, 0, place.name);
-          setStops(nextStops);
-          setStopTexts(nextTexts);
-          setEditMode(false);
-          showStatus(`Via ${place.name} — rebuilding…`);
-          await runDirections(nextStops, travelMode);
-        } catch {
-          showStatus("Could not pin that point");
-        }
         return;
       }
 
@@ -277,25 +333,19 @@ export default function App() {
       view,
       editMode,
       stops,
-      stopTexts,
       showStatus,
       clearRoutes,
       rememberPlace,
-      runDirections,
-      travelMode,
     ],
   );
 
-  const setStopText = useCallback(
-    (index, value) => {
-      setStopTexts((prev) => {
-        const next = [...prev];
-        next[index] = value;
-        return next;
-      });
-    },
-    [],
-  );
+  const setStopText = useCallback((index, value) => {
+    setStopTexts((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }, []);
 
   const setStopPlace = useCallback(
     (index, place) => {
@@ -343,6 +393,149 @@ export default function App() {
     setStopTexts((prev) => [...prev].reverse());
     clearRoutes();
   }, [clearRoutes]);
+
+  const filledStops = stops.filter(Boolean);
+  const editOrigin = filledStops[0] || null;
+  const editDestination =
+    filledStops.length >= 2 ? filledStops[filledStops.length - 1] : null;
+
+  const rebuildFromVias = useCallback(
+    async (nextVias, { pushHistory = true } = {}) => {
+      if (!editOrigin || !editDestination) return;
+      setEditBusy(true);
+      showStatus("Recalculating route…", 0);
+      try {
+        const ordered = orderViasAlongGeometry(
+          nextVias,
+          routeGeometry || baselineRoute?.geometry || [],
+        );
+        const route = await rebuildEditedRoute(
+          editOrigin,
+          ordered.map((v) => ({ lat: v.lat, lng: v.lng })),
+          editDestination,
+          travelMode,
+        );
+        applyEditedRoute(route, ordered, { pushHistory });
+        showStatus("Route updated");
+      } catch (err) {
+        showStatus(err.message || "Could not update route");
+      } finally {
+        setEditBusy(false);
+      }
+    },
+    [
+      editOrigin,
+      editDestination,
+      routeGeometry,
+      baselineRoute,
+      travelMode,
+      applyEditedRoute,
+      showStatus,
+    ],
+  );
+
+  const commitVia = useCallback(
+    async (snapped, segmentIndex) => {
+      const newVia = {
+        id: uid(),
+        lat: snapped.lat,
+        lng: snapped.lng,
+        name: snapped.name || "Via point",
+      };
+      const geometry = routeGeometry || [];
+      const withMeta = editVias.map((v) => {
+        const c = closestPointOnPolyline({ lat: v.lat, lng: v.lng }, geometry);
+        return { via: v, seg: c?.segmentIndex ?? 0 };
+      });
+      withMeta.sort((a, b) => a.seg - b.seg);
+      const next = [];
+      let inserted = false;
+      for (const item of withMeta) {
+        if (!inserted && segmentIndex <= item.seg) {
+          next.push(newVia);
+          inserted = true;
+        }
+        next.push(item.via);
+      }
+      if (!inserted) next.push(newVia);
+      await rebuildFromVias(next, { pushHistory: true });
+    },
+    [editVias, routeGeometry, rebuildFromVias],
+  );
+
+  const moveVia = useCallback(
+    async (viaId, snapped) => {
+      const next = editVias.map((v) =>
+        v.id === viaId
+          ? {
+              ...v,
+              lat: snapped.lat,
+              lng: snapped.lng,
+              name: snapped.name || v.name,
+            }
+          : v,
+      );
+      await rebuildFromVias(next, { pushHistory: true });
+    },
+    [editVias, rebuildFromVias],
+  );
+
+  const undoEdit = useCallback(() => {
+    setEditHistory((prev) => {
+      if (!prev.length) return prev;
+      const next = [...prev];
+      const snapshot = next.pop();
+      setEditVias(snapshot.vias || []);
+      if (snapshot.options) setRouteOptions(snapshot.options);
+      if (snapshot.routeId) setSelectedRouteId(snapshot.routeId);
+      if (snapshot.geometry) setRouteGeometry(snapshot.geometry);
+      setEditPreview(null);
+      showStatus("Undid last edit");
+      return next;
+    });
+  }, [showStatus]);
+
+  const resetToSuggested = useCallback(() => {
+    if (!baselineRoute) return;
+    setEditVias(seedViasFromStops(stops));
+    setEditHistory([]);
+    setEditPreview(null);
+    setRouteOptions((prev) => {
+      const clean = prev.filter((r) => !r.edited);
+      const hasBaseline = clean.some((r) => r.id === baselineRoute.id);
+      return hasBaseline ? clean : [baselineRoute, ...clean];
+    });
+    setSelectedRouteId(baselineRoute.id);
+    setRouteGeometry(baselineRoute.geometry);
+    setFitKey((k) => k + 1);
+    showStatus("Reset to suggested route");
+  }, [baselineRoute, stops, showStatus]);
+
+  const toggleEditMode = useCallback(() => {
+    setEditMode((v) => {
+      const next = !v;
+      if (next) {
+        const selected =
+          routeOptions.find((r) => r.id === selectedRouteId) || baselineRoute;
+        if (selected && !baselineRoute) setBaselineRoute(selected);
+        if (!selected?.edited) {
+          setEditVias(seedViasFromStops(stops));
+        }
+        setEditPreview(null);
+        showStatus("Drag the route line to reshape it");
+      } else {
+        setEditPreview(null);
+        showStatus("Finished editing");
+      }
+      return next;
+    });
+  }, [
+    routeOptions,
+    selectedRouteId,
+    baselineRoute,
+    stops,
+    showStatus,
+  ]);
 
   const goToMyLocation = useCallback(async () => {
     showStatus("Locating…", 0);
@@ -393,7 +586,20 @@ export default function App() {
     : [];
 
   const mapMode = view === "directions" ? "directions" : "explore";
-  const filledStops = stops.filter(Boolean);
+
+  const activeDuration =
+    editPreview?.previewDuration ??
+    routeOptions.find((r) => r.id === selectedRouteId)?.duration ??
+    null;
+  const comparison =
+    baselineRoute && activeDuration != null
+      ? comparisonVsSuggested(activeDuration, baselineRoute.duration)
+      : null;
+  const canReset =
+    Boolean(baselineRoute) &&
+    (editVias.length > 0 ||
+      routeOptions.some((r) => r.edited) ||
+      selectedRouteId !== baselineRoute.id);
 
   return (
     <div className={`app ${panelOpen ? "" : "panel-collapsed"}`}>
@@ -469,6 +675,7 @@ export default function App() {
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
             onSelectRoute={(opt) => {
+              if (editMode) return;
               selectRoute(opt);
               showStatus(opt.badge || opt.label);
             }}
@@ -477,13 +684,13 @@ export default function App() {
             currentLocation={userLocation}
             near={userLocation}
             editMode={editMode}
-            onToggleEdit={() => {
-              setEditMode((v) => {
-                const next = !v;
-                if (next) showStatus("Click the map to pin a via point");
-                return next;
-              });
-            }}
+            onToggleEdit={toggleEditMode}
+            canUndo={editHistory.length > 0}
+            onUndo={undoEdit}
+            canReset={canReset}
+            onResetSuggested={resetToSuggested}
+            comparison={editMode ? comparison : null}
+            editBusy={editBusy || Boolean(editPreview?.active)}
           />
         )}
       </aside>
@@ -519,9 +726,19 @@ export default function App() {
           routeOptions={view === "directions" ? routeOptions : []}
           selectedRouteId={selectedRouteId}
           onSelectRoute={(opt) => {
+            if (editMode) return;
             selectRoute(opt);
             showStatus(`Selected: ${opt.badge || opt.label}`);
           }}
+          editMode={view === "directions" && editMode}
+          editOrigin={editOrigin}
+          editDestination={editDestination}
+          editVias={editVias}
+          editTravelMode={travelMode}
+          onEditPreview={setEditPreview}
+          onCommitVia={commitVia}
+          onMoveVia={moveVia}
+          onEditError={(msg) => showStatus(msg)}
           flyTarget={flyTarget}
           fitKey={fitKey}
           onMapClick={handleMapClick}
@@ -581,6 +798,15 @@ export default function App() {
             <md-icon slot="icon">my_location</md-icon>
           </md-fab>
         </div>
+
+        {editMode && comparison && (
+          <div
+            className={`map-comparison tone-${comparison.tone}`}
+            role="status"
+          >
+            {comparison.label}
+          </div>
+        )}
 
         {status && (
           <div className="map-status md-typescale-label-large" role="status">

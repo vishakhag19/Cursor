@@ -10,6 +10,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
+import RouteEditorLayer from "./RouteEditorLayer";
 
 const DEFAULT_CENTER = [37.7749, -122.4194];
 const DEFAULT_ZOOM = 13;
@@ -134,6 +135,15 @@ export default function MapView({
   routeOptions = [],
   selectedRouteId = null,
   onSelectRoute,
+  editMode = false,
+  editOrigin = null,
+  editDestination = null,
+  editVias = [],
+  editTravelMode = "driving",
+  onEditPreview,
+  onCommitVia,
+  onMoveVia,
+  onEditError,
 }) {
   const selectedGeometry =
     mode === "directions"
@@ -286,56 +296,76 @@ export default function MapView({
       {routeOptions.map((opt) => {
         if (!opt?.geometry?.length) return null;
         const active = opt.id === selectedRouteId;
+        // While editing, hide alternate routes so the drag target is clear.
+        if (editMode && !active) return null;
         return (
           <Polyline
             key={opt.id}
             positions={opt.geometry}
             pathOptions={{
-              color: active ? "#1A73E8" : "#90CAF9",
+              color: active ? (editMode ? "#1A73E8" : "#1A73E8") : "#90CAF9",
               weight: active ? 6 : 5,
-              opacity: active ? 0.95 : 0.55,
+              opacity: active ? (editMode ? 0.35 : 0.95) : 0.55,
               lineJoin: "round",
               lineCap: "round",
             }}
             eventHandlers={{
               click: (e) => {
+                if (editMode) return;
                 L.DomEvent.stopPropagation(e);
                 onSelectRoute?.(opt);
               },
               mouseover: (e) => {
-                if (!active) e.target.setStyle({ opacity: 0.85, weight: 6 });
+                if (editMode || active) return;
+                e.target.setStyle({ opacity: 0.85, weight: 6 });
               },
               mouseout: (e) => {
-                if (!active) e.target.setStyle({ opacity: 0.55, weight: 5 });
+                if (editMode || active) return;
+                e.target.setStyle({ opacity: 0.55, weight: 5 });
               },
             }}
           />
         );
       })}
 
-      {/* Invisible wider hit targets so routes are easy to click */}
-      {routeOptions.map((opt) =>
-        opt?.geometry?.length ? (
-          <Polyline
-            key={`hit-${opt.id}`}
-            positions={opt.geometry}
-            pathOptions={{
-              color: "#000",
-              weight: 18,
-              opacity: 0,
-            }}
-            eventHandlers={{
-              click: (e) => {
-                L.DomEvent.stopPropagation(e);
-                onSelectRoute?.(opt);
-              },
-            }}
-          />
-        ) : null,
+      {!editMode &&
+        routeOptions.map((opt) =>
+          opt?.geometry?.length ? (
+            <Polyline
+              key={`hit-${opt.id}`}
+              positions={opt.geometry}
+              pathOptions={{
+                color: "#000",
+                weight: 18,
+                opacity: 0,
+              }}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  onSelectRoute?.(opt);
+                },
+              }}
+            />
+          ) : null,
+        )}
+
+      {editMode && selectedGeometry?.length > 1 && editOrigin && editDestination && (
+        <RouteEditorLayer
+          enabled={editMode}
+          origin={editOrigin}
+          destination={editDestination}
+          vias={editVias}
+          geometry={selectedGeometry}
+          travelMode={editTravelMode}
+          onPreview={onEditPreview}
+          onCommitVia={onCommitVia}
+          onMoveVia={onMoveVia}
+          onError={onEditError}
+        />
       )}
 
-      {/* Keep selected on top visually if list order put it under alts */}
       {selectedGeometry?.length > 1 &&
+        !editMode &&
         !routeOptions.some((o) => o.id === selectedRouteId) && (
           <Polyline
             positions={selectedGeometry}

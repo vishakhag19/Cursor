@@ -8,8 +8,7 @@ const TRAVEL = [
 ];
 
 /**
- * Google Maps–style directions panel.
- * "Your location" is only offered on the starting-point field.
+ * Google Maps–style directions panel with interactive route editing controls.
  */
 export default function DirectionsPanel({
   stops,
@@ -32,6 +31,12 @@ export default function DirectionsPanel({
   near = null,
   editMode = false,
   onToggleEdit,
+  canUndo = false,
+  onUndo,
+  canReset = false,
+  onResetSuggested,
+  comparison = null,
+  editBusy = false,
 }) {
   const canRoute = stops.filter(Boolean).length >= 2;
   const hasRoutes = routeOptions.length > 0;
@@ -143,10 +148,52 @@ export default function DirectionsPanel({
       </div>
 
       {editMode && (
-        <p className="hint md-typescale-body-small edit-hint">
-          Click the map to pin a place the route must go through. Atlas will
-          rebuild the shortest options through that point.
-        </p>
+        <div className="edit-toolbar">
+          <p className="hint md-typescale-body-small edit-hint">
+            Drag any point on the blue route to bend it through a new street.
+            Atlas snaps to the nearest road and previews the path live.
+          </p>
+
+          {comparison && (
+            <div
+              className={`comparison-chip tone-${comparison.tone}`}
+              role="status"
+            >
+              <md-icon>
+                {comparison.tone === "better"
+                  ? "trending_down"
+                  : comparison.tone === "worse"
+                    ? "trending_up"
+                    : "schedule"}
+              </md-icon>
+              <span className="md-typescale-label-large">{comparison.label}</span>
+              {editBusy && (
+                <span className="comparison-busy md-typescale-label-small">
+                  Updating…
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="btn-row wrap edit-actions">
+            <md-outlined-button
+              type="button"
+              onClick={onUndo}
+              disabled={!canUndo || undefined}
+            >
+              <md-icon slot="icon">undo</md-icon>
+              Undo
+            </md-outlined-button>
+            <md-outlined-button
+              type="button"
+              onClick={onResetSuggested}
+              disabled={!canReset || undefined}
+            >
+              <md-icon slot="icon">restart_alt</md-icon>
+              Reset to suggested
+            </md-outlined-button>
+          </div>
+        </div>
       )}
 
       {error && (
@@ -158,7 +205,9 @@ export default function DirectionsPanel({
       {routeOptions.length > 0 && (
         <div className="dir-route-list">
           <p className="hint tight md-typescale-body-small">
-            Tap a route below or click its line on the map.
+            {editMode
+              ? "Editing the selected route. Finish editing to compare other options."
+              : "Tap a route below or click its line on the map."}
           </p>
           {routeOptions.map((opt, index) => {
             const active = opt.id === selectedRouteId;
@@ -168,6 +217,7 @@ export default function DirectionsPanel({
                 type="button"
                 className={`dir-route-card ${active ? "is-active" : ""}`}
                 onClick={() => onSelectRoute(opt)}
+                disabled={editMode && !active ? true : undefined}
               >
                 {active && <span className="dir-route-bar" aria-hidden />}
                 <div className="dir-route-body">
