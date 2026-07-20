@@ -16,23 +16,23 @@ const DEFAULT_ZOOM = 13;
 
 function pinIcon(kind = "default", label = "") {
   const colors = {
-    default: "#f38ba8", // red
-    start: "#a6e3a1", // green
-    end: "#f38ba8", // red
-    stop: "#cba6f7", // mauve
-    search: "#89b4fa", // blue/sky
+    default: "#EA4335",
+    start: "#34A853",
+    end: "#EA4335",
+    stop: "#1A73E8",
+    search: "#1A73E8",
   };
   const color = colors[kind] || colors.default;
   const badge =
     label !== ""
-      ? `<span style="position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#11111b;color:#cdd6f4;font:700 10px/16px 'Plus Jakarta Sans',sans-serif;text-align:center">${label}</span>`
+      ? `<span style="position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#202124;color:#fff;font:700 10px/16px Roboto,sans-serif;text-align:center">${label}</span>`
       : "";
   return L.divIcon({
     className: "atlas-pin",
     html: `<div style="position:relative;width:28px;height:36px">
       <svg viewBox="0 0 28 36" width="28" height="36">
         <path d="M14 0C6.3 0 0 6.1 0 13.6 0 23.5 14 36 14 36s14-12.5 14-22.4C28 6.1 21.7 0 14 0z" fill="${color}"/>
-        <circle cx="14" cy="13" r="5.5" fill="#1e1e2e"/>
+        <circle cx="14" cy="13" r="5.5" fill="#fff"/>
       </svg>${badge}
     </div>`,
     iconSize: [28, 36],
@@ -78,7 +78,7 @@ function FitBounds({ positions, version }) {
       return;
     }
     const bounds = L.latLngBounds(positions);
-    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15, animate: true });
+    map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15, animate: true });
   }, [map, positions, version]);
   return null;
 }
@@ -102,6 +102,21 @@ function LocateControl({ onLocate }) {
   return null;
 }
 
+/** Keep Leaflet in sync if the container size ever changes. */
+function InvalidateOnResize() {
+  const map = useMap();
+  useEffect(() => {
+    const node = map.getContainer();
+    const ro = new ResizeObserver(() => {
+      map.invalidateSize({ animate: false });
+    });
+    ro.observe(node);
+    map.invalidateSize({ animate: false });
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
+
 export default function MapView({
   mode,
   layer,
@@ -115,18 +130,24 @@ export default function MapView({
   onContextMenu,
   onWaypointDrag,
   onLocateReady,
+  onMarkerClick,
 }) {
-  const routeLine =
+  const selectedGeometry =
     mode === "directions"
       ? directions?.geometry
       : mode === "create"
         ? createRoute?.geometry
         : null;
 
+  const altGeometries =
+    mode === "directions"
+      ? directions?.alternatives || []
+      : mode === "create"
+        ? createRoute?.alternatives || []
+        : [];
+
   const fitPositions = (() => {
-    if (mode === "directions" && directions?.geometry?.length) {
-      return directions.geometry;
-    }
+    if (selectedGeometry?.length) return selectedGeometry;
     if (mode === "create" && createRoute?.waypoints?.length) {
       return createRoute.waypoints.map((w) => [w.lat, w.lng]);
     }
@@ -142,6 +163,7 @@ export default function MapView({
       className="map-root"
     >
       <ZoomControl position="bottomright" />
+      <InvalidateOnResize />
       {layer === "satellite" ? (
         <TileLayer
           attribution="Tiles &copy; Esri"
@@ -170,11 +192,11 @@ export default function MapView({
             center={[userLocation.lat, userLocation.lng]}
             radius={Math.max(userLocation.accuracy || 40, 25)}
             pathOptions={{
-              color: "#89b4fa",
+              color: "#1A73E8",
               weight: 1,
-              fillColor: "#89b4fa",
-              fillOpacity: 0.14,
-              opacity: 0.4,
+              fillColor: "#1A73E8",
+              fillOpacity: 0.12,
+              opacity: 0.35,
             }}
           />
           <Marker
@@ -190,21 +212,34 @@ export default function MapView({
         <Marker
           position={[searchMarker.lat, searchMarker.lng]}
           icon={pinIcon("search")}
+          eventHandlers={{
+            click: () => onMarkerClick?.(searchMarker),
+          }}
         />
       )}
 
-      {mode === "directions" && directions?.from && !directions.from.isCurrentLocation && (
-        <Marker
-          position={[directions.from.lat, directions.from.lng]}
-          icon={pinIcon("start", "A")}
-        />
-      )}
-      {mode === "directions" && directions?.to && !directions.to.isCurrentLocation && (
-        <Marker
-          position={[directions.to.lat, directions.to.lng]}
-          icon={pinIcon("end", "B")}
-        />
-      )}
+      {mode === "directions" &&
+        directions?.from &&
+        !directions.from.isCurrentLocation && (
+          <Marker
+            position={[directions.from.lat, directions.from.lng]}
+            icon={pinIcon("start", "A")}
+            eventHandlers={{
+              click: () => onMarkerClick?.(directions.from),
+            }}
+          />
+        )}
+      {mode === "directions" &&
+        directions?.to &&
+        !directions.to.isCurrentLocation && (
+          <Marker
+            position={[directions.to.lat, directions.to.lng]}
+            icon={pinIcon("end", "B")}
+            eventHandlers={{
+              click: () => onMarkerClick?.(directions.to),
+            }}
+          />
+        )}
 
       {mode === "create" &&
         createRoute?.waypoints?.map((wp, i) => {
@@ -223,6 +258,7 @@ export default function MapView({
               icon={pinIcon(kind, String(i + 1))}
               draggable
               eventHandlers={{
+                click: () => onMarkerClick?.(wp),
                 dragend: (e) => {
                   const { lat, lng } = e.target.getLatLng();
                   onWaypointDrag?.(i, lat, lng);
@@ -232,13 +268,29 @@ export default function MapView({
           );
         })}
 
-      {routeLine?.length > 1 && (
+      {altGeometries.map((geom) =>
+        geom?.length > 1 ? (
+          <Polyline
+            key={`alt-${geom[0]}-${geom.length}`}
+            positions={geom}
+            pathOptions={{
+              color: "#90CAF9",
+              weight: 4,
+              opacity: 0.55,
+              lineJoin: "round",
+              lineCap: "round",
+            }}
+          />
+        ) : null,
+      )}
+
+      {selectedGeometry?.length > 1 && (
         <Polyline
-          positions={routeLine}
+          positions={selectedGeometry}
           pathOptions={{
-            color: mode === "create" ? "#cba6f7" : "#89b4fa",
-            weight: 5,
-            opacity: 0.92,
+            color: "#1A73E8",
+            weight: 6,
+            opacity: 0.95,
             lineJoin: "round",
             lineCap: "round",
           }}

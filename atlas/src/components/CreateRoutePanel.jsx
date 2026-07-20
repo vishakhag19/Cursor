@@ -2,7 +2,8 @@ import { useState } from "react";
 import SuggestInput from "./SuggestInput";
 import MdTextField from "./MdTextField";
 import MdCheckbox from "./MdCheckbox";
-import { formatDistance, formatDuration, placeLabel } from "../utils/format";
+import RouteOptionsList from "./RouteOptionsList";
+import { formatDistance, placeLabel } from "../utils/format";
 
 const MODES = [
   { id: "driving", label: "Drive", icon: "directions_car" },
@@ -18,6 +19,13 @@ export default function CreateRoutePanel({
   onTravelMode,
   snapToRoads,
   onSnapToRoads,
+  prefer,
+  onPrefer,
+  routeOptions,
+  selectedRouteId,
+  onSelectRoute,
+  routeLocked,
+  onToggleLock,
   summary,
   loading,
   error,
@@ -39,7 +47,9 @@ export default function CreateRoutePanel({
   return (
     <section className="mode-panel create-panel">
       <p className="hint tight md-typescale-body-medium">
-        Click the map to add stops, or start from your current location.
+        Add stops in the order you want to visit them. Atlas builds Fastest and
+        Shortest options through <em>your</em> stops — it won’t redirect unless
+        you pick another option.
       </p>
 
       <MdTextField
@@ -51,11 +61,7 @@ export default function CreateRoutePanel({
         maxLength={80}
       />
 
-      <md-chip-set
-        class="travel-chips"
-        role="group"
-        aria-label="Travel mode"
-      >
+      <md-chip-set class="travel-chips" role="group" aria-label="Travel mode">
         {MODES.map((m) => (
           <md-filter-chip
             key={m.id}
@@ -68,13 +74,30 @@ export default function CreateRoutePanel({
         ))}
       </md-chip-set>
 
+      <md-chip-set class="travel-chips" role="group" aria-label="Optimize for">
+        <md-filter-chip
+          label="Prefer shortest"
+          selected={prefer === "distance" || undefined}
+          onClick={() => onPrefer("distance")}
+        >
+          <md-icon slot="icon">straighten</md-icon>
+        </md-filter-chip>
+        <md-filter-chip
+          label="Prefer fastest"
+          selected={prefer === "time" || undefined}
+          onClick={() => onPrefer("time")}
+        >
+          <md-icon slot="icon">speed</md-icon>
+        </md-filter-chip>
+      </md-chip-set>
+
       <label className="toggle-row md-typescale-body-medium">
         <MdCheckbox
           checked={snapToRoads}
           onChange={onSnapToRoads}
           aria-label="Snap to roads"
         />
-        <span>Snap to roads</span>
+        <span>Snap to roads (off = straight lines between your pins)</span>
       </label>
 
       <SuggestInput
@@ -106,12 +129,15 @@ export default function CreateRoutePanel({
       <md-list class="waypoint-list">
         {waypoints.map((wp, i) => (
           <md-list-item key={wp.id}>
-            <div slot="start" className={`wp-badge ${i === 0 ? "start" : i === waypoints.length - 1 ? "end" : ""}`}>
+            <div
+              slot="start"
+              className={`wp-badge ${i === 0 ? "start" : i === waypoints.length - 1 ? "end" : ""}`}
+            >
               {i + 1}
             </div>
             <div slot="headline">{placeLabel(wp)}</div>
             <div slot="supporting-text">
-              {wp.isCurrentLocation ? "Live GPS" : wp.display_name || ""}
+              {wp.isCurrentLocation ? "Your location (pinned)" : wp.display_name || ""}
             </div>
             <div slot="end" className="wp-actions">
               <md-icon-button
@@ -148,7 +174,7 @@ export default function CreateRoutePanel({
           onClick={onBuild}
           disabled={waypoints.length < 2 || loading || undefined}
         >
-          {loading ? "Building…" : "Build route"}
+          {loading ? "Building…" : "Build route options"}
         </md-filled-button>
         <md-filled-tonal-button
           type="button"
@@ -179,16 +205,19 @@ export default function CreateRoutePanel({
         </p>
       )}
 
-      {summary && (
+      <RouteOptionsList
+        options={routeOptions}
+        selectedId={selectedRouteId}
+        onSelect={onSelectRoute}
+        locked={routeLocked}
+        onToggleLock={onToggleLock}
+      />
+
+      {summary && !routeOptions.length && (
         <div className="route-summary m3-card tonal">
           <strong className="md-typescale-title-medium">
-            {formatDuration(summary.duration)} ·{" "}
             {formatDistance(summary.distance)}
           </strong>
-          <span className="md-typescale-body-small">
-            {snapToRoads ? "Snapped to roads" : "Straight-line path"} ·{" "}
-            {travelMode}
-          </span>
         </div>
       )}
 
@@ -202,7 +231,11 @@ export default function CreateRoutePanel({
         ) : (
           <md-list class="saved-list">
             {savedRoutes.map((r) => (
-              <md-list-item key={r.id} type="button" onClick={() => onLoadSaved(r)}>
+              <md-list-item
+                key={r.id}
+                type="button"
+                onClick={() => onLoadSaved(r)}
+              >
                 <md-icon slot="start">route</md-icon>
                 <div slot="headline">{r.name}</div>
                 <div slot="supporting-text">

@@ -1,31 +1,44 @@
-/* Atlas layout — Material Design 3 surfaces & elevation */
+/* Atlas layout — Material Design 3 surfaces & elevation
+   Panel overlays the map (Google Maps–style) so collapsing never blanks tiles. */
 
 .app {
-  display: grid;
-  grid-template-columns: var(--atlas-panel-width) 1fr;
+  position: relative;
   height: 100%;
   min-height: 100dvh;
   background: var(--md-sys-color-surface);
+  overflow: hidden;
 }
 
-.app.panel-collapsed {
-  grid-template-columns: 0 1fr;
+.map-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 .panel {
-  position: relative;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  width: var(--atlas-panel-width);
   z-index: 5;
   display: flex;
   flex-direction: column;
   min-width: 0;
   background: var(--md-sys-color-surface-container-low);
-  border-right: 1px solid var(--md-sys-color-outline-variant);
-  box-shadow: var(--atlas-elevation-1);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  box-shadow: var(--atlas-elevation-2);
   overflow: hidden;
+  transition: transform 0.22s ease, opacity 0.22s ease;
 }
 
-.panel-collapsed .panel {
-  display: none;
+.app.panel-collapsed .panel {
+  transform: translateX(calc(-100% - 24px));
+  opacity: 0;
+  pointer-events: none;
 }
 
 .panel-header {
@@ -132,8 +145,99 @@ md-list.suggestions {
   --md-elevation-level: 1;
 }
 
-.place-card h2 {
-  margin: 0 0 6px;
+.place-details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.place-details-header h2 {
+  margin: 0;
+}
+
+.place-type {
+  margin: 4px 0 0;
+  color: var(--md-sys-color-primary);
+  text-transform: capitalize;
+}
+
+.place-address {
+  margin: 10px 0 4px;
+  color: var(--md-sys-color-on-surface-variant);
+  line-height: 1.4;
+}
+
+.place-coords {
+  margin: 0 0 8px;
+  color: var(--md-sys-color-outline);
+}
+
+.place-facts {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.place-facts a {
+  color: var(--md-sys-color-primary);
+}
+
+.route-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.route-options-header h3 {
+  margin: 0;
+}
+
+.route-option-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-option-card {
+  text-align: left;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-lowest);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: 12px 14px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.route-option-card:hover {
+  border-color: var(--md-sys-color-primary);
+}
+
+.route-option-card.is-active {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.route-option-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.route-check {
+  color: var(--md-sys-color-primary);
+  --md-icon-size: 20px;
 }
 
 .place-meta {
@@ -274,7 +378,9 @@ md-list.suggestions {
 }
 
 .map-stage {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   min-width: 0;
   min-height: 0;
 }
@@ -421,20 +527,18 @@ md-text-button {
 }
 
 @media (max-width: 800px) {
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(42vh, auto) 1fr;
-  }
-
-  .app.panel-collapsed {
-    grid-template-columns: 1fr;
-    grid-template-rows: 0 1fr;
-  }
-
   .panel {
-    border-right: none;
-    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    width: auto;
     max-height: 48vh;
+    border-radius: 0 0 var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large);
+  }
+
+  .app.panel-collapsed .panel {
+    transform: translateY(calc(-100% - 12px));
   }
 
   .map-controls {
@@ -444,5 +548,10 @@ md-text-button {
 
   .map-status {
     bottom: 96px;
+  }
+
+  .expand-panel {
+    top: 12px;
+    left: 12px;
   }
 }

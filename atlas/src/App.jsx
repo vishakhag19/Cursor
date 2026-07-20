@@ -6,7 +6,7 @@ import CreateRoutePanel from "./components/CreateRoutePanel";
 import ContextMenu from "./components/ContextMenu";
 import MdTabs from "./components/MdTabs";
 import { reverseGeocode } from "./api/geocode";
-import { fetchRoute, straightLineRoute } from "./api/routing";
+import { fetchRouteOptions, buildCustomRouteOptions } from "./api/routing";
 import { placeLabel } from "./utils/format";
 import { loadSavedRoutes, persistSavedRoutes } from "./utils/storage";
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
@@ -38,6 +38,10 @@ export default function App() {
   const [dirTo, setDirTo] = useState(null);
   const [dirSummary, setDirSummary] = useState(null);
   const [dirGeometry, setDirGeometry] = useState(null);
+  const [dirOptions, setDirOptions] = useState([]);
+  const [dirSelectedId, setDirSelectedId] = useState(null);
+  const [dirLocked, setDirLocked] = useState(false);
+  const [dirPrefer, setDirPrefer] = useState("time");
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
 
@@ -45,8 +49,12 @@ export default function App() {
   const [waypoints, setWaypoints] = useState([]);
   const [travelMode, setTravelMode] = useState("driving");
   const [snapToRoads, setSnapToRoads] = useState(true);
+  const [createPrefer, setCreatePrefer] = useState("distance");
   const [createSummary, setCreateSummary] = useState(null);
   const [createGeometry, setCreateGeometry] = useState(null);
+  const [createOptions, setCreateOptions] = useState([]);
+  const [createSelectedId, setCreateSelectedId] = useState(null);
+  const [createLocked, setCreateLocked] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
@@ -100,9 +108,11 @@ export default function App() {
     setFromText(place.name);
   }, [userLocation]);
 
-  // Keep live "Your location" points in sync as GPS updates.
+  // Keep live "Your location" points in sync — but never while a route is locked
+  // (avoids mid-trip redirects against the user's will).
   useEffect(() => {
     if (!userLocation) return;
+    if (dirLocked || createLocked) return;
     const place = toCurrentLocationPlace(userLocation);
 
     setDirFrom((prev) => (prev?.isCurrentLocation ? { ...place } : prev));
@@ -121,12 +131,39 @@ export default function App() {
       });
       return changed ? next : prev;
     });
-  }, [userLocation]);
+  }, [userLocation, dirLocked, createLocked]);
 
   const invalidateCreateRoute = useCallback(() => {
     setCreateSummary(null);
     setCreateGeometry(null);
     setCreateError(null);
+    setCreateOptions([]);
+    setCreateSelectedId(null);
+    setCreateLocked(false);
+  }, []);
+
+  const clearDirRoute = useCallback(() => {
+    setDirSummary(null);
+    setDirGeometry(null);
+    setDirOptions([]);
+    setDirSelectedId(null);
+    setDirLocked(false);
+    setDirError(null);
+  }, []);
+
+  const applySelectedRoute = useCallback((opt, kind) => {
+    if (!opt) return;
+    if (kind === "directions") {
+      setDirSelectedId(opt.id);
+      setDirGeometry(opt.geometry);
+      setDirSummary({ distance: opt.distance, duration: opt.duration });
+      setFitKey((k) => k + 1);
+    } else {
+      setCreateSelectedId(opt.id);
+      setCreateGeometry(opt.geometry);
+      setCreateSummary({ distance: opt.distance, duration: opt.duration });
+      setFitKey((k) => k + 1);
+    }
   }, []);
 
   const selectExplorePlace = useCallback(
@@ -140,30 +177,32 @@ export default function App() {
   );
 
   const runDirections = useCallback(
-    async (from = dirFrom, to = dirTo) => {
+    async (from = dirFrom, to = dirTo, prefer = dirPrefer) => {
       if (!from || !to) {
         setDirError("Choose a start and destination");
         return;
       }
       setDirLoading(true);
       setDirError(null);
-      showStatus("Finding the best route…", 0);
+      showStatus("Finding route options…", 0);
       try {
-        const route = await fetchRoute([from, to], "driving");
-        setDirGeometry(route.geometry);
-        setDirSummary({ distance: route.distance, duration: route.duration });
-        setFitKey((k) => k + 1);
-        showStatus("Route ready");
+        const options = await fetchRouteOptions([from, to], "driving", {
+          alternatives: true,
+          prefer,
+        });
+        setDirOptions(options);
+        applySelectedRoute(options[0], "directions");
+        setDirLocked(true);
+        showStatus(`${options.length} route option${options.length === 1 ? "" : "s"} ready — pick one`);
       } catch (err) {
-        setDirGeometry(null);
-        setDirSummary(null);
+        clearDirRoute();
         setDirError(err.message || "Could not find a route");
         showStatus(err.message || "Could not find a route");
       } finally {
         setDirLoading(false);
       }
     },
-    [dirFrom, dirTo, showStatus],
+    [dirFrom, dirTo, dirPrefer, showStatus, applySelectedRoute, clearDirRoute],
   );
 
   const buildCustomRoute = useCallback(
@@ -174,23 +213,18 @@ export default function App() {
       }
       setCreateLoading(true);
       setCreateError(null);
-      showStatus("Building your route…", 0);
+      showStatus("Building your route options…", 0);
       try {
-        let route;
-        if (snapToRoads) {
-          try {
-            route = await fetchRoute(wps, travelMode);
-          } catch {
-            route = straightLineRoute(wps);
-            showStatus("Road snap unavailable — using straight lines");
-          }
-        } else {
-          route = straightLineRoute(wps);
-        }
-        setCreateGeometry(route.geometry);
-        setCreateSummary({ distance: route.distance, duration: route.duration });
-        setFitKey((k) => k + 1);
-        showStatus("Custom route ready");
+        const options = await buildCustomRouteOptions(wps, travelMode, {
+          prefer: createPrefer,
+          snapToRoads,
+        });
+        setCreateOptions(options);
+        applySelectedRoute(options[0], "create");
+        setCreateLocked(true);
+        showStatus(
+          `${options.length} custom option${options.length === 1 ? "" : "s"} — locked until you change it`,
+        );
       } catch (err) {
         setCreateError(err.message || "Could not build route");
         showStatus(err.message || "Could not build route");
@@ -198,7 +232,7 @@ export default function App() {
         setCreateLoading(false);
       }
     },
-    [waypoints, snapToRoads, travelMode, showStatus],
+    [waypoints, snapToRoads, travelMode, createPrefer, showStatus, applySelectedRoute],
   );
 
   const addWaypoint = useCallback(
@@ -239,14 +273,13 @@ export default function App() {
       if (!place) throw new Error("no location");
       setDirFrom(place);
       setFromText(place.name);
-      setDirSummary(null);
-      setDirGeometry(null);
+      clearDirRoute();
       setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 15 });
       showStatus("Starting from your location");
     } catch {
       showStatus(geoError || "Could not get your location");
     }
-  }, [userLocation, refreshLocation, geoError, showStatus]);
+  }, [userLocation, refreshLocation, geoError, showStatus, clearDirRoute]);
 
   const endAtMyLocation = useCallback(async () => {
     try {
@@ -255,13 +288,12 @@ export default function App() {
       if (!place) throw new Error("no location");
       setDirTo(place);
       setToText(place.name);
-      setDirSummary(null);
-      setDirGeometry(null);
+      clearDirRoute();
       showStatus("Destination set to your location");
     } catch {
       showStatus(geoError || "Could not get your location");
     }
-  }, [userLocation, refreshLocation, geoError, showStatus]);
+  }, [userLocation, refreshLocation, geoError, showStatus, clearDirRoute]);
 
   const addCurrentLocationStop = useCallback(async () => {
     try {
@@ -279,6 +311,7 @@ export default function App() {
     async (latlng) => {
       setCtx(null);
       if (mode === "explore") {
+        setPanelOpen(true);
         try {
           const place = await reverseGeocode(latlng.lat, latlng.lng);
           setSearchMarker(place);
@@ -298,10 +331,14 @@ export default function App() {
         return;
       }
       if (mode === "create") {
+        if (createLocked) {
+          showStatus("Route is locked — unlock it to edit stops");
+          return;
+        }
         await addWaypoint(latlng.lat, latlng.lng);
       }
     },
-    [mode, addWaypoint, showStatus],
+    [mode, addWaypoint, showStatus, createLocked],
   );
 
   const handleWaypointDrag = useCallback(
@@ -369,8 +406,23 @@ export default function App() {
       setTravelMode(route.travelMode || "driving");
       setSnapToRoads(route.snapToRoads !== false);
       setCreateError(null);
+      setCreateOptions(
+        route.geometry
+          ? [
+              {
+                id: route.id || "saved",
+                label: route.name || "Saved route",
+                distance: route.stats?.distance,
+                duration: route.stats?.duration,
+                geometry: route.geometry,
+              },
+            ]
+          : [],
+      );
+      setCreateSelectedId(route.id || "saved");
+      setCreateLocked(true);
       setFitKey((k) => k + 1);
-      showStatus(`Loaded “${route.name}”`);
+      showStatus(`Loaded “${route.name}” (locked)`);
     },
     [showStatus],
   );
@@ -535,8 +587,7 @@ export default function App() {
               if (!p.isCurrentLocation) {
                 setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
               }
-              setDirSummary(null);
-              setDirGeometry(null);
+              clearDirRoute();
             }}
             onToSelect={(p) => {
               setDirTo(p);
@@ -544,16 +595,14 @@ export default function App() {
               if (!p.isCurrentLocation) {
                 setFlyTarget({ lat: p.lat, lng: p.lng, zoom: 13 });
               }
-              setDirSummary(null);
-              setDirGeometry(null);
+              clearDirRoute();
             }}
             onSwap={() => {
               setDirFrom(dirTo);
               setDirTo(dirFrom);
               setFromText(toText);
               setToText(fromText);
-              setDirSummary(null);
-              setDirGeometry(null);
+              clearDirRoute();
             }}
             onSubmit={() => runDirections()}
             onClear={() => {
@@ -561,14 +610,26 @@ export default function App() {
               setToText("");
               setDirFrom(null);
               setDirTo(null);
-              setDirSummary(null);
-              setDirGeometry(null);
-              setDirError(null);
+              clearDirRoute();
             }}
             onUseCurrentFrom={startFromMyLocation}
             onUseCurrentTo={endAtMyLocation}
             currentLocation={userLocation}
             geoStatus={geoStatus}
+            prefer={dirPrefer}
+            onPrefer={(p) => {
+              setDirPrefer(p);
+              clearDirRoute();
+            }}
+            routeOptions={dirOptions}
+            selectedRouteId={dirSelectedId}
+            onSelectRoute={(opt) => {
+              applySelectedRoute(opt, "directions");
+              setDirLocked(true);
+              showStatus(`Using ${opt.label}`);
+            }}
+            routeLocked={dirLocked}
+            onToggleLock={() => setDirLocked((v) => !v)}
             summary={dirSummary}
             loading={dirLoading}
             error={dirError}
@@ -590,6 +651,20 @@ export default function App() {
               setSnapToRoads(v);
               invalidateCreateRoute();
             }}
+            prefer={createPrefer}
+            onPrefer={(p) => {
+              setCreatePrefer(p);
+              invalidateCreateRoute();
+            }}
+            routeOptions={createOptions}
+            selectedRouteId={createSelectedId}
+            onSelectRoute={(opt) => {
+              applySelectedRoute(opt, "create");
+              setCreateLocked(true);
+              showStatus(`Using ${opt.label}`);
+            }}
+            routeLocked={createLocked}
+            onToggleLock={() => setCreateLocked((v) => !v)}
             summary={createSummary}
             loading={createLoading}
             error={createError}
@@ -616,10 +691,8 @@ export default function App() {
             }}
             onClear={() => {
               setWaypoints([]);
-              setCreateGeometry(null);
-              setCreateSummary(null);
-              setCreateError(null);
               setRouteName("");
+              invalidateCreateRoute();
             }}
             onBuild={() => buildCustomRoute()}
             onSave={saveRoute}
@@ -653,10 +726,16 @@ export default function App() {
             from: dirFrom,
             to: dirTo,
             geometry: dirGeometry,
+            alternatives: dirOptions
+              .filter((o) => o.id !== dirSelectedId)
+              .map((o) => o.geometry),
           }}
           createRoute={{
             waypoints,
             geometry: createGeometry,
+            alternatives: createOptions
+              .filter((o) => o.id !== createSelectedId)
+              .map((o) => o.geometry),
           }}
           flyTarget={flyTarget}
           fitKey={fitKey}
@@ -665,6 +744,13 @@ export default function App() {
           onWaypointDrag={handleWaypointDrag}
           onLocateReady={(fn) => {
             locateFn.current = fn;
+          }}
+          onMarkerClick={(place) => {
+            setMode("explore");
+            setPanelOpen(true);
+            setSearchMarker(place);
+            setExploreQuery(place.name || placeLabel(place));
+            setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 15 });
           }}
         />
 

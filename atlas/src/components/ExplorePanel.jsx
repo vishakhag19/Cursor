@@ -1,4 +1,5 @@
 import SuggestInput from "./SuggestInput";
+import PlaceDetailsCard from "./PlaceDetailsCard";
 
 export default function ExplorePanel({
   query,
@@ -35,29 +36,17 @@ export default function ExplorePanel({
       </div>
 
       {place ? (
-        <div className="place-card m3-card">
-          <md-elevation aria-hidden="true" />
-          <h2 className="md-typescale-title-large">{place.name}</h2>
-          <p className="md-typescale-body-medium place-meta">
-            {place.display_name}
-          </p>
-          <div className="place-actions">
-            <md-filled-button type="button" onClick={onDirectionsTo}>
-              <md-icon slot="icon">directions</md-icon>
-              Directions
-            </md-filled-button>
-            <md-outlined-button type="button" onClick={onDirectionsFrom}>
-              From here
-            </md-outlined-button>
-            <md-text-button type="button" onClick={onAddToRoute}>
-              Add to route
-            </md-text-button>
-          </div>
-        </div>
+        <PlaceDetailsCard
+          place={place}
+          onClose={onClear}
+          onDirectionsTo={onDirectionsTo}
+          onDirectionsFrom={onDirectionsFrom}
+          onAddToRoute={onAddToRoute}
+        />
       ) : (
         <p className="hint md-typescale-body-medium">
           Search for a place, allow location access to center on you, or click
-          the map to drop a pin.
+          the map to see place details for that pin.
         </p>
       )}
     </section>

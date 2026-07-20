@@ -1,4 +1,5 @@
 import SuggestInput from "./SuggestInput";
+import RouteOptionsList from "./RouteOptionsList";
 import { formatDistance, formatDuration } from "../utils/format";
 
 export default function DirectionsPanel({
@@ -15,6 +16,13 @@ export default function DirectionsPanel({
   onUseCurrentTo,
   currentLocation,
   geoStatus,
+  prefer,
+  onPrefer,
+  routeOptions,
+  selectedRouteId,
+  onSelectRoute,
+  routeLocked,
+  onToggleLock,
   summary,
   loading,
   error,
@@ -55,6 +63,23 @@ export default function DirectionsPanel({
             currentLocation={currentLocation}
           />
         </div>
+
+        <md-chip-set class="loc-chips" role="group" aria-label="Optimize for">
+          <md-filter-chip
+            label="Prefer fastest"
+            selected={prefer === "time" || undefined}
+            onClick={() => onPrefer("time")}
+          >
+            <md-icon slot="icon">speed</md-icon>
+          </md-filter-chip>
+          <md-filter-chip
+            label="Prefer shortest"
+            selected={prefer === "distance" || undefined}
+            onClick={() => onPrefer("distance")}
+          >
+            <md-icon slot="icon">straighten</md-icon>
+          </md-filter-chip>
+        </md-chip-set>
 
         <md-chip-set class="loc-chips">
           <md-assist-chip
@@ -104,22 +129,30 @@ export default function DirectionsPanel({
         </p>
       )}
 
-      {summary && (
+      <RouteOptionsList
+        options={routeOptions}
+        selectedId={selectedRouteId}
+        onSelect={onSelectRoute}
+        locked={routeLocked}
+        onToggleLock={onToggleLock}
+      />
+
+      {summary && !routeOptions.length && (
         <div className="route-summary m3-card tonal">
           <strong className="md-typescale-title-medium">
             {formatDuration(summary.duration)} ·{" "}
             {formatDistance(summary.distance)}
           </strong>
           <span className="md-typescale-body-small">
-            Fastest driving route via OpenStreetMap roads
+            Driving route via OpenStreetMap roads
           </span>
         </div>
       )}
 
-      {!summary && !error && (
+      {!summary && !error && !routeOptions.length && (
         <p className="hint md-typescale-body-medium">
-          Enter a start and destination, pick “Your location”, or right-click
-          the map.
+          Enter a start and destination. You’ll get Fastest / Shortest options
+          and can lock the one you choose.
         </p>
       )}
     </section>
