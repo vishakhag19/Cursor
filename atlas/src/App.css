@@ -698,7 +698,8 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-bar-field {
-  position: relative;
+  /* Don’t create a positioning context — dropdown should span .search-bar */
+  position: static;
   flex: 1;
   min-width: 0;
 }
@@ -807,8 +808,8 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-bar .suggest-spinner {
-  right: 8px;
-  /* Match the 40px field / search glyph column */
+  /* Anchored to .search-bar; clear of the trailing search/clear control */
+  right: 52px;
   top: 50%;
   translate: 0 -50%;
 }
