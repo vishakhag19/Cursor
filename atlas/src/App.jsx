@@ -92,8 +92,10 @@ export default function App() {
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
+  const [followingLocation, setFollowingLocation] = useState(false);
   const locateFn = useRef(null);
   const zoomFn = useRef(null);
+  const locateFlightRef = useRef(false);
   const editViasRef = useRef([]);
   const routeGeometryRef = useRef(null);
   const selectedRouteIdRef = useRef(null);
@@ -128,6 +130,8 @@ export default function App() {
   useEffect(() => {
     if (!userLocation) return;
     if (!takeCenteredOnce()) return;
+    locateFlightRef.current = true;
+    setFollowingLocation(true);
     setFlyTarget({
       lat: userLocation.lat,
       lng: userLocation.lng,
@@ -135,6 +139,16 @@ export default function App() {
     });
     showStatus("Centered on your location");
   }, [userLocation, takeCenteredOnce, showStatus]);
+
+  // Leaving the user via search / route fly clears the blue “following” state.
+  useEffect(() => {
+    if (!flyTarget) return;
+    if (locateFlightRef.current) {
+      locateFlightRef.current = false;
+      return;
+    }
+    setFollowingLocation(false);
+  }, [flyTarget]);
 
   // Sync "Your location" stop pins only when route is unlocked.
   useEffect(() => {
@@ -702,6 +716,9 @@ export default function App() {
   }, [editMode, selectedViaId, deleteVia]);
 
   const goToMyLocation = useCallback(async () => {
+    locateFlightRef.current = true;
+    setFollowingLocation(true);
+
     // If we already have a fix (browser / magic base location), recenter now.
     if (userLocation?.lat != null && userLocation?.lng != null) {
       locateFn.current?.([userLocation.lat, userLocation.lng], 16);
@@ -712,6 +729,7 @@ export default function App() {
     try {
       const loc = await refreshLocation();
       if (loc?.lat != null && loc?.lng != null) {
+        locateFlightRef.current = true;
         locateFn.current?.([loc.lat, loc.lng], 16);
         showStatus("Centered on your location");
         return;
@@ -719,10 +737,12 @@ export default function App() {
       throw new Error("no location");
     } catch {
       if (userLocation?.lat != null && userLocation?.lng != null) {
+        locateFlightRef.current = true;
         locateFn.current?.([userLocation.lat, userLocation.lng], 16);
         showStatus("Centered on your location");
         return;
       }
+      setFollowingLocation(false);
       showStatus(geoError || "Could not get your location");
     }
   }, [refreshLocation, geoError, showStatus, userLocation]);
@@ -1082,6 +1102,7 @@ export default function App() {
           onZoomReady={(api) => {
             zoomFn.current = api;
           }}
+          onUserDrag={() => setFollowingLocation(false)}
           onMarkerClick={(place) => {
             setView("search");
             setPanelOpen(true);
@@ -1117,9 +1138,10 @@ export default function App() {
             </button>
             <button
               type="button"
-              className={`map-ctrl-btn locate-btn ${geoStatus === "ready" ? "is-located" : ""}`}
+              className={`map-ctrl-btn locate-btn ${followingLocation ? "is-located" : ""}`}
               aria-label="My location"
               title="My location"
+              aria-pressed={followingLocation ? "true" : "false"}
               onClick={goToMyLocation}
             >
               <md-icon>my_location</md-icon>

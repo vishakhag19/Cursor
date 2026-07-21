@@ -164,6 +164,20 @@ function LocateControl({ onLocate }) {
   return null;
 }
 
+/** Clear “following location” when the user pans the map. */
+function MapDragBridge({ onUserDrag }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!onUserDrag) return undefined;
+    const handle = () => onUserDrag();
+    map.on("dragstart", handle);
+    return () => {
+      map.off("dragstart", handle);
+    };
+  }, [map, onUserDrag]);
+  return null;
+}
+
 /** Expose zoomIn / zoomOut so App can render a unified control stack. */
 function ZoomBridge({ onReady }) {
   const map = useMap();
@@ -235,6 +249,7 @@ export default function MapView({
   onWaypointDrag,
   onLocateReady,
   onZoomReady,
+  onUserDrag,
   onMarkerClick,
   routeOptions = [],
   selectedRouteId = null,
@@ -305,6 +320,7 @@ export default function MapView({
       <FlyTo target={flyTarget} />
       <LocateControl onLocate={onLocateReady} />
       <ZoomBridge onReady={onZoomReady} />
+      <MapDragBridge onUserDrag={onUserDrag} />
 
       {userLocation && (
         <>
