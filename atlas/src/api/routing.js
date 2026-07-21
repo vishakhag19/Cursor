@@ -155,33 +155,98 @@ export async function fetchSingleRoute(coords, travelMode = "driving") {
   }
   const profile = profileOf(travelMode);
   const path = coords.map((c) => `${c.lng},${c.lat}`).join(";");
-  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=false`;
+  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${coords.length === 2 ? "true" : "false"}&continue_straight=false`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("Routing service unavailable");
   const data = await res.json();
   if (data.code !== "Ok" || !data.routes?.[0]) {
     throw new Error(data.message || "No route found");
   }
-  return normalizeRoute(data.routes[0], "edit");
+  // Prefer the shortest distance among any alternatives returned.
+  const ranked = [...data.routes].sort(
+    (a, b) => a.distance - b.distance || a.duration - b.duration,
+  );
+  return normalizeRoute(ranked[0], "edit");
 }
 
 /**
  * Rebuild a route through origin → vias… → destination.
- * Used after drag commits and for live preview.
+ * Snaps every point to the road network (unless skipSnap), then picks the
+ * shortest OSRM path that visits the vias in order.
  */
 export async function rebuildEditedRoute(
   origin,
   vias,
   destination,
   travelMode = "driving",
+  { skipSnap = false } = {},
 ) {
-  const coords = [origin, ...(vias || []), destination].filter(Boolean);
-  return fetchSingleRoute(coords, travelMode);
+  const raw = [origin, ...(vias || []), destination].filter(Boolean);
+  if (raw.length < 2) throw new Error("Need at least two points");
+
+  let snapped = raw.map((p) => ({
+    lat: p.lat,
+    lng: p.lng,
+    name: p.name,
+  }));
+
+  if (!skipSnap) {
+    const next = [];
+    for (const p of snapped) {
+      try {
+        const s = await nearestRoadPoint(p.lat, p.lng, travelMode);
+        next.push({ lat: s.lat, lng: s.lng, name: p.name || s.name });
+      } catch {
+        next.push(p);
+      }
+    }
+    snapped = next;
+  }
+
+  // Ask OSRM for the best path through the waypoint sequence, then also
+  // try a couple of exclude variants and keep the shortest.
+  const candidates = [];
+  const pushBest = async (extra = "") => {
+    const profile = profileOf(travelMode);
+    const path = snapped.map((c) => `${c.lng},${c.lat}`).join(";");
+    const alt = snapped.length === 2 ? "true" : "false";
+    const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${alt}&continue_straight=false${extra}`;
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.code !== "Ok" || !data.routes?.length) return;
+    data.routes.forEach((r, i) => {
+      candidates.push(normalizeRoute(r, `edit-${extra || "base"}-${i}`));
+    });
+  };
+
+  await pushBest("");
+  if (!skipSnap && candidates.length < 2) {
+    try {
+      await pushBest("&exclude=motorway");
+    } catch {
+      /* optional */
+    }
+  }
+
+  if (!candidates.length) {
+    return fetchSingleRoute(snapped, travelMode);
+  }
+
+  candidates.sort(
+    (a, b) => a.distance - b.distance || a.duration - b.duration,
+  );
+  return {
+    ...candidates[0],
+    label:
+      (vias || []).length > 0
+        ? `Custom · ${(vias || []).length} via point${(vias || []).length === 1 ? "" : "s"}`
+        : candidates[0].label,
+  };
 }
 
 /**
- * Return up to `limit` shortest driving/walking/cycling options between stops.
- * Always ranked by distance (shortest first).
+ * Return up to `limit` shortest + fastest options between stops.
  */
 export async function fetchShortestRoutes(
   coords,
@@ -197,7 +262,7 @@ export async function fetchShortestRoutes(
   const altCount = coords.length === 2 ? Math.min(limit - 1, 3) : false;
   const altParam = altCount === false ? "false" : String(Math.max(altCount, 1));
 
-  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${altParam}`;
+  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${altParam}&continue_straight=false`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(
@@ -212,22 +277,21 @@ export async function fetchShortestRoutes(
   let routes = data.routes.map((r, i) => normalizeRoute(r, i));
 
   if (coords.length === 2 && routes.length < limit) {
-    try {
-      const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&exclude=motorway`;
-      const localRes = await fetch(localUrl);
-      if (localRes.ok) {
+    for (const exclude of ["motorway", "toll", "ferry"]) {
+      if (routes.length >= limit) break;
+      try {
+        const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&continue_straight=false&exclude=${exclude}`;
+        const localRes = await fetch(localUrl);
+        if (!localRes.ok) continue;
         const localData = await localRes.json();
         if (localData.code === "Ok" && localData.routes?.length) {
           localData.routes.forEach((r, i) => {
-            routes.push({
-              ...normalizeRoute(r, `local-${i}`),
-              label: viaLabel(r),
-            });
+            routes.push(normalizeRoute(r, `${exclude}-${i}`));
           });
         }
+      } catch {
+        /* optional enrichment */
       }
-    } catch {
-      /* optional enrichment */
     }
   }
 
@@ -244,7 +308,7 @@ export async function fetchShortestRoutes(
     }
   }
 
-  return rankShortest(routes).slice(0, limit);
+  return rankShortestAndFastest(routes, limit);
 }
 
 async function routeLegByLegShortest(coords, travelMode) {
@@ -284,23 +348,52 @@ async function routeLegByLegShortest(coords, travelMode) {
   };
 }
 
-function rankShortest(routes) {
-  const sorted = [...routes].sort(
+function routeKey(r) {
+  return `${Math.round(r.distance / 25)}:${Math.round(r.duration / 15)}`;
+}
+
+/** Prefer a mix of shortest-distance and fastest-time options, up to `limit`. */
+function rankShortestAndFastest(routes, limit = 5) {
+  const byDistance = [...routes].sort(
     (a, b) => a.distance - b.distance || a.duration - b.duration,
   );
+  const byDuration = [...routes].sort(
+    (a, b) => a.duration - b.duration || a.distance - b.distance,
+  );
+  const byBalanced = [...routes].sort((a, b) => {
+    const sa = a.duration + a.distance / 14;
+    const sb = b.duration + b.distance / 14;
+    return sa - sb;
+  });
+
   const seen = new Set();
-  const unique = [];
-  for (const r of sorted) {
-    const key = `${Math.round(r.distance / 20)}:${Math.round(r.duration / 10)}`;
-    if (seen.has(key)) continue;
+  const out = [];
+
+  function take(r, badge) {
+    if (!r || out.length >= limit) return;
+    const key = routeKey(r);
+    if (seen.has(key)) return;
     seen.add(key);
-    unique.push(r);
+    out.push({ ...r, badge: badge || null });
   }
-  return unique.map((r, i) => ({
-    ...r,
-    rank: i + 1,
-    badge: i === 0 ? "Shortest route" : null,
-  }));
+
+  const shortest = byDistance[0];
+  const fastest = byDuration[0];
+  if (shortest && fastest && routeKey(shortest) === routeKey(fastest)) {
+    take(shortest, "Shortest & fastest");
+  } else {
+    take(shortest, "Shortest route");
+    take(fastest, "Fastest route");
+  }
+
+  for (const r of byBalanced) take(r, null);
+  for (const r of byDistance) take(r, null);
+
+  return out.slice(0, limit).map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+function rankShortest(routes) {
+  return rankShortestAndFastest(routes, routes.length);
 }
 
 export async function fetchRouteOptions(coords, travelMode = "driving") {

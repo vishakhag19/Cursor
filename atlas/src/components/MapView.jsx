@@ -139,15 +139,19 @@ export default function MapView({
   onMarkerClick,
   routeOptions = [],
   selectedRouteId = null,
+  hiddenRouteIds = null,
   onSelectRoute,
   editMode = false,
   editOrigin = null,
   editDestination = null,
   editVias = [],
   editTravelMode = "driving",
+  selectedViaId = null,
+  onSelectVia,
   onEditPreview,
   onCommitVia,
   onMoveVia,
+  onDeleteVia,
   onEditError,
 }) {
   const selectedGeometry =
@@ -303,6 +307,8 @@ export default function MapView({
         const active = opt.id === selectedRouteId;
         // While editing, hide alternate routes so the drag target is clear.
         if (editMode && !active) return null;
+        // User toggles can hide non-active alternatives on the map.
+        if (!active && hiddenRouteIds?.has?.(opt.id)) return null;
         return (
           <Polyline
             key={opt.id}
@@ -335,8 +341,12 @@ export default function MapView({
       })}
 
       {!editMode &&
-        routeOptions.map((opt) =>
-          opt?.geometry?.length ? (
+        routeOptions.map((opt) => {
+          if (!opt?.geometry?.length) return null;
+          if (opt.id !== selectedRouteId && hiddenRouteIds?.has?.(opt.id)) {
+            return null;
+          }
+          return (
             <Polyline
               key={`hit-${opt.id}`}
               positions={opt.geometry}
@@ -352,8 +362,8 @@ export default function MapView({
                 },
               }}
             />
-          ) : null,
-        )}
+          );
+        })}
 
       {editMode && selectedGeometry?.length > 1 && editOrigin && editDestination && (
         <RouteEditorLayer
@@ -363,9 +373,12 @@ export default function MapView({
           vias={editVias}
           geometry={selectedGeometry}
           travelMode={editTravelMode}
+          selectedViaId={selectedViaId}
+          onSelectVia={onSelectVia}
           onPreview={onEditPreview}
           onCommitVia={onCommitVia}
           onMoveVia={onMoveVia}
+          onDeleteVia={onDeleteVia}
           onError={onEditError}
         />
       )}

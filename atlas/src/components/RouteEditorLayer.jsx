@@ -7,11 +7,12 @@ import {
   rebuildEditedRoute,
 } from "../api/routing";
 
-function handleIcon(dragging = false) {
-  const size = dragging ? 22 : 18;
+function handleIcon(dragging = false, selected = false) {
+  const size = dragging || selected ? 22 : 18;
+  const selectedClass = selected ? "is-selected" : "";
   return L.divIcon({
     className: "atlas-drag-handle",
-    html: `<div class="drag-handle-core ${dragging ? "is-dragging" : ""}" style="width:${size}px;height:${size}px"></div>`,
+    html: `<div class="drag-handle-core ${dragging ? "is-dragging" : ""} ${selectedClass}" style="width:${size}px;height:${size}px"></div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
@@ -51,6 +52,9 @@ export default function RouteEditorLayer({
   onPreview,
   onCommitVia,
   onMoveVia,
+  onDeleteVia,
+  onSelectVia,
+  selectedViaId = null,
   onError,
 }) {
   const map = useMap();
@@ -168,6 +172,7 @@ export default function RouteEditorLayer({
         nextVias.map((v) => ({ lat: v.lat, lng: v.lng })),
         destinationNow,
         travelModeRef.current,
+        { skipSnap: true },
       );
       if (session !== dragSession.current) return;
       if (seq !== previewSeq.current) return;
@@ -500,16 +505,31 @@ export default function RouteEditorLayer({
         <Marker
           key={via.id}
           position={[via.lat, via.lng]}
-          icon={handleIcon(dragState?.viaId === via.id)}
+          icon={handleIcon(
+            dragState?.viaId === via.id,
+            selectedViaId === via.id,
+          )}
           eventHandlers={{
+            click: (e) => {
+              L.DomEvent.stopPropagation(e);
+              onSelectVia?.(via.id);
+            },
+            contextmenu: (e) => {
+              L.DomEvent.stopPropagation(e);
+              L.DomEvent.preventDefault(e);
+              onSelectVia?.(via.id);
+              onDeleteVia?.(via.id);
+            },
             mousedown: (e) => {
               L.DomEvent.stopPropagation(e);
               L.DomEvent.preventDefault(e);
+              onSelectVia?.(via.id);
               beginViaDrag(via, e.latlng, e.originalEvent);
             },
             touchstart: (e) => {
               L.DomEvent.stopPropagation(e);
               L.DomEvent.preventDefault(e);
+              onSelectVia?.(via.id);
               beginViaDrag(via, e.latlng, e.originalEvent);
             },
           }}

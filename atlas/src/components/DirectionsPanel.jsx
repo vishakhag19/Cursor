@@ -32,6 +32,12 @@ export default function DirectionsPanel({
   onResetSuggested,
   comparison = null,
   editBusy = false,
+  hiddenRouteIds = null,
+  onToggleRouteVisibility = null,
+  editVias = [],
+  selectedViaId = null,
+  onSelectVia = null,
+  onDeleteVia = null,
 }) {
   const hasRoutes = routeOptions.length > 0;
   const [activeStop, setActiveStop] = useState(null);
@@ -215,7 +221,43 @@ export default function DirectionsPanel({
               <md-icon slot="icon">restart_alt</md-icon>
               Reset
             </md-outlined-button>
+            {selectedViaId && (
+              <md-outlined-button
+                type="button"
+                class="via-delete-btn"
+                onClick={() => onDeleteVia?.(selectedViaId)}
+              >
+                <md-icon slot="icon">delete</md-icon>
+                Delete point
+              </md-outlined-button>
+            )}
           </div>
+
+          {editVias.length > 0 && (
+            <ul className="via-point-list" aria-label="Via points">
+              {editVias.map((via, i) => (
+                <li key={via.id}>
+                  <button
+                    type="button"
+                    className={`via-point-item ${selectedViaId === via.id ? "is-selected" : ""}`}
+                    onClick={() => onSelectVia?.(via.id)}
+                  >
+                    <md-icon>radio_button_checked</md-icon>
+                    <span className="md-typescale-body-medium">
+                      {via.name || `Via ${i + 1}`}
+                    </span>
+                  </button>
+                  <md-icon-button
+                    type="button"
+                    aria-label={`Delete ${via.name || `via ${i + 1}`}`}
+                    onClick={() => onDeleteVia?.(via.id)}
+                  >
+                    <md-icon>close</md-icon>
+                  </md-icon-button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
@@ -229,10 +271,11 @@ export default function DirectionsPanel({
         <div className="dir-route-list">
           {routeOptions.map((opt, index) => {
             const active = opt.id === selectedRouteId;
+            const hidden = hiddenRouteIds?.has?.(opt.id) && !active;
             return (
               <div
                 key={opt.id}
-                className={`dir-route-card ${active ? "is-active" : ""} ${editMode && active ? "is-editing" : ""}`}
+                className={`dir-route-card ${active ? "is-active" : ""} ${editMode && active ? "is-editing" : ""} ${hidden ? "is-map-hidden" : ""}`}
               >
                 {active && <span className="dir-route-bar" aria-hidden />}
                 <button
@@ -268,6 +311,23 @@ export default function DirectionsPanel({
                     </div>
                   </div>
                 </button>
+                {!editMode && onToggleRouteVisibility && (
+                  <md-icon-button
+                    type="button"
+                    class="dir-route-visibility-btn"
+                    aria-label={hidden ? "Show on map" : "Hide on map"}
+                    title={hidden ? "Show on map" : "Hide on map"}
+                    aria-pressed={hidden ? "false" : "true"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (active) return;
+                      onToggleRouteVisibility(opt.id);
+                    }}
+                    disabled={active || undefined}
+                  >
+                    <md-icon>{hidden ? "visibility_off" : "visibility"}</md-icon>
+                  </md-icon-button>
+                )}
                 {active && (
                   <md-icon-button
                     type="button"

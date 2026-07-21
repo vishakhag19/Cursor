@@ -68,6 +68,8 @@ export default function App() {
   const [showSteps, setShowSteps] = useState(false);
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
+  const [hiddenRouteIds, setHiddenRouteIds] = useState(() => new Set());
+  const [selectedViaId, setSelectedViaId] = useState(null);
 
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
@@ -247,6 +249,7 @@ export default function App() {
         }
         setRouteOptions(options);
         setBaselineRoute(options[0]);
+        setHiddenRouteIds(new Set());
         selectRoute(options[0]);
         showStatus(
           `${options.length} shortest option${options.length === 1 ? "" : "s"}`,
@@ -436,15 +439,17 @@ export default function App() {
     filledStops.length >= 2 ? filledStops[filledStops.length - 1] : null;
 
   const rebuildFromVias = useCallback(
-    async (nextVias, { pushHistory = true } = {}) => {
+    async (nextVias, { pushHistory = true, preserveOrder = false } = {}) => {
       if (!editOrigin || !editDestination) return;
       setEditBusy(true);
-      showStatus("Recalculating route…", 0);
+      showStatus("Recalculating shortest route…", 0);
       try {
-        const ordered = orderViasAlongGeometry(
-          nextVias,
-          routeGeometryRef.current || baselineRoute?.geometry || [],
-        );
+        const ordered = preserveOrder
+          ? nextVias
+          : orderViasAlongGeometry(
+              nextVias,
+              routeGeometryRef.current || baselineRoute?.geometry || [],
+            );
         const route = await rebuildEditedRoute(
           editOrigin,
           ordered.map((v) => ({ lat: v.lat, lng: v.lng })),
@@ -452,7 +457,7 @@ export default function App() {
           travelMode,
         );
         applyEditedRoute(route, ordered, { pushHistory });
-        showStatus("Route updated");
+        showStatus("Shortest route via your points");
       } catch (err) {
         showStatus(err.message || "Could not update route");
       } finally {
@@ -504,7 +509,7 @@ export default function App() {
           next.push(item.via);
         }
         if (!inserted) next.push(newVia);
-        await rebuildFromVias(next, { pushHistory: true });
+        await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
       }),
     [enqueueEdit, rebuildFromVias],
   );
@@ -522,10 +527,30 @@ export default function App() {
               }
             : v,
         );
-        await rebuildFromVias(next, { pushHistory: true });
+        await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
       }),
     [enqueueEdit, rebuildFromVias],
   );
+
+  const deleteVia = useCallback(
+    (viaId) =>
+      enqueueEdit(async () => {
+        const next = editViasRef.current.filter((v) => v.id !== viaId);
+        setSelectedViaId(null);
+        await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
+        showStatus(next.length ? "Removed via point" : "Via point removed");
+      }),
+    [enqueueEdit, rebuildFromVias, showStatus],
+  );
+
+  const toggleRouteVisibility = useCallback((routeId) => {
+    setHiddenRouteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(routeId)) next.delete(routeId);
+      else next.add(routeId);
+      return next;
+    });
+  }, []);
 
   const undoEdit = useCallback(() => {
     setEditHistory((prev) => {
@@ -593,6 +618,7 @@ export default function App() {
         showStatus("Drag the route line to reshape it");
       } else {
         setEditPreview(null);
+        setSelectedViaId(null);
         showStatus("Finished editing");
       }
       return next;
@@ -768,6 +794,7 @@ export default function App() {
               setSearchQuery("");
               setSelectedPlace(null);
             }}
+            onOpenDirections={() => openDirections({})}
             onDirectionsTo={() => {
               if (!selectedPlace) return;
               openDirections({ to: selectedPlace });
@@ -801,6 +828,8 @@ export default function App() {
             }}
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
+            hiddenRouteIds={hiddenRouteIds}
+            onToggleRouteVisibility={toggleRouteVisibility}
             onSelectRoute={(opt) => {
               if (editMode) return;
               selectRoute(opt);
@@ -830,6 +859,10 @@ export default function App() {
             onResetSuggested={resetToSuggested}
             comparison={editMode ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
+            editVias={editVias}
+            selectedViaId={selectedViaId}
+            onSelectVia={setSelectedViaId}
+            onDeleteVia={deleteVia}
           />
         )}
       </aside>
@@ -864,6 +897,7 @@ export default function App() {
           }}
           routeOptions={view === "directions" ? routeOptions : []}
           selectedRouteId={selectedRouteId}
+          hiddenRouteIds={hiddenRouteIds}
           onSelectRoute={(opt) => {
             if (editMode) return;
             selectRoute(opt);
@@ -874,9 +908,12 @@ export default function App() {
           editDestination={editDestination}
           editVias={editVias}
           editTravelMode={travelMode}
+          selectedViaId={selectedViaId}
+          onSelectVia={setSelectedViaId}
           onEditPreview={setEditPreview}
           onCommitVia={commitVia}
           onMoveVia={moveVia}
+          onDeleteVia={deleteVia}
           onEditError={(msg) => showStatus(msg)}
           flyTarget={flyTarget}
           fitKey={fitKey}

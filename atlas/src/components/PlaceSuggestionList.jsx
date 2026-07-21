@@ -24,7 +24,6 @@ function secondaryText(place) {
     parts.push(formatNearDistance(place.distanceMeters));
   }
   if (place.display_name && place.display_name !== place.name) {
-    // Prefer address-like tail without repeating the name.
     const addr = place.display_name.startsWith(place.name)
       ? place.display_name.slice(place.name.length).replace(/^,\s*/, "")
       : place.display_name;
@@ -34,9 +33,7 @@ function secondaryText(place) {
 }
 
 /**
- * Google Maps–style place rows: icon + bold title + gray subtitle.
- * Used under direction inputs (before search = Your location + recent;
- * after search = matching places).
+ * Google Maps–style place rows: icon + bold match + grey subtitle on one line.
  */
 export default function PlaceSuggestionList({
   items = [],
@@ -75,16 +72,14 @@ export default function PlaceSuggestionList({
                   <md-icon>{icon}</md-icon>
                 </span>
                 <span className="place-suggest-text">
-                  <span className="place-suggest-title md-typescale-body-large">
+                  <span className="place-suggest-title">
                     {s.isCurrentLocation
                       ? s.name
                       : highlightMatch(s.name, query)}
                   </span>
-                  {subtitle && (
-                    <span className="place-suggest-sub md-typescale-body-medium">
-                      {subtitle}
-                    </span>
-                  )}
+                  {subtitle ? (
+                    <span className="place-suggest-sub">{subtitle}</span>
+                  ) : null}
                 </span>
               </button>
             </li>
