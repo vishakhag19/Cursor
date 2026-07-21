@@ -734,34 +734,27 @@ md-filled-tonal-button.is-edit-active {
   color: #9aa0a6;
 }
 
-/* Dropdown spans the full search pill (field + icon + bar padding) */
-.search-bar .suggest-wrap.is-inline-list .place-suggest-panel {
-  position: absolute;
-  left: calc(-1 * var(--search-pad-l));
-  width: calc(
-    100% + var(--search-pad-l) + var(--search-pad-r) + var(--search-action-w)
-  );
+.search-bar .search-clear-btn {
+  position: static;
+  top: auto;
   right: auto;
-  top: calc(100% + 10px);
-  z-index: 50;
+}
+
+/* Suggestions sit in the panel below the search pill — not a floating overlay */
+.search-panel .place-suggest-panel {
+  position: static;
+  left: auto;
+  right: auto;
+  top: auto;
+  width: auto;
   margin: 0;
   border: 1px solid #e8eaed;
   border-radius: 16px;
   box-shadow: none;
   background: #fff;
-  max-height: min(360px, 48dvh);
+  max-height: min(320px, 40dvh);
   box-sizing: border-box;
   overflow: auto;
-}
-
-.search-bar .suggest-wrap.is-inline-list.is-open {
-  z-index: 50;
-}
-
-.search-bar .search-clear-btn {
-  position: static;
-  top: auto;
-  right: auto;
 }
 
 .search-block {

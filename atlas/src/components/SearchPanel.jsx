@@ -1,7 +1,9 @@
+import { useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
+import PlaceSuggestionList from "./PlaceSuggestionList";
 
-/** Search-only panel. Landing dropdown = recent searches only. */
+/** Search-only panel. Suggestions render in-panel (not as a floating overlay). */
 export default function SearchPanel({
   query,
   onQueryChange,
@@ -13,6 +15,24 @@ export default function SearchPanel({
   recentPlaces = [],
   near = null,
 }) {
+  const [placeList, setPlaceList] = useState({
+    open: false,
+    items: [],
+    query: "",
+    loading: false,
+    select: null,
+  });
+
+  function clearPlaceList() {
+    setPlaceList({
+      open: false,
+      items: [],
+      query: "",
+      loading: false,
+      select: null,
+    });
+  }
+
   return (
     <section className="mode-panel search-panel">
       <div className={`search-bar ${query ? "has-query" : ""}`}>
@@ -22,12 +42,17 @@ export default function SearchPanel({
             label=""
             value={query}
             onChange={onQueryChange}
-            onSelect={onSelectPlace}
+            onSelect={(selected) => {
+              onSelectPlace(selected);
+              clearPlaceList();
+            }}
             placeholder="Search here"
             allowCurrentLocation={false}
             recentPlaces={recentPlaces}
             near={near}
             bare
+            externalList
+            onListChange={setPlaceList}
           />
         </div>
         <div className="search-bar-actions">
@@ -35,7 +60,10 @@ export default function SearchPanel({
             <md-icon-button
               class="search-clear-btn"
               aria-label="Clear search"
-              onClick={onClear}
+              onClick={() => {
+                onClear();
+                clearPlaceList();
+              }}
             >
               <md-icon>close</md-icon>
             </md-icon-button>
@@ -46,6 +74,21 @@ export default function SearchPanel({
           )}
         </div>
       </div>
+
+      {placeList.open && (placeList.items.length > 0 || placeList.loading) && (
+        <PlaceSuggestionList
+          items={placeList.items}
+          query={placeList.query}
+          loading={placeList.loading}
+          onSelect={(selected) => {
+            if (placeList.select) placeList.select(selected);
+            else {
+              onSelectPlace(selected);
+              clearPlaceList();
+            }
+          }}
+        />
+      )}
 
       {place && (
         <PlaceDetailsCard

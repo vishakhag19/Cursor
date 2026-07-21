@@ -77,7 +77,7 @@ export default function SuggestInput({
   const debounceRef = useRef(null);
   const wrapRef = useRef(null);
   const committedRef = useRef(null);
-  const typingRef = useRef(false);
+  const lastTypedValueRef = useRef(null);
   const requestSeq = useRef(0);
   const selectRef = useRef(null);
   const nearRef = useRef(near);
@@ -168,7 +168,7 @@ export default function SuggestInput({
       }
     }
     committedRef.current = labelForPlace(place);
-    typingRef.current = false;
+    lastTypedValueRef.current = labelForPlace(place);
     stopSearch();
     setOpen(false);
     setSuggestions([]);
@@ -259,8 +259,9 @@ export default function SuggestInput({
   }
 
   useEffect(() => {
-    if (typingRef.current) {
-      typingRef.current = false;
+    // Ignore value updates that came from our own keystrokes (also survives
+    // React Strict Mode double-invoking this effect).
+    if (lastTypedValueRef.current === value) {
       return;
     }
     const q = (value || "").trim();
@@ -288,7 +289,7 @@ export default function SuggestInput({
   );
 
   function handleValueChange(v) {
-    typingRef.current = true;
+    lastTypedValueRef.current = v;
     committedRef.current = null;
     onChange(v);
     scheduleSearch(v);
