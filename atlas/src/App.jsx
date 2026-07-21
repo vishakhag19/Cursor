@@ -112,6 +112,7 @@ export default function App() {
   const locateFn = useRef(null);
   const zoomFn = useRef(null);
   const locateFlightRef = useRef(false);
+  const followHighlightTimer = useRef(null);
   const editViasRef = useRef([]);
   const routeGeometryRef = useRef(null);
   const selectedRouteIdRef = useRef(null);
@@ -135,7 +136,29 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => () => clearTimeout(statusTimer.current), []);
+  const clearFollowHighlight = useCallback(() => {
+    clearTimeout(followHighlightTimer.current);
+    followHighlightTimer.current = null;
+    setFollowingLocation(false);
+  }, []);
+
+  // Blue locate icon only while recentering — not a sticky idle state.
+  const pulseFollowHighlight = useCallback(() => {
+    clearTimeout(followHighlightTimer.current);
+    setFollowingLocation(true);
+    followHighlightTimer.current = setTimeout(() => {
+      followHighlightTimer.current = null;
+      setFollowingLocation(false);
+    }, 1100);
+  }, []);
+
+  useEffect(
+    () => () => {
+      clearTimeout(statusTimer.current);
+      clearTimeout(followHighlightTimer.current);
+    },
+    [],
+  );
 
   editViasRef.current = editVias;
   routeGeometryRef.current = routeGeometry;
@@ -146,14 +169,14 @@ export default function App() {
     if (!userLocation) return;
     if (!takeCenteredOnce()) return;
     locateFlightRef.current = true;
-    setFollowingLocation(true);
+    pulseFollowHighlight();
     setFlyTarget({
       lat: userLocation.lat,
       lng: userLocation.lng,
       zoom: 15,
     });
     showStatus("Centered on your location");
-  }, [userLocation, takeCenteredOnce, showStatus]);
+  }, [userLocation, takeCenteredOnce, showStatus, pulseFollowHighlight]);
 
   // Leaving the user via search / route fly clears the blue “following” state.
   useEffect(() => {
@@ -162,14 +185,14 @@ export default function App() {
       locateFlightRef.current = false;
       return;
     }
-    setFollowingLocation(false);
-  }, [flyTarget]);
+    clearFollowHighlight();
+  }, [flyTarget, clearFollowHighlight]);
 
   // Route fitBounds moves the camera away from a pure follow lock.
   useEffect(() => {
     if (!fitKey) return;
-    setFollowingLocation(false);
-  }, [fitKey]);
+    clearFollowHighlight();
+  }, [fitKey, clearFollowHighlight]);
 
   // Sync "Your location" stop pins only when route is unlocked.
   useEffect(() => {
@@ -735,7 +758,7 @@ export default function App() {
 
   const goToMyLocation = useCallback(async () => {
     locateFlightRef.current = true;
-    setFollowingLocation(true);
+    pulseFollowHighlight();
 
     // If we already have a fix (browser / magic base location), recenter now.
     if (userLocation?.lat != null && userLocation?.lng != null) {
@@ -748,6 +771,7 @@ export default function App() {
       const loc = await refreshLocation();
       if (loc?.lat != null && loc?.lng != null) {
         locateFlightRef.current = true;
+        pulseFollowHighlight();
         locateFn.current?.([loc.lat, loc.lng], 16);
         showStatus("Centered on your location");
         return;
@@ -756,14 +780,22 @@ export default function App() {
     } catch {
       if (userLocation?.lat != null && userLocation?.lng != null) {
         locateFlightRef.current = true;
+        pulseFollowHighlight();
         locateFn.current?.([userLocation.lat, userLocation.lng], 16);
         showStatus("Centered on your location");
         return;
       }
-      setFollowingLocation(false);
+      clearFollowHighlight();
       showStatus(geoError || "Could not get your location");
     }
-  }, [refreshLocation, geoError, showStatus, userLocation]);
+  }, [
+    refreshLocation,
+    geoError,
+    showStatus,
+    userLocation,
+    pulseFollowHighlight,
+    clearFollowHighlight,
+  ]);
 
   const ctxActions = ctx
     ? [
@@ -1135,7 +1167,7 @@ export default function App() {
           onZoomReady={(api) => {
             zoomFn.current = api;
           }}
-          onUserDrag={() => setFollowingLocation(false)}
+          onUserDrag={() => clearFollowHighlight()}
           onMarkerClick={(place) => {
             setView("search");
             setPanelOpen(true);
@@ -1188,7 +1220,7 @@ export default function App() {
                 className="map-ctrl-btn"
                 aria-label="Zoom in"
                 onClick={() => {
-                  setFollowingLocation(false);
+                  clearFollowHighlight();
                   zoomFn.current?.zoomIn?.();
                 }}
               >
@@ -1201,7 +1233,7 @@ export default function App() {
                 className="map-ctrl-btn"
                 aria-label="Zoom out"
                 onClick={() => {
-                  setFollowingLocation(false);
+                  clearFollowHighlight();
                   zoomFn.current?.zoomOut?.();
                 }}
               >
