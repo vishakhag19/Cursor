@@ -658,11 +658,6 @@
   pointer-events: none !important;
 }
 
-.expand-panel.is-edit-done {
-  --md-fab-container-color: #1a73e8;
-  --md-fab-icon-color: #fff;
-}
-
 md-filled-tonal-button.is-edit-active {
   --md-filled-tonal-button-container-color: var(--md-sys-color-tertiary-container);
   --md-filled-tonal-button-label-text-color: var(--md-sys-color-on-tertiary-container);
@@ -1183,6 +1178,53 @@ md-filled-tonal-button.is-edit-active {
   top: 16px;
   left: 16px;
   z-index: 1100;
+}
+
+.expand-panel.is-edit-done {
+  --md-fab-container-color: #1a73e8;
+  --md-fab-icon-color: #fff;
+}
+
+/* Floating undo / reset / done when the panel is collapsed (mobile edit) */
+.mobile-edit-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 4px 6px 4px 4px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 28px;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+}
+
+.mobile-edit-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.mobile-edit-comparison {
+  flex: 1;
+  min-width: 0;
+  padding: 0 6px;
+  color: #5f6368;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-edit-done {
+  flex-shrink: 0;
+  --md-filled-button-container-shape: 20px;
+  --md-filled-button-container-height: 36px;
+  --md-filled-button-leading-space: 12px;
+  --md-filled-button-trailing-space: 14px;
 }
 
 .map-stage {

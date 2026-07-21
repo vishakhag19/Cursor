@@ -910,21 +910,60 @@ export default function App() {
         )}
       </aside>
 
-      {!panelOpen && (
+      {!panelOpen && editMode && (
+        <div
+          className="mobile-edit-bar"
+          role="toolbar"
+          aria-label="Route edit actions"
+        >
+          <md-icon-button
+            type="button"
+            class="mobile-edit-undo"
+            aria-label="Undo last edit"
+            title="Undo last edit"
+            onClick={undoEdit}
+            disabled={editHistory.length === 0 || undefined}
+          >
+            <md-icon>undo</md-icon>
+          </md-icon-button>
+          <md-icon-button
+            type="button"
+            class="mobile-edit-reset"
+            aria-label="Reset to suggested route"
+            title="Reset to suggested route"
+            onClick={resetToSuggested}
+            disabled={!canReset || undefined}
+          >
+            <md-icon>restart_alt</md-icon>
+          </md-icon-button>
+          {comparison?.label ? (
+            <span className="mobile-edit-comparison md-typescale-label-medium">
+              {comparison.label}
+            </span>
+          ) : (
+            <span className="mobile-edit-spacer" aria-hidden />
+          )}
+          <md-filled-button
+            type="button"
+            class="mobile-edit-done"
+            aria-label="Done editing"
+            onClick={toggleEditMode}
+          >
+            <md-icon slot="icon">check</md-icon>
+            Done
+          </md-filled-button>
+        </div>
+      )}
+
+      {!panelOpen && !editMode && (
         <md-fab
-          class={`expand-panel ${editMode ? "is-edit-done" : ""}`}
+          class="expand-panel"
           variant="primary"
           size="medium"
-          aria-label={editMode ? "Done editing" : "Open panel"}
-          onClick={() => {
-            if (editMode) {
-              toggleEditMode();
-              return;
-            }
-            setPanelOpen(true);
-          }}
+          aria-label="Open panel"
+          onClick={() => setPanelOpen(true)}
         >
-          <md-icon slot="icon">{editMode ? "check" : "menu"}</md-icon>
+          <md-icon slot="icon">menu</md-icon>
         </md-fab>
       )}
 
