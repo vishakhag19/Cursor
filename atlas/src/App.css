@@ -55,10 +55,6 @@
   padding: 12px 8px 8px 16px;
 }
 
-.collapse-icon-mobile {
-  display: none !important;
-}
-
 .brand {
   display: flex;
   align-items: center;
@@ -1353,14 +1349,6 @@ md-text-button {
 
   .panel-header {
     padding: 10px 6px 6px 14px;
-  }
-
-  .collapse-icon-desktop {
-    display: none !important;
-  }
-
-  .collapse-icon-mobile {
-    display: inline-flex !important;
   }
 
   .mode-panel {

@@ -73,6 +73,11 @@ export default function App() {
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
+  const [isMobileLayout, setIsMobileLayout] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 800px)").matches
+      : false,
+  );
   const locateFn = useRef(null);
   const zoomFn = useRef(null);
   const editViasRef = useRef([]);
@@ -88,6 +93,14 @@ export default function App() {
     refresh: refreshLocation,
     takeCenteredOnce,
   } = useGeolocation({ autoStart: true });
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 800px)");
+    const onChange = () => setIsMobileLayout(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   const showStatus = useCallback((message, ms = 2800) => {
     setStatus(message);
@@ -797,8 +810,7 @@ export default function App() {
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <md-icon class="collapse-icon-desktop">chevron_left</md-icon>
-            <md-icon class="collapse-icon-mobile">keyboard_arrow_up</md-icon>
+            <md-icon>{isMobileLayout ? "expand_less" : "chevron_left"}</md-icon>
           </md-icon-button>
         </header>
 
