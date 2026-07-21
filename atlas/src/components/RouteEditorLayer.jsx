@@ -41,11 +41,22 @@ function getHandleIcon(dragging = false, selected = false) {
 
 /** Pixel hit slop for route line / via handles (larger on touch). */
 function hitPixels() {
-  return isCoarsePointer() ? 32 : 22;
+  // Keep the line hit modest so pinch-zoom near the route isn’t stolen.
+  return isCoarsePointer() ? 22 : 18;
 }
 
 function viaHitPixels() {
-  return isCoarsePointer() ? 36 : 24;
+  return isCoarsePointer() ? 30 : 22;
+}
+
+function isTouchLikeEvent(e) {
+  return (
+    e?.pointerType === "touch" ||
+    e?.type === "touchstart" ||
+    e?.type === "touchmove" ||
+    e?.type === "touchend" ||
+    Boolean(e?.touches)
+  );
 }
 
 const VIA_DELETE_ICON = L.divIcon({
@@ -134,6 +145,10 @@ export default function RouteEditorLayer({
     document.removeEventListener("touchmove", L.moveTouch, L.touchOpts);
     document.removeEventListener("touchend", L.up);
     document.removeEventListener("touchcancel", L.up);
+    if (L.secondFinger) {
+      document.removeEventListener("pointerdown", L.secondFinger, true);
+      document.removeEventListener("touchstart", L.secondFinger, true);
+    }
     window.removeEventListener("pointerup", L.up, true);
     window.removeEventListener("mouseup", L.up, true);
     listenersRef.current = null;
@@ -344,11 +359,23 @@ export default function RouteEditorLayer({
     const origin = dragRef.current
       ? map.latLngToContainerPoint([dragRef.current.lat, dragRef.current.lng])
       : null;
-    const DRAG_PX = 8;
+    // Touch needs a larger slop so tiny finger jitter / zoom setup doesn’t commit.
+    const DRAG_PX = isCoarsePointer() ? 18 : 8;
 
     const onMove = (ev) => {
       if (session !== dragSession.current) return;
       if (!dragRef.current?.active) return;
+
+      // Second finger → pinch zoom; abort reshape and let the map take over.
+      if (
+        (ev.touches && ev.touches.length > 1) ||
+        (ev.pointerType === "touch" &&
+          ev.isPrimary === false &&
+          ev.type === "pointerdown")
+      ) {
+        finishDrag(session, { cancel: true });
+        return;
+      }
 
       // Mouse: detect button release if pointerup was missed.
       // Touch / pen pointer events keep buttons === 1 while down.
@@ -411,6 +438,18 @@ export default function RouteEditorLayer({
       finishDrag(session);
     }
 
+    function onSecondFinger(ev) {
+      if (session !== dragSession.current) return;
+      if (!dragRef.current?.active) return;
+      const multi =
+        (ev.touches && ev.touches.length > 1) ||
+        (ev.type === "pointerdown" &&
+          ev.pointerType === "touch" &&
+          ev.isPrimary === false);
+      if (!multi) return;
+      finishDrag(session, { cancel: true });
+    }
+
     const touchOpts = { passive: false };
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
@@ -420,6 +459,8 @@ export default function RouteEditorLayer({
     document.addEventListener("touchmove", onMove, touchOpts);
     document.addEventListener("touchend", onUp);
     document.addEventListener("touchcancel", onUp);
+    document.addEventListener("pointerdown", onSecondFinger, true);
+    document.addEventListener("touchstart", onSecondFinger, true);
     window.addEventListener("pointerup", onUp, true);
     window.addEventListener("mouseup", onUp, true);
     listenersRef.current = {
@@ -428,6 +469,7 @@ export default function RouteEditorLayer({
       moveTouch: onMove,
       touchOpts,
       up: onUp,
+      secondFinger: onSecondFinger,
     };
   }
 
@@ -503,13 +545,21 @@ export default function RouteEditorLayer({
 
   /**
    * Leaflet only bridges mouse events to vector layers — not touch/pointer.
-   * On phones, mousedown arrives too late (after the gesture), so map pan wins.
-   * Capture pointer/touch on the map container and hit-test the route ourselves.
+   * On phones, claim the gesture only after a clear single-finger drag so
+   * pinch-zoom / pan near the route aren’t stolen on finger-down.
    */
   useEffect(() => {
     if (!enabled || !geometry?.length) return undefined;
 
     const container = map.getContainer();
+    let pending = null;
+    let pendingCleanups = [];
+
+    function clearPending() {
+      for (const off of pendingCleanups) off();
+      pendingCleanups = [];
+      pending = null;
+    }
 
     function clientToLatLng(clientX, clientY) {
       const rect = container.getBoundingClientRect();
@@ -518,8 +568,121 @@ export default function RouteEditorLayer({
       );
     }
 
+    function claimDrag(kind, payload, event) {
+      if (event?.cancelable) event.preventDefault();
+      event?.stopPropagation?.();
+      event?.stopImmediatePropagation?.();
+      if (kind === "via") {
+        onSelectViaRef.current?.(payload.via.id);
+        beginViaDragRef.current?.(
+          payload.via,
+          L.latLng(payload.via.lat, payload.via.lng),
+          event,
+        );
+      } else {
+        beginPolylineDragRef.current?.(
+          L.latLng(payload.lat, payload.lng),
+          payload.segmentIndex ?? 0,
+          event,
+        );
+      }
+    }
+
+    function armPending(kind, payload, startEvent, clientX, clientY) {
+      clearPending();
+      const touch = isTouchLikeEvent(startEvent);
+      // Desktop: claim immediately (existing mouse behavior).
+      if (!touch) {
+        claimDrag(kind, payload, startEvent);
+        return;
+      }
+
+      // Touch: wait for intentional single-finger movement before stealing zoom/pan.
+      const pointerId = startEvent.pointerId;
+      pending = {
+        kind,
+        payload,
+        x: clientX,
+        y: clientY,
+        pointerId,
+      };
+      const CLAIM_PX = 16;
+
+      const onMove = (ev) => {
+        if (!pending) return;
+        if (ev.touches && ev.touches.length > 1) {
+          clearPending();
+          return;
+        }
+        if (
+          pointerId != null &&
+          ev.pointerId != null &&
+          ev.pointerId !== pointerId
+        ) {
+          return;
+        }
+        const x = ev.clientX ?? ev.touches?.[0]?.clientX;
+        const y = ev.clientY ?? ev.touches?.[0]?.clientY;
+        if (x == null || y == null) return;
+        const dx = x - pending.x;
+        const dy = y - pending.y;
+        if (dx * dx + dy * dy < CLAIM_PX * CLAIM_PX) return;
+
+        const { kind: k, payload: p } = pending;
+        clearPending();
+        claimDrag(k, p, ev);
+      };
+
+      const onUp = (ev) => {
+        if (!pending) return;
+        // Tap on a via selects it without reshaping.
+        if (
+          pending.kind === "via" &&
+          (pointerId == null ||
+            ev.pointerId == null ||
+            ev.pointerId === pointerId)
+        ) {
+          onSelectViaRef.current?.(pending.payload.via.id);
+        }
+        clearPending();
+      };
+
+      const onSecondFinger = (ev) => {
+        if (!pending) return;
+        const multi =
+          (ev.touches && ev.touches.length > 1) ||
+          (ev.type === "pointerdown" &&
+            ev.pointerType === "touch" &&
+            (pointerId == null || ev.pointerId !== pointerId));
+        if (multi) clearPending();
+      };
+
+      const moveOpts = { capture: true, passive: true };
+      const claimOpts = { capture: true, passive: false };
+      document.addEventListener("pointermove", onMove, claimOpts);
+      document.addEventListener("touchmove", onMove, claimOpts);
+      document.addEventListener("pointerup", onUp, moveOpts);
+      document.addEventListener("pointercancel", onUp, moveOpts);
+      document.addEventListener("touchend", onUp, moveOpts);
+      document.addEventListener("touchcancel", onUp, moveOpts);
+      document.addEventListener("pointerdown", onSecondFinger, moveOpts);
+      document.addEventListener("touchstart", onSecondFinger, moveOpts);
+      pendingCleanups = [
+        () => document.removeEventListener("pointermove", onMove, claimOpts),
+        () => document.removeEventListener("touchmove", onMove, claimOpts),
+        () => document.removeEventListener("pointerup", onUp, moveOpts),
+        () => document.removeEventListener("pointercancel", onUp, moveOpts),
+        () => document.removeEventListener("touchend", onUp, moveOpts),
+        () => document.removeEventListener("touchcancel", onUp, moveOpts),
+        () =>
+          document.removeEventListener("pointerdown", onSecondFinger, moveOpts),
+        () =>
+          document.removeEventListener("touchstart", onSecondFinger, moveOpts),
+      ];
+    }
+
     function onPointerDown(e) {
-      if (!enabled || dragRef.current?.active) return;
+      if (!enabled || dragRef.current?.active || pending) return;
       // Prefer pointer events; ignore redundant touchstart when PointerEvent exists.
       if (e.type === "touchstart" && typeof window.PointerEvent === "function") {
         return;
@@ -558,15 +721,7 @@ export default function RouteEditorLayer({
         }
       }
       if (bestVia && bestViaDist <= viaHitPixels()) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation?.();
-        onSelectViaRef.current?.(bestVia.id);
-        beginViaDragRef.current?.(
-          bestVia,
-          L.latLng(bestVia.lat, bestVia.lng),
-          e,
-        );
+        armPending("via", { via: bestVia }, e, clientX, clientY);
         return;
       }
 
@@ -581,20 +736,20 @@ export default function RouteEditorLayer({
         return;
       }
 
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      beginPolylineDragRef.current?.(
-        L.latLng(closest.lat, closest.lng),
-        closest.segmentIndex ?? 0,
+      armPending(
+        "line",
+        { lat: closest.lat, lng: closest.lng, segmentIndex: closest.segmentIndex },
         e,
+        clientX,
+        clientY,
       );
     }
 
-    const opts = { capture: true, passive: false };
+    const opts = { capture: true, passive: true };
     container.addEventListener("pointerdown", onPointerDown, opts);
     container.addEventListener("touchstart", onPointerDown, opts);
     return () => {
+      clearPending();
       container.removeEventListener("pointerdown", onPointerDown, opts);
       container.removeEventListener("touchstart", onPointerDown, opts);
     };
