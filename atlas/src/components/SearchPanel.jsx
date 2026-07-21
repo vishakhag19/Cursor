@@ -11,7 +11,6 @@ export default function SearchPanel({
   onDirectionsTo,
   onDirectionsFrom,
   onAddToRoute,
-  onOpenDirections,
   recentPlaces = [],
   near = null,
 }) {
@@ -45,15 +44,6 @@ export default function SearchPanel({
               <md-icon>search</md-icon>
             </span>
           )}
-          <button
-            type="button"
-            className="search-directions-btn"
-            aria-label="Directions"
-            title="Directions"
-            onClick={() => onOpenDirections?.()}
-          >
-            <md-icon>directions</md-icon>
-          </button>
         </div>
       </div>
 

@@ -66,9 +66,13 @@ export default function DirectionsPanel({
     ...routeOptions.filter((o) => o.id !== selectedRouteId),
   ].filter((opt) => !editMode || opt.id === selectedRouteId);
 
+  const bothEndsSet = stops.filter(Boolean).length >= 2;
+  const hasRouteResults = bothEndsSet && routeOptions.length > 0;
+  const [forceShowStops, setForceShowStops] = useState(false);
+
   return (
     <section
-      className={`mode-panel directions-panel ${editMode ? "is-editing" : ""}`}
+      className={`mode-panel directions-panel ${editMode ? "is-editing" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""}`}
     >
       <div className="dir-top-bar">
         <span className="md-typescale-title-medium dir-title">
@@ -81,6 +85,17 @@ export default function DirectionsPanel({
 
       {!editMode && (
         <>
+          {hasRouteResults && !forceShowStops && (
+            <button
+              type="button"
+              className="dir-change-stops"
+              onClick={() => setForceShowStops(true)}
+            >
+              <md-icon>edit_location_alt</md-icon>
+              <span className="md-typescale-body-medium">Change locations</span>
+            </button>
+          )}
+          <div className="dir-stops-block">
           <div className="dir-stops">
             <div className="dir-stops-rail" aria-hidden>
               {stops.map((_, i) => (
@@ -167,6 +182,7 @@ export default function DirectionsPanel({
             <md-icon>add</md-icon>
             <span className="md-typescale-body-medium">Add Stops</span>
           </button>
+          </div>
         </>
       )}
 

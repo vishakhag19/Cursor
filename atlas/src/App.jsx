@@ -798,7 +798,6 @@ export default function App() {
               setSearchQuery("");
               setSelectedPlace(null);
             }}
-            onOpenDirections={() => openDirections({})}
             onDirectionsTo={() => {
               if (!selectedPlace) return;
               openDirections({ to: selectedPlace });
@@ -955,20 +954,20 @@ export default function App() {
 
         <div className="map-controls">
           <div className="layer-toggle" role="group" aria-label="Map type">
-            <md-icon-button
+            <button
               type="button"
-              class={layer === "map" ? "layer-btn is-selected" : "layer-btn"}
+              className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
               aria-label="Map"
               title="Map"
               aria-pressed={layer === "map" ? "true" : "false"}
               onClick={() => setLayer("map")}
             >
               <md-icon>map</md-icon>
-            </md-icon-button>
-            <md-icon-button
+            </button>
+            <button
               type="button"
-              class={
-                layer === "satellite" ? "layer-btn is-selected" : "layer-btn"
+              className={
+                layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
               }
               aria-label="Satellite"
               title="Satellite"
@@ -976,28 +975,18 @@ export default function App() {
               onClick={() => setLayer("satellite")}
             >
               <md-icon>satellite_alt</md-icon>
-            </md-icon-button>
+            </button>
           </div>
-          <md-fab
-            class={`locate-fab ${geoStatus === "ready" ? "is-located" : ""}`}
-            variant="surface"
-            size="medium"
+          <button
+            type="button"
+            className={`map-ctrl-btn locate-btn ${geoStatus === "ready" ? "is-located" : ""}`}
             aria-label="My location"
             title="My location"
             onClick={goToMyLocation}
           >
-            <md-icon slot="icon">my_location</md-icon>
-          </md-fab>
+            <md-icon>my_location</md-icon>
+          </button>
         </div>
-
-        {editMode && comparison && !navigating && (
-          <div
-            className={`map-comparison tone-${comparison.tone}`}
-            role="status"
-          >
-            {comparison.label}
-          </div>
-        )}
 
         {view === "directions" && selectedRoute && !editMode && (
           <>
