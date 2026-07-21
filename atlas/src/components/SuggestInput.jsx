@@ -225,7 +225,7 @@ export default function SuggestInput({
         const loc = currentLocationRef.current;
         const results = await searchPlaces(q, {
           near: nearRef.current || loc,
-          limit: 5,
+          limit: 6,
         });
         if (seq !== requestSeq.current) return;
         if (committedRef.current) {

@@ -740,6 +740,16 @@ md-filled-tonal-button.is-edit-active {
   right: auto;
 }
 
+/* Landing search: tall enough for ~6 suggestion rows, then scroll */
+.search-panel .place-suggest-panel {
+  max-height: 300px;
+}
+
+.search-panel .place-suggest-item {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 .search-block {
   position: relative;
 }

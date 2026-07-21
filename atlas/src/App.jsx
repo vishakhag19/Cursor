@@ -861,9 +861,6 @@ export default function App() {
       routeOptions.some((r) => r.edited) ||
       selectedRouteId !== baselineRoute.id);
 
-  const routesSheet =
-    view === "directions" && routeOptions.length > 0 && !navigating;
-
   const fitPadding = useMemo(() => {
     const mobile =
       typeof window !== "undefined" &&
@@ -871,18 +868,15 @@ export default function App() {
     if (!panelOpen) {
       return { top: 72, right: 72, bottom: 72, left: 72 };
     }
-    if (mobile && routesSheet) {
-      return { top: 56, right: 28, bottom: 320, left: 28 };
-    }
     if (mobile) {
       return { top: 280, right: 28, bottom: 56, left: 28 };
     }
     return { top: 48, right: 72, bottom: 48, left: 420 };
-  }, [panelOpen, routesSheet]);
+  }, [panelOpen]);
 
   return (
     <div
-      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${routesSheet ? "has-routes-sheet" : ""}`}
+      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""}`}
     >
       <aside className="panel m3-surface" aria-label="Map tools">
         <header className="panel-header">
@@ -904,9 +898,7 @@ export default function App() {
             title="Collapse panel"
           >
             <md-icon class="collapse-chevron-desktop">chevron_left</md-icon>
-            <md-icon class="collapse-chevron-mobile">
-              {routesSheet ? "expand_more" : "expand_less"}
-            </md-icon>
+            <md-icon class="collapse-chevron-mobile">expand_less</md-icon>
           </button>
         </header>
 
