@@ -783,7 +783,7 @@ export default function App() {
           <div className="brand">
             <img
               className="brand-logo"
-              src="/favicon.svg"
+              src={`${import.meta.env.BASE_URL}favicon.svg`}
               alt=""
               width="28"
               height="28"
