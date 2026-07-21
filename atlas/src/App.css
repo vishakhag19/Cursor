@@ -9,7 +9,7 @@
   background: var(--md-sys-color-surface);
   overflow: hidden;
   /* Shared by open-panel collapse + collapsed-map expand controls */
-  --panel-control-size: 32px;
+  --panel-control-size: 40px;
 }
 
 .map-stage {
@@ -89,10 +89,10 @@
 }
 
 .collapse-panel-btn md-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  --md-icon-size: 18px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
 }
 
 .collapse-chevron-mobile {
@@ -1247,10 +1247,10 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .expand-panel md-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  --md-icon-size: 18px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
 }
 
 .expand-chevron-mobile {
@@ -1311,10 +1311,10 @@ md-filled-tonal-button.is-edit-active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  height: 28px;
+  min-height: 34px;
+  height: 34px;
   margin: 0;
-  padding: 0 12px;
+  padding: 0 14px;
   border: none;
   border-radius: 999px;
   background: #1a73e8;
