@@ -208,7 +208,7 @@
   flex-direction: column;
   gap: 0;
   margin-top: 4px;
-  border-top: 1px solid #dadce0;
+  border-top: none;
 }
 
 .dir-route-card {
@@ -694,8 +694,8 @@ md-filled-tonal-button.is-edit-active {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px 4px 4px;
+  gap: 0;
+  padding: 4px 8px;
   background: #fff;
   border: 1px solid #dadce0;
   border-radius: 24px;
@@ -716,7 +716,7 @@ md-filled-tonal-button.is-edit-active {
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-  padding-right: 2px;
+  padding-right: 0;
 }
 
 .search-bar-glyph {
@@ -745,7 +745,10 @@ md-filled-tonal-button.is-edit-active {
   --md-outlined-text-field-outline-width: 0px;
   --md-outlined-text-field-hover-outline-width: 0px;
   --md-outlined-text-field-focus-outline-width: 0px;
-  --md-outlined-text-field-input-text-padding: 12px 8px 12px 14px;
+  /* Match left text inset to the search icon’s right inset (8px) */
+  --md-outlined-text-field-input-text-padding: 12px 4px 12px 8px;
+  --md-outlined-text-field-leading-space: 8px;
+  --md-outlined-text-field-trailing-space: 0px;
   --md-outlined-text-field-top-space: 8px;
   --md-outlined-text-field-bottom-space: 8px;
   --md-outlined-text-field-container-height: 40px;
@@ -755,7 +758,7 @@ md-filled-tonal-button.is-edit-active {
   position: absolute;
   /* Span the full search pill (field + trailing icon) */
   left: 0;
-  right: calc(-1 * (40px + 6px + 2px));
+  right: calc(-1 * 40px);
   top: calc(100% + 6px);
   width: auto;
   z-index: 50;
@@ -828,6 +831,9 @@ md-filled-tonal-button.is-edit-active {
   --md-outlined-text-field-container-height: 40px;
   --md-outlined-text-field-top-space: 8px;
   --md-outlined-text-field-bottom-space: 8px;
+  --md-outlined-text-field-leading-space: 8px;
+  --md-outlined-text-field-trailing-space: 0px;
+  --md-outlined-text-field-input-text-padding: 12px 4px 12px 8px;
 }
 
 .suggest-spinner {
@@ -1235,8 +1241,9 @@ md-filled-tonal-button.is-edit-active {
 .mobile-edit-bar {
   position: absolute;
   top: 12px;
-  left: 12px;
+  left: 50%;
   right: auto;
+  translate: -50% 0;
   z-index: 1100;
   display: flex;
   align-items: center;
@@ -1292,7 +1299,9 @@ md-filled-tonal-button.is-edit-active {
 /* Mobile: stretch the edit bar edge-to-edge for easier taps */
 @media (max-width: 800px) {
   .mobile-edit-bar {
+    left: 12px;
     right: 12px;
+    translate: none;
     width: auto;
     max-width: none;
   }
