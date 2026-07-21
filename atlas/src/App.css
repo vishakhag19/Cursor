@@ -30,10 +30,9 @@
   min-width: 0;
   height: auto;
   background: #ffffff;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-large);
-  box-shadow: var(--atlas-elevation-2);
-  /* Keep visible so suggestion dropdowns aren't clipped when the panel hugs content */
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  box-shadow: none;
   overflow: visible;
   transition: transform 0.22s ease, opacity 0.22s ease;
   --md-sys-color-surface: #ffffff;
@@ -230,10 +229,20 @@
   flex-shrink: 0;
 }
 
-.dir-route-steps-btn {
+.dir-route-steps-btn,
+.dir-route-undo-btn,
+.dir-route-reset-btn,
+.dir-route-delete-via-btn {
   align-self: center;
   flex-shrink: 0;
+}
+
+.dir-route-steps-btn {
   display: none;
+}
+
+.dir-route-delete-via-btn {
+  --md-icon-button-icon-color: #c5221f;
 }
 
 /* Desktop: Steps sits beside Edit in the route card */
@@ -576,54 +585,54 @@ md-filled-tonal-button.is-edit-active {
   max-height: calc(100dvh - 88px);
 }
 
-/* Google Maps–style unified search card */
-.gmaps-search-card {
-  background: #ffffff;
-  border-radius: 28px;
-  box-shadow:
-    0 1px 2px rgba(60, 64, 67, 0.3),
-    0 2px 6px 2px rgba(60, 64, 67, 0.15);
-  overflow: hidden;
+/* Minimal search bar — no shadows, flex-contained actions */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 4px;
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 24px;
+  box-shadow: none;
+  overflow: visible;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
-.gmaps-search-field-wrap {
+.search-bar-field {
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
-.gmaps-search-actions {
-  position: absolute;
-  right: 8px;
-  top: 10px;
-  z-index: 3;
+.search-bar-actions {
   display: flex;
   align-items: center;
   gap: 2px;
-  pointer-events: none;
+  flex-shrink: 0;
+  padding-right: 2px;
 }
 
-.gmaps-search-actions > * {
-  pointer-events: auto;
-}
-
-.gmaps-search-glyph {
+.search-bar-glyph {
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
-  color: #70757a;
+  color: #5f6368;
 }
 
-.gmaps-search-glyph md-icon {
+.search-bar-glyph md-icon {
   font-size: 22px;
   width: 22px;
   height: 22px;
 }
 
-.gmaps-directions-fab {
+.search-directions-btn {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   margin: 0;
   padding: 0;
   border: none;
@@ -631,40 +640,56 @@ md-filled-tonal-button.is-edit-active {
   background: #1a73e8;
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3);
+  flex-shrink: 0;
+  box-shadow: none;
 }
 
-.gmaps-directions-fab:hover {
+.search-directions-btn:hover {
   background: #1765cc;
 }
 
-.gmaps-directions-fab md-icon {
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
+.search-directions-btn md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
   color: #fff;
 }
 
-.gmaps-search-card .suggest-wrap md-outlined-text-field {
+.search-bar .suggest-wrap {
   width: 100%;
-  --md-outlined-text-field-container-shape: 0;
+}
+
+.search-bar .suggest-wrap md-outlined-text-field {
+  width: 100%;
+  --md-outlined-text-field-container-shape: 20px;
   --md-outlined-text-field-outline-width: 0px;
   --md-outlined-text-field-hover-outline-width: 0px;
   --md-outlined-text-field-focus-outline-width: 0px;
-  --md-outlined-text-field-input-text-padding: 18px 96px 18px 20px;
-  --md-outlined-text-field-top-space: 12px;
-  --md-outlined-text-field-bottom-space: 12px;
+  --md-outlined-text-field-input-text-padding: 12px 8px 12px 14px;
+  --md-outlined-text-field-top-space: 8px;
+  --md-outlined-text-field-bottom-space: 8px;
+  --md-outlined-text-field-container-height: 40px;
 }
 
-.gmaps-search-card .suggest-wrap.is-inline-list .place-suggest-panel {
+.search-bar .suggest-wrap.is-inline-list .place-suggest-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 50;
   margin: 0;
-  border: none;
-  border-top: 1px solid #e8eaed;
-  border-radius: 0;
-  max-height: min(420px, 55dvh);
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  box-shadow: none;
+  background: #fff;
+  max-height: min(360px, 48dvh);
 }
 
-.gmaps-search-card .search-clear-btn {
+.search-bar .suggest-wrap.is-inline-list.is-open {
+  z-index: 50;
+}
+
+.search-bar .search-clear-btn {
   position: static;
   top: auto;
   right: auto;
@@ -675,10 +700,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-clear-btn {
-  position: absolute;
-  right: 4px;
-  top: 8px;
-  z-index: 2;
+  position: static;
 }
 
 .suggest-wrap {
@@ -1508,6 +1530,21 @@ md-text-button {
   border-radius: 16px;
   box-shadow: var(--atlas-elevation-3);
   overflow: hidden;
+}
+
+.steps-sheet.is-embedded {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  top: auto;
+  z-index: auto;
+  max-height: calc(100dvh - 88px);
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  flex: 1;
+  min-height: 0;
 }
 
 .steps-sheet-header {

@@ -17,8 +17,8 @@ export default function SearchPanel({
 }) {
   return (
     <section className="mode-panel search-panel">
-      <div className="gmaps-search-card">
-        <div className="gmaps-search-field-wrap">
+      <div className={`search-bar ${query ? "has-query" : ""}`}>
+        <div className="search-bar-field">
           <SuggestInput
             id="main-search"
             label=""
@@ -30,30 +30,30 @@ export default function SearchPanel({
             recentPlaces={recentPlaces}
             near={near}
           />
-          <div className="gmaps-search-actions">
-            {query ? (
-              <md-icon-button
-                class="search-clear-btn"
-                aria-label="Clear search"
-                onClick={onClear}
-              >
-                <md-icon>close</md-icon>
-              </md-icon-button>
-            ) : (
-              <span className="gmaps-search-glyph" aria-hidden>
-                <md-icon>search</md-icon>
-              </span>
-            )}
-            <button
-              type="button"
-              className="gmaps-directions-fab"
-              aria-label="Directions"
-              title="Directions"
-              onClick={() => onOpenDirections?.()}
+        </div>
+        <div className="search-bar-actions">
+          {query ? (
+            <md-icon-button
+              class="search-clear-btn"
+              aria-label="Clear search"
+              onClick={onClear}
             >
-              <md-icon>directions</md-icon>
-            </button>
-          </div>
+              <md-icon>close</md-icon>
+            </md-icon-button>
+          ) : (
+            <span className="search-bar-glyph" aria-hidden>
+              <md-icon>search</md-icon>
+            </span>
+          )}
+          <button
+            type="button"
+            className="search-directions-btn"
+            aria-label="Directions"
+            title="Directions"
+            onClick={() => onOpenDirections?.()}
+          >
+            <md-icon>directions</md-icon>
+          </button>
         </div>
       </div>
 

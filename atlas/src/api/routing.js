@@ -246,7 +246,9 @@ export async function rebuildEditedRoute(
 }
 
 /**
- * Return up to `limit` shortest + fastest options between stops.
+ * Return up to `limit` distinct shortest + fastest route options.
+ * Public OSRM only returns a few alternatives, so we also seed detour
+ * vias to produce additional distinct corridors when needed.
  */
 export async function fetchShortestRoutes(
   coords,
@@ -276,9 +278,9 @@ export async function fetchShortestRoutes(
 
   let routes = data.routes.map((r, i) => normalizeRoute(r, i));
 
-  if (coords.length === 2 && routes.length < limit) {
+  if (coords.length === 2) {
     for (const exclude of ["motorway", "toll", "ferry"]) {
-      if (routes.length >= limit) break;
+      if (uniqueRouteCount(routes) >= limit) break;
       try {
         const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&continue_straight=false&exclude=${exclude}`;
         const localRes = await fetch(localUrl);
@@ -292,6 +294,16 @@ export async function fetchShortestRoutes(
       } catch {
         /* optional enrichment */
       }
+    }
+
+    if (uniqueRouteCount(routes) < limit) {
+      const extras = await fetchDetourAlternatives(
+        coords[0],
+        coords[coords.length - 1],
+        travelMode,
+        limit - uniqueRouteCount(routes),
+      );
+      routes.push(...extras);
     }
   }
 
@@ -309,6 +321,60 @@ export async function fetchShortestRoutes(
   }
 
   return rankShortestAndFastest(routes, limit);
+}
+
+function uniqueRouteCount(routes) {
+  const seen = new Set();
+  for (const r of routes) seen.add(routeKey(r));
+  return seen.size;
+}
+
+/** Offset a point along A→B by fraction t, then shift perpendicular by meters. */
+function offsetAlong(a, b, t, offsetMeters) {
+  const lat = a.lat + (b.lat - a.lat) * t;
+  const lng = a.lng + (b.lng - a.lng) * t;
+  const dLat = b.lat - a.lat;
+  const dLng = b.lng - a.lng;
+  const len = Math.hypot(dLat, dLng) || 1;
+  const pLat = -dLng / len;
+  const pLng = dLat / len;
+  const degLat = offsetMeters / 111320;
+  const degLng = offsetMeters / (111320 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+  return { lat: lat + pLat * degLat, lng: lng + pLng * degLng };
+}
+
+async function fetchDetourAlternatives(origin, destination, travelMode, needed) {
+  if (needed <= 0) return [];
+  const seeds = [
+    { t: 0.5, offset: 800 },
+    { t: 0.5, offset: -800 },
+    { t: 0.35, offset: 1600 },
+    { t: 0.65, offset: -1600 },
+    { t: 0.5, offset: 2800 },
+    { t: 0.5, offset: -2800 },
+    { t: 0.4, offset: 4000 },
+    { t: 0.6, offset: -4000 },
+  ];
+  const out = [];
+  for (let i = 0; i < seeds.length && out.length < needed; i++) {
+    const { t, offset } = seeds[i];
+    const via = offsetAlong(origin, destination, t, offset);
+    try {
+      const snapped = await nearestRoadPoint(via.lat, via.lng, travelMode);
+      const route = await fetchSingleRoute(
+        [origin, snapped, destination],
+        travelMode,
+      );
+      out.push({
+        ...route,
+        id: `detour-${i}-${Math.round(route.distance)}`,
+        label: route.label || `via alternate roads`,
+      });
+    } catch {
+      /* skip failed detour */
+    }
+  }
+  return out;
 }
 
 async function routeLegByLegShortest(coords, travelMode) {
@@ -349,7 +415,9 @@ async function routeLegByLegShortest(coords, travelMode) {
 }
 
 function routeKey(r) {
-  return `${Math.round(r.distance / 25)}:${Math.round(r.duration / 15)}`;
+  // Coarser bucket so near-identical copies collapse, but distinct
+  // corridors (hundreds of meters / tens of seconds apart) stay.
+  return `${Math.round(r.distance / 120)}:${Math.round(r.duration / 45)}`;
 }
 
 /** Prefer a mix of shortest-distance and fastest-time options, up to `limit`. */

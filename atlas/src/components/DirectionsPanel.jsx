@@ -173,16 +173,9 @@ export default function DirectionsPanel({
 
       {editMode && (
         <div className="edit-toolbar">
-          <div className="edit-toolbar-head">
-            <p className="hint md-typescale-body-small edit-hint">
-              Drag the route to bend it. Release to drop a via point.
-            </p>
-            <md-filled-tonal-button type="button" onClick={onToggleEdit}>
-              <md-icon slot="icon">check</md-icon>
-              Done
-            </md-filled-tonal-button>
-          </div>
-
+          <p className="hint md-typescale-body-small edit-hint">
+            Drag the route to add a point. Select a point, then press Delete.
+          </p>
           {comparison && (
             <div
               className={`comparison-chip tone-${comparison.tone}`}
@@ -202,61 +195,6 @@ export default function DirectionsPanel({
                 </span>
               )}
             </div>
-          )}
-
-          <div className="btn-row wrap edit-actions">
-            <md-outlined-button
-              type="button"
-              onClick={onUndo}
-              disabled={!canUndo || undefined}
-            >
-              <md-icon slot="icon">undo</md-icon>
-              Undo
-            </md-outlined-button>
-            <md-outlined-button
-              type="button"
-              onClick={onResetSuggested}
-              disabled={!canReset || undefined}
-            >
-              <md-icon slot="icon">restart_alt</md-icon>
-              Reset
-            </md-outlined-button>
-            {selectedViaId && (
-              <md-outlined-button
-                type="button"
-                class="via-delete-btn"
-                onClick={() => onDeleteVia?.(selectedViaId)}
-              >
-                <md-icon slot="icon">delete</md-icon>
-                Delete point
-              </md-outlined-button>
-            )}
-          </div>
-
-          {editVias.length > 0 && (
-            <ul className="via-point-list" aria-label="Via points">
-              {editVias.map((via, i) => (
-                <li key={via.id}>
-                  <button
-                    type="button"
-                    className={`via-point-item ${selectedViaId === via.id ? "is-selected" : ""}`}
-                    onClick={() => onSelectVia?.(via.id)}
-                  >
-                    <md-icon>radio_button_checked</md-icon>
-                    <span className="md-typescale-body-medium">
-                      {via.name || `Via ${i + 1}`}
-                    </span>
-                  </button>
-                  <md-icon-button
-                    type="button"
-                    aria-label={`Delete ${via.name || `via ${i + 1}`}`}
-                    onClick={() => onDeleteVia?.(via.id)}
-                  >
-                    <md-icon>close</md-icon>
-                  </md-icon-button>
-                </li>
-              ))}
-            </ul>
           )}
         </div>
       )}
@@ -341,6 +279,52 @@ export default function DirectionsPanel({
                   >
                     <md-icon>list</md-icon>
                   </md-icon-button>
+                )}
+                {active && editMode && (
+                  <>
+                    <md-icon-button
+                      type="button"
+                      class="dir-route-undo-btn"
+                      aria-label="Undo"
+                      title="Undo"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUndo?.();
+                      }}
+                      disabled={!canUndo || undefined}
+                    >
+                      <md-icon>undo</md-icon>
+                    </md-icon-button>
+                    <md-icon-button
+                      type="button"
+                      class="dir-route-reset-btn"
+                      aria-label="Reset"
+                      title="Reset"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onResetSuggested?.();
+                      }}
+                      disabled={!canReset || undefined}
+                    >
+                      <md-icon>restart_alt</md-icon>
+                    </md-icon-button>
+                    <md-icon-button
+                      type="button"
+                      class="dir-route-delete-via-btn"
+                      aria-label="Delete point"
+                      title="Delete point"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (selectedViaId) onDeleteVia?.(selectedViaId);
+                        else if (editVias?.length) {
+                          onDeleteVia?.(editVias[editVias.length - 1].id);
+                        }
+                      }}
+                      disabled={!selectedViaId && !editVias?.length ? true : undefined}
+                    >
+                      <md-icon>delete</md-icon>
+                    </md-icon-button>
+                  </>
                 )}
                 {active && (
                   <md-icon-button

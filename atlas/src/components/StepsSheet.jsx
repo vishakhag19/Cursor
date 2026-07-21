@@ -1,12 +1,21 @@
 import { formatDistance, formatDuration } from "../utils/format";
 
-/** Simple turn-by-turn steps sheet. */
-export default function StepsSheet({ route, onClose, onStart }) {
+/** Turn-by-turn steps — panel-embedded or floating sheet. */
+export default function StepsSheet({
+  route,
+  onClose,
+  onStart,
+  embedded = false,
+}) {
   if (!route) return null;
   const steps = route.steps || [];
 
   return (
-    <div className="steps-sheet" role="dialog" aria-label="Trip steps">
+    <div
+      className={`steps-sheet ${embedded ? "is-embedded" : ""}`}
+      role={embedded ? "region" : "dialog"}
+      aria-label="Trip steps"
+    >
       <div className="steps-sheet-header">
         <div>
           <div className="md-typescale-title-medium">Steps</div>

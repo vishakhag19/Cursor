@@ -625,6 +625,25 @@ export default function App() {
     });
   }, [baselineRoute, stops, showStatus]);
 
+  // Delete / Backspace removes the selected via (or the last via) in edit mode.
+  useEffect(() => {
+    if (!editMode) return undefined;
+    function onKeyDown(e) {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const tag = e.target?.tagName?.toLowerCase?.();
+      if (tag === "input" || tag === "textarea" || e.target?.isContentEditable) {
+        return;
+      }
+      e.preventDefault();
+      const id =
+        selectedViaId ||
+        editViasRef.current[editViasRef.current.length - 1]?.id;
+      if (id) deleteVia(id);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editMode, selectedViaId, deleteVia]);
+
   const goToMyLocation = useCallback(async () => {
     showStatus("Locating…", 0);
     try {
@@ -806,7 +825,16 @@ export default function App() {
           />
         )}
 
-        {view === "directions" && (
+        {view === "directions" && showSteps && selectedRoute && (
+          <StepsSheet
+            route={selectedRoute}
+            embedded
+            onClose={() => setShowSteps(false)}
+            onStart={startNavigation}
+          />
+        )}
+
+        {view === "directions" && !showSteps && (
           <DirectionsPanel
             stops={stops}
             stopTexts={stopTexts}
@@ -1004,18 +1032,14 @@ export default function App() {
                 type="button"
                 className="steps-fab"
                 aria-label="Steps"
-                onClick={() => setShowSteps(true)}
+                onClick={() => {
+                  setShowSteps(true);
+                  setPanelOpen(true);
+                }}
               >
                 <md-icon>list</md-icon>
                 <span>Steps</span>
               </button>
-            )}
-            {showSteps && (
-              <StepsSheet
-                route={selectedRoute}
-                onClose={() => setShowSteps(false)}
-                onStart={startNavigation}
-              />
             )}
           </>
         )}
