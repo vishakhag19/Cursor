@@ -337,13 +337,11 @@ export default function MapView({
         if (!wp || wp.isCurrentLocation) return null;
         const last = directionWaypoints.length - 1;
         const kind = i === 0 ? "start" : i === last ? "end" : "stop";
-        const label =
-          i === 0 ? "A" : i === last ? "B" : String(i + 1);
         return (
           <DraggableStopMarker
             key={wp.id || `dir-wp-${i}`}
             position={[wp.lat, wp.lng]}
-            icon={pinIcon(kind, label)}
+            icon={pinIcon(kind)}
             draggable={!editMode}
             onClick={() => onMarkerClick?.(wp)}
             onDragEnd={(lat, lng) => onWaypointDrag?.(i, lat, lng)}

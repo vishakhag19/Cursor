@@ -317,20 +317,23 @@
   }
 }
 
-/* Mobile & tablet: floating Steps FAB; steps open as a bottom sheet */
+/* Mobile & tablet: full-width Steps bar; opens as a bottom sheet */
 .steps-fab {
   position: absolute;
-  left: 50%;
-  bottom: 20px;
-  translate: -50% 0;
+  left: 12px;
+  right: 12px;
+  bottom: 16px;
+  translate: none;
   z-index: 1200;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  width: auto;
   margin: 0;
-  padding: 12px 22px;
+  padding: 14px 22px;
   border: none;
-  border-radius: 999px;
+  border-radius: 28px;
   background: #1a73e8;
   color: #fff;
   font: 500 15px/1 Roboto, sans-serif;
@@ -354,6 +357,13 @@
 @media (max-width: 800px) {
   .steps-in-panel {
     display: none !important;
+  }
+
+  .steps-fab {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    width: auto;
   }
 }
 
