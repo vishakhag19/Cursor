@@ -946,6 +946,12 @@ md-filled-tonal-button.is-edit-active {
   --md-elevation-level: 1;
 }
 
+.place-card.place-details,
+.place-details.m3-card {
+  box-shadow: none;
+  border: 1px solid #e8eaed;
+}
+
 .place-details-header {
   display: flex;
   align-items: flex-start;
@@ -1223,10 +1229,9 @@ md-filled-tonal-button.is-edit-active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   min-height: 36px;
   margin: 0;
-  padding: 0 16px 0 12px;
+  padding: 0 18px;
   border: none;
   border-radius: 20px;
   background: #1a73e8;
@@ -1237,17 +1242,6 @@ md-filled-tonal-button.is-edit-active {
 
 .mobile-edit-done:hover {
   background: #1765cc;
-}
-
-.mobile-edit-done .material-symbols-outlined {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  line-height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 20;
 }
 
 .map-stage {

@@ -1005,9 +1005,6 @@ export default function App() {
             aria-label="Done editing"
             onClick={toggleEditMode}
           >
-            <span className="material-symbols-outlined" aria-hidden="true">
-              check
-            </span>
             Done
           </button>
         </div>

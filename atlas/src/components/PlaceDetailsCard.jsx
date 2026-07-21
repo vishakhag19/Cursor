@@ -16,7 +16,6 @@ export default function PlaceDetailsCard({
 
   return (
     <div className="place-card m3-card place-details">
-      <md-elevation aria-hidden="true" />
       <div className="place-details-header">
         <div>
           <h2 className="md-typescale-title-large">{place.name}</h2>
