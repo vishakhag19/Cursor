@@ -77,23 +77,25 @@ export default function DirectionsPanel({
         <span className="md-typescale-title-medium dir-title">
           {editMode ? "Edit route" : "Directions"}
         </span>
-        <md-icon-button type="button" aria-label="Close directions" onClick={onClose}>
-          <md-icon>close</md-icon>
-        </md-icon-button>
-      </div>
-
-      {!editMode && (
-        <>
-          {hasRouteResults && !forceShowStops && (
+        <div className="dir-top-actions">
+          {!editMode && hasRouteResults && !forceShowStops && (
             <button
               type="button"
               className="dir-change-stops"
               onClick={() => setForceShowStops(true)}
             >
               <md-icon>edit_location_alt</md-icon>
-              <span className="md-typescale-body-medium">Change locations</span>
+              <span className="md-typescale-label-large">Change</span>
             </button>
           )}
+          <md-icon-button type="button" aria-label="Close directions" onClick={onClose}>
+            <md-icon>close</md-icon>
+          </md-icon-button>
+        </div>
+      </div>
+
+      {!editMode && (
+        <>
           <div className="dir-stops-block">
           <div className="dir-stops">
             <div className="dir-stops-rail" aria-hidden>
