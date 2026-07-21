@@ -310,36 +310,24 @@
   display: none;
 }
 
-/* Hover tooltips for icon actions — wrapper must own the tip so
-   md-icon-button overflow/ripple does not clip it */
-.has-tip {
+.action-tip-wrap {
   position: relative;
   display: inline-flex;
-  overflow: visible;
+  flex-shrink: 0;
 }
 
-.has-tip::after {
-  content: attr(data-tip);
-  position: absolute;
-  right: 0;
-  left: auto;
-  bottom: calc(100% + 6px);
-  translate: 0;
-  padding: 5px 8px;
+.action-tip {
+  position: fixed;
+  translate: -100% -100%;
+  padding: 6px 8px;
   border-radius: 4px;
   background: #202124;
   color: #fff;
-  font: 500 11px/1.2 Roboto, sans-serif;
+  font: 500 11px/1.2 Roboto, system-ui, sans-serif;
   white-space: nowrap;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 120ms ease;
-  z-index: 40;
-}
-
-.has-tip:hover::after,
-.has-tip:focus-within::after {
-  opacity: 1;
+  z-index: 4000;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
 }
 
 .atlas-via-delete {

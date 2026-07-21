@@ -1,6 +1,7 @@
 import { useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
+import ActionTip from "./ActionTip";
 import { formatDistance, formatDuration } from "../utils/format";
 
 /**
@@ -251,12 +252,11 @@ export default function DirectionsPanel({
                 </button>
                 <div className="dir-route-actions">
                   {active && !editMode && onShowSteps ? (
-                    <span className="has-tip" data-tip="Steps">
+                    <ActionTip tip="Steps">
                       <md-icon-button
                         type="button"
                         class="dir-route-steps-btn"
                         aria-label="View turn-by-turn steps"
-                        title="View turn-by-turn steps"
                         onClick={(e) => {
                           e.stopPropagation();
                           onShowSteps();
@@ -264,16 +264,15 @@ export default function DirectionsPanel({
                       >
                         <md-icon>list</md-icon>
                       </md-icon-button>
-                    </span>
+                    </ActionTip>
                   ) : null}
                   {active && editMode ? (
                     <>
-                      <span className="has-tip" data-tip="Undo last edit">
+                      <ActionTip tip="Undo last edit">
                         <md-icon-button
                           type="button"
                           class="dir-route-undo-btn"
                           aria-label="Undo last edit"
-                          title="Undo last edit"
                           onClick={(e) => {
                             e.stopPropagation();
                             onUndo?.();
@@ -282,13 +281,12 @@ export default function DirectionsPanel({
                         >
                           <md-icon>undo</md-icon>
                         </md-icon-button>
-                      </span>
-                      <span className="has-tip" data-tip="Reset to suggested route">
+                      </ActionTip>
+                      <ActionTip tip="Reset to suggested route">
                         <md-icon-button
                           type="button"
                           class="dir-route-reset-btn"
                           aria-label="Reset to suggested route"
-                          title="Reset to suggested route"
                           onClick={(e) => {
                             e.stopPropagation();
                             onResetSuggested?.();
@@ -297,19 +295,15 @@ export default function DirectionsPanel({
                         >
                           <md-icon>restart_alt</md-icon>
                         </md-icon-button>
-                      </span>
+                      </ActionTip>
                     </>
                   ) : null}
                   {active ? (
-                    <span
-                      className="has-tip"
-                      data-tip={editMode ? "Finish editing" : "Edit route"}
-                    >
+                    <ActionTip tip={editMode ? "Finish editing" : "Edit route"}>
                       <md-icon-button
                         type="button"
                         class={`dir-route-edit-btn ${editMode ? "is-edit-active" : ""}`}
                         aria-label={editMode ? "Finish editing" : "Edit route"}
-                        title={editMode ? "Finish editing" : "Edit route"}
                         onClick={(e) => {
                           e.stopPropagation();
                           onToggleEdit();
@@ -317,7 +311,7 @@ export default function DirectionsPanel({
                       >
                         <md-icon>{editMode ? "check" : "edit"}</md-icon>
                       </md-icon-button>
-                    </span>
+                    </ActionTip>
                   ) : null}
                 </div>
               </div>
