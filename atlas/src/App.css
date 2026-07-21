@@ -53,14 +53,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 8px 8px 16px;
+  gap: 8px;
+  /* Match .mode-panel horizontal inset so the chevron lines up with actions below */
+  padding: 12px 16px 8px;
 }
 
 .collapse-panel-btn {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   margin: 0;
   padding: 0;
   border: 1px solid #e8eaed;
@@ -69,6 +71,7 @@
   color: #5f6368;
   cursor: pointer;
   box-sizing: border-box;
+  flex-shrink: 0;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
@@ -83,10 +86,10 @@
 }
 
 .collapse-panel-btn md-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  --md-icon-size: 20px;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  --md-icon-size: 22px;
 }
 
 .collapse-chevron-mobile {
