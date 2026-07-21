@@ -1231,16 +1231,18 @@ md-filled-tonal-button.is-edit-active {
   --md-fab-icon-color: #fff;
 }
 
-/* Floating undo / reset / done when the panel is collapsed (mobile edit) */
+/* Floating undo / reset / done when the panel is collapsed during edit */
 .mobile-edit-bar {
   position: absolute;
   top: 12px;
   left: 12px;
-  right: 12px;
+  right: auto;
   z-index: 1100;
   display: flex;
   align-items: center;
   gap: 2px;
+  width: max-content;
+  max-width: calc(100% - 24px);
   min-height: 48px;
   padding: 4px 6px 4px 4px;
   box-sizing: border-box;
@@ -1251,14 +1253,15 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .mobile-edit-spacer {
-  flex: 1;
+  flex: 0 0 8px;
   min-width: 8px;
 }
 
 .mobile-edit-comparison {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
-  padding: 0 6px;
+  max-width: 220px;
+  padding: 0 8px;
   color: #5f6368;
   white-space: nowrap;
   overflow: hidden;
@@ -1284,6 +1287,24 @@ md-filled-tonal-button.is-edit-active {
 
 .mobile-edit-done:hover {
   background: #1765cc;
+}
+
+/* Mobile: stretch the edit bar edge-to-edge for easier taps */
+@media (max-width: 800px) {
+  .mobile-edit-bar {
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  .mobile-edit-spacer {
+    flex: 1 1 auto;
+  }
+
+  .mobile-edit-comparison {
+    flex: 1 1 auto;
+    max-width: none;
+  }
 }
 
 .map-stage {
