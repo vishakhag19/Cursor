@@ -18,15 +18,28 @@ function handleIcon(dragging = false, selected = false) {
   });
 }
 
-function viaDeleteIcon() {
-  return L.divIcon({
-    className: "atlas-via-delete",
-    html: `<button type="button" class="via-map-delete" title="Remove this point" aria-label="Remove this point">
+const HANDLE_ICON_CACHE = new Map();
+function getHandleIcon(dragging = false, selected = false) {
+  const key = `${dragging ? 1 : 0}-${selected ? 1 : 0}`;
+  let icon = HANDLE_ICON_CACHE.get(key);
+  if (!icon) {
+    icon = handleIcon(dragging, selected);
+    HANDLE_ICON_CACHE.set(key, icon);
+  }
+  return icon;
+}
+
+const VIA_DELETE_ICON = L.divIcon({
+  className: "atlas-via-delete",
+  html: `<button type="button" class="via-map-delete" title="Remove this point" aria-label="Remove this point">
       <span aria-hidden="true">×</span>
     </button>`,
-    iconSize: [28, 28],
-    iconAnchor: [-6, 28],
-  });
+  iconSize: [28, 28],
+  iconAnchor: [-6, 28],
+});
+
+function viaDeleteIcon() {
+  return VIA_DELETE_ICON;
 }
 
 function orderedViasWithInsert(vias, geometry, segmentIndex, newVia) {
@@ -516,7 +529,7 @@ export default function RouteEditorLayer({
         <Marker
           key={via.id}
           position={[via.lat, via.lng]}
-          icon={handleIcon(
+          icon={getHandleIcon(
             dragState?.viaId === via.id,
             selectedViaId === via.id,
           )}

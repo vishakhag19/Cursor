@@ -62,10 +62,9 @@ export default function DirectionsPanel({
     setActiveStop(null);
   }
 
-  const orderedRoutes = [
-    ...routeOptions.filter((o) => o.id === selectedRouteId),
-    ...routeOptions.filter((o) => o.id !== selectedRouteId),
-  ].filter((opt) => !editMode || opt.id === selectedRouteId);
+  const orderedRoutes = routeOptions.filter(
+    (opt) => !editMode || opt.id === selectedRouteId,
+  );
 
   const bothEndsSet = stops.filter(Boolean).length >= 2;
   const hasRouteResults = bothEndsSet && routeOptions.length > 0;

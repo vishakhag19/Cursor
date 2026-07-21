@@ -1,11 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Circle,
   Polyline,
-  ZoomControl,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -15,36 +14,13 @@ import RouteEditorLayer from "./RouteEditorLayer";
 const DEFAULT_CENTER = [37.7749, -122.4194];
 const DEFAULT_ZOOM = 13;
 
-/** Selected route must stay above alternatives (Leaflet appends new layers on top). */
-function RoutePolyline({
-  positions,
-  pathOptions,
-  bringToFront = false,
-  stackEpoch = 0,
-  interactive = true,
-  eventHandlers,
-}) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!bringToFront) return;
-    const layer = ref.current;
-    if (!layer?.bringToFront) return;
-    // After siblings mount (e.g. leaving edit mode), re-assert stacking.
-    const id = requestAnimationFrame(() => layer.bringToFront());
-    return () => cancelAnimationFrame(id);
-  }, [bringToFront, positions, stackEpoch]);
-  return (
-    <Polyline
-      ref={ref}
-      positions={positions}
-      pathOptions={pathOptions}
-      interactive={interactive}
-      eventHandlers={eventHandlers}
-    />
-  );
-}
+const PIN_ICON_CACHE = new Map();
 
 function pinIcon(kind = "default", label = "") {
+  const cacheKey = `${kind}:${label}`;
+  const cached = PIN_ICON_CACHE.get(cacheKey);
+  if (cached) return cached;
+
   const colors = {
     default: "#EA4335",
     start: "#34A853",
@@ -57,7 +33,7 @@ function pinIcon(kind = "default", label = "") {
     label !== ""
       ? `<span style="position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#202124;color:#fff;font:700 10px/16px Roboto,sans-serif;text-align:center">${label}</span>`
       : "";
-  return L.divIcon({
+  const icon = L.divIcon({
     className: "atlas-pin",
     html: `<div style="position:relative;width:28px;height:36px">
       <svg viewBox="0 0 28 36" width="28" height="36">
@@ -69,6 +45,8 @@ function pinIcon(kind = "default", label = "") {
     iconAnchor: [14, 36],
     popupAnchor: [0, -32],
   });
+  PIN_ICON_CACHE.set(cacheKey, icon);
+  return icon;
 }
 
 function userLocationIcon() {
@@ -137,6 +115,38 @@ function LocateControl({ onLocate }) {
   return null;
 }
 
+/** Expose zoomIn / zoomOut so App can render a unified control stack. */
+function ZoomBridge({ onReady }) {
+  const map = useMap();
+  useEffect(() => {
+    onReady?.({
+      zoomIn: () => map.zoomIn(),
+      zoomOut: () => map.zoomOut(),
+    });
+  }, [map, onReady]);
+  return null;
+}
+
+/** Stable panes so the selected route stays above alts without bringToFront thrash. */
+function EnsureRoutePanes() {
+  const map = useMap();
+  useEffect(() => {
+    if (!map.getPane("routeAlt")) {
+      const pane = map.createPane("routeAlt");
+      pane.style.zIndex = 410;
+    }
+    if (!map.getPane("routeSelected")) {
+      const pane = map.createPane("routeSelected");
+      pane.style.zIndex = 420;
+    }
+    if (!map.getPane("routeHit")) {
+      const pane = map.createPane("routeHit");
+      pane.style.zIndex = 430;
+    }
+  }, [map]);
+  return null;
+}
+
 /** Keep Leaflet in sync if the container size ever changes. */
 function InvalidateOnResize() {
   const map = useMap();
@@ -165,6 +175,7 @@ export default function MapView({
   onContextMenu,
   onWaypointDrag,
   onLocateReady,
+  onZoomReady,
   onMarkerClick,
   routeOptions = [],
   selectedRouteId = null,
@@ -201,7 +212,8 @@ export default function MapView({
     return null;
   })();
 
-  const stackEpoch = `${editMode ? 1 : 0}-${routeOptions.length}-${selectedRouteId || ""}`;
+  const directionWaypoints =
+    mode === "directions" ? createRoute?.waypoints || [] : [];
 
   return (
     <MapContainer
@@ -210,8 +222,8 @@ export default function MapView({
       zoomControl={false}
       className="map-root"
     >
-      <ZoomControl position="bottomright" />
       <InvalidateOnResize />
+      <EnsureRoutePanes />
       {layer === "satellite" ? (
         <TileLayer
           attribution="Tiles &copy; Esri"
@@ -233,6 +245,7 @@ export default function MapView({
       <FitBounds positions={fitPositions} version={fitKey} />
       <FlyTo target={flyTarget} />
       <LocateControl onLocate={onLocateReady} />
+      <ZoomBridge onReady={onZoomReady} />
 
       {userLocation && (
         <>
@@ -266,44 +279,29 @@ export default function MapView({
         />
       )}
 
-      {mode === "directions" &&
-        directions?.from &&
-        !directions.from.isCurrentLocation && (
+      {directionWaypoints.map((wp, i) => {
+        if (!wp || wp.isCurrentLocation) return null;
+        const last = directionWaypoints.length - 1;
+        const kind = i === 0 ? "start" : i === last ? "end" : "stop";
+        const label =
+          i === 0 ? "A" : i === last ? "B" : String(i + 1);
+        return (
           <Marker
-            position={[directions.from.lat, directions.from.lng]}
-            icon={pinIcon("start", "A")}
+            key={wp.id || `dir-wp-${i}`}
+            position={[wp.lat, wp.lng]}
+            icon={pinIcon(kind, label)}
+            draggable={!editMode}
+            autoPan={false}
             eventHandlers={{
-              click: () => onMarkerClick?.(directions.from),
+              click: () => onMarkerClick?.(wp),
+              dragend: (e) => {
+                const { lat, lng } = e.target.getLatLng();
+                onWaypointDrag?.(i, lat, lng);
+              },
             }}
           />
-        )}
-      {mode === "directions" &&
-        directions?.to &&
-        !directions.to.isCurrentLocation && (
-          <Marker
-            position={[directions.to.lat, directions.to.lng]}
-            icon={pinIcon("end", "B")}
-            eventHandlers={{
-              click: () => onMarkerClick?.(directions.to),
-            }}
-          />
-        )}
-
-      {mode === "directions" &&
-        createRoute?.waypoints?.length > 2 &&
-        createRoute.waypoints.slice(1, -1).map((wp, i) => {
-          if (wp.isCurrentLocation) return null;
-          return (
-            <Marker
-              key={wp.id || `mid-${i}`}
-              position={[wp.lat, wp.lng]}
-              icon={pinIcon("stop", String(i + 2))}
-              eventHandlers={{
-                click: () => onMarkerClick?.(wp),
-              }}
-            />
-          );
-        })}
+        );
+      })}
 
       {mode === "create" &&
         createRoute?.waypoints?.map((wp, i) => {
@@ -321,6 +319,7 @@ export default function MapView({
               position={[wp.lat, wp.lng]}
               icon={pinIcon(kind, String(i + 1))}
               draggable
+              autoPan={false}
               eventHandlers={{
                 click: () => onMarkerClick?.(wp),
                 dragend: (e) => {
@@ -332,44 +331,44 @@ export default function MapView({
           );
         })}
 
-      {/* Inactive routes first; selected is brought to front after mount */}
-      {routeOptions
-        .filter((opt) => opt?.geometry?.length && opt.id !== selectedRouteId)
-        .filter(() => !editMode)
-        .map((opt) => (
-          <RoutePolyline
-            key={opt.id}
-            positions={opt.geometry}
-            pathOptions={{
-              color: "#64B5F6",
-              weight: 5,
-              opacity: 0.82,
-              lineJoin: "round",
-              lineCap: "round",
-            }}
-            eventHandlers={{
-              click: (e) => {
-                L.DomEvent.stopPropagation(e);
-                onSelectRoute?.(opt);
-              },
-              mouseover: (e) => {
-                e.target.setStyle({ opacity: 0.95, weight: 6 });
-              },
-              mouseout: (e) => {
-                e.target.setStyle({ opacity: 0.82, weight: 5 });
-              },
-            }}
-          />
-        ))}
+      {/* Alternate routes on a lower pane so the selected route stays on top */}
+      {!editMode &&
+        routeOptions
+          .filter((opt) => opt?.geometry?.length && opt.id !== selectedRouteId)
+          .map((opt) => (
+            <Polyline
+              key={opt.id}
+              positions={opt.geometry}
+              pane="routeAlt"
+              pathOptions={{
+                color: "#64B5F6",
+                weight: 5,
+                opacity: 0.82,
+                lineJoin: "round",
+                lineCap: "round",
+              }}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  onSelectRoute?.(opt);
+                },
+                mouseover: (e) => {
+                  e.target.setStyle({ opacity: 0.95, weight: 6 });
+                },
+                mouseout: (e) => {
+                  e.target.setStyle({ opacity: 0.82, weight: 5 });
+                },
+              }}
+            />
+          ))}
 
       {routeOptions
         .filter((opt) => opt?.geometry?.length && opt.id === selectedRouteId)
         .map((opt) => (
-          <RoutePolyline
+          <Polyline
             key={opt.id}
             positions={opt.geometry}
-            bringToFront
-            stackEpoch={stackEpoch}
+            pane="routeSelected"
             pathOptions={{
               color: "#1A73E8",
               weight: 6,
@@ -389,18 +388,13 @@ export default function MapView({
         ))}
 
       {!editMode &&
-        [
-          ...routeOptions.filter((o) => o.id !== selectedRouteId),
-          ...routeOptions.filter((o) => o.id === selectedRouteId),
-        ].map((opt) => {
+        routeOptions.map((opt) => {
           if (!opt?.geometry?.length) return null;
-          const isSelected = opt.id === selectedRouteId;
           return (
-            <RoutePolyline
+            <Polyline
               key={`hit-${opt.id}`}
               positions={opt.geometry}
-              bringToFront={isSelected}
-              stackEpoch={stackEpoch}
+              pane="routeHit"
               pathOptions={{
                 color: "#000",
                 weight: 18,
@@ -433,21 +427,6 @@ export default function MapView({
           onError={onEditError}
         />
       )}
-
-      {selectedGeometry?.length > 1 &&
-        !editMode &&
-        !routeOptions.some((o) => o.id === selectedRouteId) && (
-          <Polyline
-            positions={selectedGeometry}
-            pathOptions={{
-              color: "#1A73E8",
-              weight: 6,
-              opacity: 0.95,
-              lineJoin: "round",
-              lineCap: "round",
-            }}
-          />
-        )}
     </MapContainer>
   );
 }

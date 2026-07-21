@@ -1131,7 +1131,6 @@ md-filled-tonal-button.is-edit-active {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
   pointer-events: none;
 }
 
@@ -1139,12 +1138,20 @@ md-filled-tonal-button.is-edit-active {
   pointer-events: auto;
 }
 
-/* Match Leaflet zoom control (~30×30) */
+.map-ctrl-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 34px;
+  gap: 8px;
+}
+
+/* Match a single column width for layers / locate / zoom */
 .map-ctrl-btn {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   margin: 0;
   padding: 0;
   border: none;
@@ -1153,6 +1160,7 @@ md-filled-tonal-button.is-edit-active {
   color: #333;
   cursor: pointer;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
 }
 
 .map-ctrl-btn:hover {
@@ -1166,31 +1174,41 @@ md-filled-tonal-button.is-edit-active {
   color: inherit;
 }
 
-.layer-toggle {
-  display: inline-flex;
+.layer-toggle,
+.zoom-toggle {
+  display: flex;
   flex-direction: column;
   align-items: stretch;
+  width: 100%;
   gap: 0;
   background: #fff;
   border-radius: 2px;
   padding: 0;
   overflow: hidden;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
 }
 
-.layer-toggle .map-ctrl-btn {
+.layer-toggle .map-ctrl-btn,
+.zoom-toggle .map-ctrl-btn {
+  width: 100%;
   box-shadow: none;
   border-radius: 0;
   border-bottom: 1px solid #ccc;
 }
 
-.layer-toggle .map-ctrl-btn:last-child {
+.layer-toggle .map-ctrl-btn:last-child,
+.zoom-toggle .map-ctrl-btn:last-child {
   border-bottom: none;
 }
 
 .layer-toggle .map-ctrl-btn.is-selected {
   background: #e8f0fe;
   color: #1a73e8;
+}
+
+.locate-btn {
+  width: 100%;
 }
 
 .locate-btn.is-located {
@@ -1330,12 +1348,7 @@ md-text-button {
 
   .map-controls {
     top: auto;
-    bottom: 78px;
-    right: 12px;
-  }
-
-  .leaflet-bottom.leaflet-right {
-    bottom: 12px;
+    bottom: 16px;
     right: 12px;
   }
 
@@ -1409,10 +1422,6 @@ md-text-button {
 @media (max-width: 480px) {
   .brand-name {
     font-size: 1.15rem;
-  }
-
-  .layer-toggle {
-    padding: 2px;
   }
 
   .dir-stops {
@@ -1572,15 +1581,9 @@ md-text-button {
 }
 
 /* Map chrome sits above the anchored nav footer */
-.app.nav-mode .leaflet-bottom.leaflet-right {
-  bottom: 88px;
-  right: 16px;
-  margin-bottom: 0;
-}
-
 .app.nav-mode .map-controls {
   top: auto;
-  bottom: 156px;
+  bottom: 88px;
   right: 16px;
 }
 
@@ -1715,14 +1718,9 @@ md-text-button {
     padding-top: max(14px, env(safe-area-inset-top, 0px));
   }
 
-  .app.nav-mode .leaflet-bottom.leaflet-right {
-    bottom: 84px;
-    right: 12px;
-  }
-
   .app.nav-mode .map-controls {
     top: auto;
-    bottom: 148px;
+    bottom: 84px;
     right: 12px;
   }
 
@@ -1731,12 +1729,7 @@ md-text-button {
     bottom: 84px;
   }
 
-  .app:has(.steps-fab) .leaflet-bottom.leaflet-right {
-    bottom: 12px;
-  }
-
-  .app:has(.steps-bottom-sheet) .map-controls,
-  .app:has(.steps-bottom-sheet) .leaflet-bottom.leaflet-right {
+  .app:has(.steps-bottom-sheet) .map-controls {
     visibility: hidden;
   }
 }

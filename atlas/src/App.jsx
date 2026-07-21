@@ -74,6 +74,7 @@ export default function App() {
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
   const locateFn = useRef(null);
+  const zoomFn = useRef(null);
   const editViasRef = useRef([]);
   const routeGeometryRef = useRef(null);
   const selectedRouteIdRef = useRef(null);
@@ -606,15 +607,6 @@ export default function App() {
       } else {
         setEditPreview(null);
         setSelectedViaId(null);
-        // Keep the active (edited) route first in the list and selected.
-        setRouteOptions((prev) => {
-          const id = selectedRouteIdRef.current;
-          const selected = prev.find((r) => r.id === id);
-          if (!selected) return prev;
-          const nextOpts = [selected, ...prev.filter((r) => r.id !== id)];
-          routeOptionsRef.current = nextOpts;
-          return nextOpts;
-        });
       }
       return next;
     });
@@ -948,6 +940,9 @@ export default function App() {
           onLocateReady={(fn) => {
             locateFn.current = fn;
           }}
+          onZoomReady={(api) => {
+            zoomFn.current = api;
+          }}
           onMarkerClick={(place) => {
             setView("search");
             setPanelOpen(true);
@@ -958,39 +953,61 @@ export default function App() {
         />
 
         <div className="map-controls">
-          <div className="layer-toggle" role="group" aria-label="Map type">
+          <div className="map-ctrl-stack" role="group" aria-label="Map controls">
+            <div className="layer-toggle" role="group" aria-label="Map type">
+              <button
+                type="button"
+                className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
+                aria-label="Map"
+                title="Map"
+                aria-pressed={layer === "map" ? "true" : "false"}
+                onClick={() => setLayer("map")}
+              >
+                <md-icon>map</md-icon>
+              </button>
+              <button
+                type="button"
+                className={
+                  layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
+                }
+                aria-label="Satellite"
+                title="Satellite"
+                aria-pressed={layer === "satellite" ? "true" : "false"}
+                onClick={() => setLayer("satellite")}
+              >
+                <md-icon>satellite_alt</md-icon>
+              </button>
+            </div>
             <button
               type="button"
-              className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
-              aria-label="Map"
-              title="Map"
-              aria-pressed={layer === "map" ? "true" : "false"}
-              onClick={() => setLayer("map")}
+              className={`map-ctrl-btn locate-btn ${geoStatus === "ready" ? "is-located" : ""}`}
+              aria-label="My location"
+              title="My location"
+              onClick={goToMyLocation}
             >
-              <md-icon>map</md-icon>
+              <md-icon>my_location</md-icon>
             </button>
-            <button
-              type="button"
-              className={
-                layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
-              }
-              aria-label="Satellite"
-              title="Satellite"
-              aria-pressed={layer === "satellite" ? "true" : "false"}
-              onClick={() => setLayer("satellite")}
-            >
-              <md-icon>satellite_alt</md-icon>
-            </button>
+            <div className="zoom-toggle" role="group" aria-label="Zoom">
+              <button
+                type="button"
+                className="map-ctrl-btn"
+                aria-label="Zoom in"
+                title="Zoom in"
+                onClick={() => zoomFn.current?.zoomIn?.()}
+              >
+                <md-icon>add</md-icon>
+              </button>
+              <button
+                type="button"
+                className="map-ctrl-btn"
+                aria-label="Zoom out"
+                title="Zoom out"
+                onClick={() => zoomFn.current?.zoomOut?.()}
+              >
+                <md-icon>remove</md-icon>
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            className={`map-ctrl-btn locate-btn ${geoStatus === "ready" ? "is-located" : ""}`}
-            aria-label="My location"
-            title="My location"
-            onClick={goToMyLocation}
-          >
-            <md-icon>my_location</md-icon>
-          </button>
         </div>
 
         {view === "directions" && selectedRoute && !editMode && (
