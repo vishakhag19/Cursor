@@ -1379,7 +1379,7 @@ md-filled-tonal-button.is-edit-active {
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 12px;
+  border-radius: 999px;
   background: transparent;
   color: #3c4043;
   cursor: pointer;
