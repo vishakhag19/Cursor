@@ -208,7 +208,7 @@
   flex-direction: column;
   gap: 0;
   margin-top: 4px;
-  border-top: 1px solid var(--md-sys-color-outline-variant);
+  border-top: 1px solid #dadce0;
 }
 
 .dir-route-card {
@@ -218,7 +218,7 @@
   align-items: center;
   width: 100%;
   min-height: 76px;
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  border-bottom: 1px solid #dadce0;
   background: transparent;
   color: inherit;
 }
@@ -852,7 +852,7 @@ md-filled-tonal-button.is-edit-active {
 /* Google Maps–style place list under inputs */
 .place-suggest-panel {
   margin: 0 -16px;
-  border-top: 1px solid var(--md-sys-color-outline-variant);
+  border-top: none;
   background: #ffffff;
   max-height: min(360px, 48dvh);
   overflow: auto;
@@ -870,7 +870,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .place-suggest-list > li:not(:last-child) .place-suggest-item {
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid #dadce0;
 }
 
 .place-suggest-item {
@@ -1842,7 +1842,7 @@ md-text-button {
   justify-content: space-between;
   gap: 8px;
   padding: 14px 8px 10px 16px;
-  border-bottom: 1px solid #e8eaed;
+  border-bottom: 1px solid #dadce0;
 }
 
 .steps-sheet-meta {
@@ -1863,7 +1863,7 @@ md-text-button {
   align-items: flex-start;
   gap: 14px;
   padding: 14px 16px;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid #dadce0;
 }
 
 .steps-item:last-child {
