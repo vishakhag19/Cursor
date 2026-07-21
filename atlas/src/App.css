@@ -8,6 +8,8 @@
   min-height: 0;
   background: var(--md-sys-color-surface);
   overflow: hidden;
+  /* Shared by open-panel collapse + collapsed-map expand controls */
+  --panel-control-size: 32px;
 }
 
 .map-stage {
@@ -37,7 +39,6 @@
   overflow: visible;
   transition: transform 0.22s ease, opacity 0.22s ease;
   --panel-pad-x: 16px;
-  --panel-control-size: 32px;
   --md-sys-color-surface: #ffffff;
   --md-sys-color-surface-container-low: #ffffff;
   --md-sys-color-surface-container-lowest: #ffffff;
@@ -88,10 +89,10 @@
 }
 
 .collapse-panel-btn md-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  --md-icon-size: 20px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  --md-icon-size: 18px;
 }
 
 .collapse-chevron-mobile {
@@ -1225,8 +1226,8 @@ md-filled-tonal-button.is-edit-active {
   z-index: 1100;
   display: grid;
   place-items: center;
-  width: var(--panel-control-size, 32px);
-  height: var(--panel-control-size, 32px);
+  width: var(--panel-control-size);
+  height: var(--panel-control-size);
   margin: 0;
   padding: 0;
   border: 1px solid #e8eaed;
@@ -1246,10 +1247,10 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .expand-panel md-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  --md-icon-size: 20px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  --md-icon-size: 18px;
 }
 
 .expand-chevron-mobile {
@@ -1261,7 +1262,7 @@ md-filled-tonal-button.is-edit-active {
   position: absolute;
   /* Align vertically with .expand-panel (same top + height) */
   top: 16px;
-  left: 56px;
+  left: calc(16px + var(--panel-control-size) + 8px);
   right: auto;
   translate: none;
   z-index: 1100;
@@ -1269,10 +1270,10 @@ md-filled-tonal-button.is-edit-active {
   align-items: center;
   gap: 2px;
   width: max-content;
-  max-width: calc(100% - 80px);
-  height: var(--panel-control-size, 32px);
-  min-height: var(--panel-control-size, 32px);
-  padding: 0 4px 0 2px;
+  max-width: calc(100% - 32px - var(--panel-control-size) - 8px);
+  height: var(--panel-control-size);
+  min-height: var(--panel-control-size);
+  padding: 0 3px 0 1px;
   box-sizing: border-box;
   background: #fff;
   border: 1px solid #e8eaed;
@@ -1310,14 +1311,15 @@ md-filled-tonal-button.is-edit-active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 28px;
+  height: 28px;
   margin: 0;
-  padding: 0 18px;
+  padding: 0 12px;
   border: none;
   border-radius: 999px;
   background: #1a73e8;
   color: #fff;
-  font: 500 14px/1 Roboto, sans-serif;
+  font: 500 13px/1 Roboto, sans-serif;
   cursor: pointer;
 }
 
@@ -1331,19 +1333,19 @@ md-filled-tonal-button.is-edit-active {
     top: 12px;
     left: auto;
     right: 12px;
-    width: var(--panel-control-size, 32px);
-    height: var(--panel-control-size, 32px);
+    width: var(--panel-control-size);
+    height: var(--panel-control-size);
   }
 
   .mobile-edit-bar {
     top: 12px;
     left: 12px;
-    right: 52px;
+    right: calc(12px + var(--panel-control-size) + 8px);
     translate: none;
     width: auto;
     max-width: none;
-    height: var(--panel-control-size, 32px);
-    min-height: var(--panel-control-size, 32px);
+    height: var(--panel-control-size);
+    min-height: var(--panel-control-size);
   }
 
   .mobile-edit-spacer {
