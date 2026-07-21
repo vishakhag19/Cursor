@@ -885,10 +885,10 @@ export default function App() {
               className="brand-logo"
               src={`${import.meta.env.BASE_URL}favicon.svg`}
               alt=""
-              width="28"
-              height="28"
+              width="32"
+              height="32"
             />
-            <span className="brand-name md-typescale-title-large">Atlas</span>
+            <span className="brand-name">Atlas</span>
           </div>
           <button
             type="button"
