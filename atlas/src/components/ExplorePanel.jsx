@@ -37,7 +37,6 @@ export default function ExplorePanel({
       {place ? (
         <PlaceDetailsCard
           place={place}
-          onClose={onClear}
           onDirectionsTo={onDirectionsTo}
           onDirectionsFrom={onDirectionsFrom}
         />
