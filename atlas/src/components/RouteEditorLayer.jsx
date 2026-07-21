@@ -18,6 +18,17 @@ function handleIcon(dragging = false, selected = false) {
   });
 }
 
+function viaDeleteIcon() {
+  return L.divIcon({
+    className: "atlas-via-delete",
+    html: `<button type="button" class="via-map-delete" title="Remove this point" aria-label="Remove this point">
+      <span aria-hidden="true">×</span>
+    </button>`,
+    iconSize: [28, 28],
+    iconAnchor: [-6, 28],
+  });
+}
+
 function orderedViasWithInsert(vias, geometry, segmentIndex, newVia) {
   if (!vias.length) return [newVia];
   const withMeta = vias.map((v) => {
@@ -536,6 +547,29 @@ export default function RouteEditorLayer({
           zIndexOffset={2000}
         />
       ))}
+
+      {selectedViaId &&
+        vias
+          .filter((v) => v.id === selectedViaId)
+          .map((via) => (
+            <Marker
+              key={`del-${via.id}`}
+              position={[via.lat, via.lng]}
+              icon={viaDeleteIcon()}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  L.DomEvent.preventDefault(e);
+                  onDeleteVia?.(via.id);
+                },
+                mousedown: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  L.DomEvent.preventDefault(e);
+                },
+              }}
+              zIndexOffset={3000}
+            />
+          ))}
 
       {dragState?.active && (
         <>

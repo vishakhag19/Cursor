@@ -883,10 +883,6 @@ export default function App() {
             onResetSuggested={resetToSuggested}
             comparison={editMode ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
-            editVias={editVias}
-            selectedViaId={selectedViaId}
-            onSelectVia={setSelectedViaId}
-            onDeleteVia={deleteVia}
             onShowSteps={() => setShowSteps(true)}
           />
         )}

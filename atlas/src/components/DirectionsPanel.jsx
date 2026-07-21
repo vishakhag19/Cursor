@@ -34,10 +34,6 @@ export default function DirectionsPanel({
   editBusy = false,
   hiddenRouteIds = null,
   onToggleRouteVisibility = null,
-  editVias = [],
-  selectedViaId = null,
-  onSelectVia = null,
-  onDeleteVia = null,
   onShowSteps = null,
 }) {
   const [activeStop, setActiveStop] = useState(null);
@@ -174,7 +170,8 @@ export default function DirectionsPanel({
       {editMode && (
         <div className="edit-toolbar">
           <p className="hint md-typescale-body-small edit-hint">
-            Drag the route to add a point. Select a point, then press Delete.
+            Drag the blue line to reshape the route. Drag a point to move it.
+            Tap a point, then use the × on the map to remove it.
           </p>
           {comparison && (
             <div
@@ -252,9 +249,10 @@ export default function DirectionsPanel({
                 {!editMode && onToggleRouteVisibility && (
                   <md-icon-button
                     type="button"
-                    class="dir-route-visibility-btn"
-                    aria-label={hidden ? "Show on map" : "Hide on map"}
-                    title={hidden ? "Show on map" : "Hide on map"}
+                    class="dir-route-visibility-btn has-tip"
+                    aria-label={hidden ? "Show route on map" : "Hide route on map"}
+                    title={hidden ? "Show route on map" : "Hide route on map"}
+                    data-tip={hidden ? "Show on map" : "Hide on map"}
                     aria-pressed={hidden ? "false" : "true"}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -269,9 +267,10 @@ export default function DirectionsPanel({
                 {active && !editMode && onShowSteps && (
                   <md-icon-button
                     type="button"
-                    class="dir-route-steps-btn"
-                    aria-label="Steps"
-                    title="Steps"
+                    class="dir-route-steps-btn has-tip"
+                    aria-label="View turn-by-turn steps"
+                    title="View turn-by-turn steps"
+                    data-tip="Steps"
                     onClick={(e) => {
                       e.stopPropagation();
                       onShowSteps();
@@ -284,9 +283,10 @@ export default function DirectionsPanel({
                   <>
                     <md-icon-button
                       type="button"
-                      class="dir-route-undo-btn"
-                      aria-label="Undo"
-                      title="Undo"
+                      class="dir-route-undo-btn has-tip"
+                      aria-label="Undo last edit"
+                      title="Undo last edit"
+                      data-tip="Undo last edit"
                       onClick={(e) => {
                         e.stopPropagation();
                         onUndo?.();
@@ -297,9 +297,10 @@ export default function DirectionsPanel({
                     </md-icon-button>
                     <md-icon-button
                       type="button"
-                      class="dir-route-reset-btn"
-                      aria-label="Reset"
-                      title="Reset"
+                      class="dir-route-reset-btn has-tip"
+                      aria-label="Reset to suggested route"
+                      title="Reset to suggested route"
+                      data-tip="Reset to suggested route"
                       onClick={(e) => {
                         e.stopPropagation();
                         onResetSuggested?.();
@@ -308,30 +309,15 @@ export default function DirectionsPanel({
                     >
                       <md-icon>restart_alt</md-icon>
                     </md-icon-button>
-                    <md-icon-button
-                      type="button"
-                      class="dir-route-delete-via-btn"
-                      aria-label="Delete point"
-                      title="Delete point"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (selectedViaId) onDeleteVia?.(selectedViaId);
-                        else if (editVias?.length) {
-                          onDeleteVia?.(editVias[editVias.length - 1].id);
-                        }
-                      }}
-                      disabled={!selectedViaId && !editVias?.length ? true : undefined}
-                    >
-                      <md-icon>delete</md-icon>
-                    </md-icon-button>
                   </>
                 )}
                 {active && (
                   <md-icon-button
                     type="button"
-                    class={`dir-route-edit-btn ${editMode ? "is-edit-active" : ""}`}
-                    aria-label={editMode ? "Done editing" : "Edit route"}
-                    title={editMode ? "Done editing" : "Edit route"}
+                    class={`dir-route-edit-btn has-tip ${editMode ? "is-edit-active" : ""}`}
+                    aria-label={editMode ? "Finish editing" : "Edit route"}
+                    title={editMode ? "Finish editing" : "Edit route"}
+                    data-tip={editMode ? "Finish editing" : "Edit route"}
                     onClick={(e) => {
                       e.stopPropagation();
                       onToggleEdit();

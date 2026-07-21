@@ -314,9 +314,9 @@ export default function MapView({
             key={opt.id}
             positions={opt.geometry}
             pathOptions={{
-              color: active ? (editMode ? "#1A73E8" : "#1A73E8") : "#90CAF9",
+              color: active ? "#1A73E8" : "#64B5F6",
               weight: active ? 6 : 5,
-              opacity: active ? (editMode ? 0.35 : 0.95) : 0.55,
+              opacity: active ? (editMode ? 0.35 : 0.95) : 0.82,
               lineJoin: "round",
               lineCap: "round",
             }}
@@ -329,11 +329,11 @@ export default function MapView({
               },
               mouseover: (e) => {
                 if (editMode || active) return;
-                e.target.setStyle({ opacity: 0.85, weight: 6 });
+                e.target.setStyle({ opacity: 0.95, weight: 6 });
               },
               mouseout: (e) => {
                 if (editMode || active) return;
-                e.target.setStyle({ opacity: 0.55, weight: 5 });
+                e.target.setStyle({ opacity: 0.82, weight: 5 });
               },
             }}
           />
