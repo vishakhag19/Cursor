@@ -126,22 +126,39 @@ function MapClickHandler({ onMapClick, onContextMenu }) {
   return null;
 }
 
-function FitBounds({ positions, version }) {
+function FitBounds({ positions, version, padding }) {
   const map = useMap();
-  // Only re-fit when `version` changes (new directions / explicit reset).
-  // Do NOT re-fit when geometry updates during route editing — that caused
-  // the map to zoom out after every drag commit.
+  // Re-fit when version or chrome padding changes. Skip geometry-only updates
+  // during route editing (version is not bumped on drag commits).
   useEffect(() => {
     if (!positions?.length) return;
+    const pad = {
+      top: padding?.top ?? 80,
+      right: padding?.right ?? 80,
+      bottom: padding?.bottom ?? 80,
+      left: padding?.left ?? 80,
+    };
     if (positions.length === 1) {
       map.setView(positions[0], Math.max(map.getZoom(), 14), { animate: true });
       return;
     }
     const bounds = L.latLngBounds(positions);
-    map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15, animate: true });
+    map.fitBounds(bounds, {
+      paddingTopLeft: [pad.left, pad.top],
+      paddingBottomRight: [pad.right, pad.bottom],
+      maxZoom: 15,
+      animate: true,
+    });
     // intentionally omit `positions` from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, version]);
+  }, [
+    map,
+    version,
+    padding?.top,
+    padding?.right,
+    padding?.bottom,
+    padding?.left,
+  ]);
   return null;
 }
 
@@ -244,6 +261,7 @@ export default function MapView({
   createRoute,
   flyTarget,
   fitKey,
+  fitPadding = null,
   onMapClick,
   onContextMenu,
   onWaypointDrag,
@@ -316,7 +334,7 @@ export default function MapView({
         onMapClick={onMapClick}
         onContextMenu={onContextMenu}
       />
-      <FitBounds positions={fitPositions} version={fitKey} />
+      <FitBounds positions={fitPositions} version={fitKey} padding={fitPadding} />
       <FlyTo target={flyTarget} />
       <LocateControl onLocate={onLocateReady} />
       <ZoomBridge onReady={onZoomReady} />

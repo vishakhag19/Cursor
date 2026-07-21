@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapView from "./components/MapView";
 import SearchPanel from "./components/SearchPanel";
 import DirectionsPanel from "./components/DirectionsPanel";
@@ -296,6 +296,7 @@ export default function App() {
         setRouteOptions(options);
         setBaselineRoute(options[0]);
         selectRoute(options[0]);
+        setFitKey((k) => k + 1);
         showStatus(
           `${options.length} shortest option${options.length === 1 ? "" : "s"}`,
         );
@@ -860,9 +861,28 @@ export default function App() {
       routeOptions.some((r) => r.edited) ||
       selectedRouteId !== baselineRoute.id);
 
+  const routesSheet =
+    view === "directions" && routeOptions.length > 0 && !navigating;
+
+  const fitPadding = useMemo(() => {
+    const mobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 800px)").matches;
+    if (!panelOpen) {
+      return { top: 72, right: 72, bottom: 72, left: 72 };
+    }
+    if (mobile && routesSheet) {
+      return { top: 56, right: 28, bottom: 320, left: 28 };
+    }
+    if (mobile) {
+      return { top: 280, right: 28, bottom: 56, left: 28 };
+    }
+    return { top: 48, right: 72, bottom: 48, left: 420 };
+  }, [panelOpen, routesSheet]);
+
   return (
     <div
-      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""}`}
+      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${routesSheet ? "has-routes-sheet" : ""}`}
     >
       <aside className="panel m3-surface" aria-label="Map tools">
         <header className="panel-header">
@@ -884,7 +904,9 @@ export default function App() {
             title="Collapse panel"
           >
             <md-icon class="collapse-chevron-desktop">chevron_left</md-icon>
-            <md-icon class="collapse-chevron-mobile">expand_less</md-icon>
+            <md-icon class="collapse-chevron-mobile">
+              {routesSheet ? "expand_more" : "expand_less"}
+            </md-icon>
           </button>
         </header>
 
@@ -1026,13 +1048,15 @@ export default function App() {
       {!panelOpen && (
         <button
           type="button"
-          className="expand-panel"
+          className={`expand-panel ${routesSheet ? "is-bottom-sheet" : ""}`}
           aria-label="Open panel"
           title="Open panel"
           onClick={() => setPanelOpen(true)}
         >
           <md-icon class="expand-chevron-desktop">chevron_right</md-icon>
-          <md-icon class="expand-chevron-mobile">expand_more</md-icon>
+          <md-icon class="expand-chevron-mobile">
+            {routesSheet ? "expand_less" : "expand_more"}
+          </md-icon>
         </button>
       )}
 
@@ -1073,6 +1097,7 @@ export default function App() {
           onEditError={(msg) => showStatus(msg)}
           flyTarget={flyTarget}
           fitKey={fitKey}
+          fitPadding={fitPadding}
           onMapClick={handleMapClick}
           onContextMenu={(latlng, pos) => setCtx({ latlng, ...pos })}
           onWaypointDrag={async (index, lat, lng) => {
