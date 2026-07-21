@@ -676,10 +676,6 @@ export default function App() {
   const mapMode = view === "directions" ? "directions" : "explore";
   const selectedRoute =
     routeOptions.find((r) => r.id === selectedRouteId) || null;
-  const destinationName =
-    filledStops[filledStops.length - 1]?.name ||
-    placeLabel(filledStops[filledStops.length - 1]) ||
-    "Destination";
 
   const startNavigation = useCallback(async () => {
     if (!selectedRoute?.steps?.length && !selectedRoute?.geometry?.length) {
@@ -863,6 +859,7 @@ export default function App() {
             selectedViaId={selectedViaId}
             onSelectVia={setSelectedViaId}
             onDeleteVia={deleteVia}
+            onShowSteps={() => setShowSteps(true)}
           />
         )}
       </aside>
@@ -994,15 +991,24 @@ export default function App() {
 
         {view === "directions" && selectedRoute && !editMode && (
           <>
-            {!showSteps && (
+            {navigating && !showSteps && (
               <NavigationUI
                 active={navigating}
                 route={selectedRoute}
-                destinationName={destinationName}
                 currentStepIndex={navStepIndex}
                 onExit={exitNavigation}
-                onShowSteps={() => setShowSteps(true)}
               />
+            )}
+            {!navigating && !showSteps && selectedRoute.steps?.length > 0 && (
+              <button
+                type="button"
+                className="steps-fab"
+                aria-label="Steps"
+                onClick={() => setShowSteps(true)}
+              >
+                <md-icon>list</md-icon>
+                <span>Steps</span>
+              </button>
             )}
             {showSteps && (
               <StepsSheet

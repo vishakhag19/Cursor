@@ -230,6 +230,67 @@
   flex-shrink: 0;
 }
 
+.dir-route-steps-btn {
+  align-self: center;
+  flex-shrink: 0;
+  display: none;
+}
+
+/* Desktop: Steps sits beside Edit in the route card */
+@media (min-width: 801px) {
+  .dir-route-steps-btn {
+    display: inline-flex;
+  }
+
+  .steps-fab {
+    display: none !important;
+  }
+}
+
+/* Mobile & tablet: floating Steps at the bottom of the map */
+.steps-fab {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  translate: -50% 0;
+  z-index: 1200;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: #1a73e8;
+  color: #fff;
+  font: 500 15px/1 Roboto, sans-serif;
+  box-shadow:
+    0 1px 3px rgba(60, 64, 67, 0.3),
+    0 4px 8px rgba(60, 64, 67, 0.15);
+  cursor: pointer;
+}
+
+.steps-fab:hover {
+  background: #1765cc;
+}
+
+.steps-fab md-icon {
+  color: #fff;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 800px) {
+  .app:has(.steps-fab) .map-controls {
+    bottom: 84px;
+  }
+
+  .app:has(.steps-fab) .map-status {
+    bottom: 84px;
+  }
+}
+
 .dir-route-edit-btn.is-edit-active {
   --md-icon-button-icon-color: var(--md-sys-color-on-tertiary-container);
   --md-icon-button-hover-state-layer-color: var(--md-sys-color-tertiary);
@@ -304,10 +365,6 @@
 
 .edit-actions {
   margin-top: 0;
-}
-
-.dir-stops-summary {
-  word-break: break-word;
 }
 
 .comparison-chip {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
-import { formatDistance, formatDuration, placeLabel } from "../utils/format";
+import { formatDistance, formatDuration } from "../utils/format";
 
 /**
  * Directions panel — Google Maps–style inputs with a shared place list below.
@@ -38,8 +38,8 @@ export default function DirectionsPanel({
   selectedViaId = null,
   onSelectVia = null,
   onDeleteVia = null,
+  onShowSteps = null,
 }) {
-  const hasRoutes = routeOptions.length > 0;
   const [activeStop, setActiveStop] = useState(null);
   const [placeList, setPlaceList] = useState({
     open: false,
@@ -328,6 +328,20 @@ export default function DirectionsPanel({
                     <md-icon>{hidden ? "visibility_off" : "visibility"}</md-icon>
                   </md-icon-button>
                 )}
+                {active && !editMode && onShowSteps && (
+                  <md-icon-button
+                    type="button"
+                    class="dir-route-steps-btn"
+                    aria-label="Steps"
+                    title="Steps"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShowSteps();
+                    }}
+                  >
+                    <md-icon>list</md-icon>
+                  </md-icon-button>
+                )}
                 {active && (
                   <md-icon-button
                     type="button"
@@ -346,12 +360,6 @@ export default function DirectionsPanel({
             );
           })}
         </div>
-      )}
-
-      {hasRoutes && stops.some(Boolean) && (
-        <p className="hint tight md-typescale-body-small dir-stops-summary">
-          {stops.map((s) => (s ? placeLabel(s) : "…")).join(" → ")}
-        </p>
       )}
     </section>
   );

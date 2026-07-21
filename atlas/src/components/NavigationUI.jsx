@@ -1,54 +1,20 @@
 import { formatDistance, formatDuration } from "../utils/format";
 
 /**
- * Google Maps mobile–style navigation chrome.
- * - Idle (pre-start): bottom sheet with ETA + Start
- * - Active: top maneuver banner + bottom trip summary + Exit
+ * Active turn-by-turn navigation chrome (maneuver banner + Exit).
+ * Pre-start Steps lives beside Edit (desktop) or as a floating button (mobile).
  */
 export default function NavigationUI({
   active = false,
   route,
-  destinationName = "Destination",
   currentStepIndex = 0,
   onExit,
-  onShowSteps,
 }) {
-  if (!route) return null;
+  if (!route || !active) return null;
 
   const steps = route.steps || [];
   const step = steps[currentStepIndex] || steps[0];
   const nextStep = steps[currentStepIndex + 1];
-
-  if (!active) {
-    return (
-      <div className="nav-sheet" role="region" aria-label="Start navigation">
-        <div className="nav-sheet-handle" aria-hidden />
-        <div className="nav-sheet-summary">
-          <div>
-            <div className="nav-sheet-eta md-typescale-headline-small">
-              {formatDuration(route.duration)}
-            </div>
-            <div className="nav-sheet-meta md-typescale-body-medium">
-              {formatDistance(route.distance)}
-              {destinationName ? ` · to ${destinationName}` : ""}
-            </div>
-          </div>
-        </div>
-        <div className="nav-sheet-actions">
-          {steps.length > 0 ? (
-            <md-filled-button class="nav-start-btn" type="button" onClick={onShowSteps}>
-              <md-icon slot="icon">list</md-icon>
-              Steps
-            </md-filled-button>
-          ) : (
-            <p className="nav-sheet-meta md-typescale-body-medium">
-              Route details unavailable
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="nav-active" role="region" aria-label="Navigation">
