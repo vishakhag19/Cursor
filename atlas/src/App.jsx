@@ -18,6 +18,7 @@ import {
 } from "./utils/routeEdit";
 import { loadRecentSearches, pushRecentSearch } from "./utils/storage";
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
+import ActionTip from "./components/ActionTip";
 import "./App.css";
 
 function uid() {
@@ -890,16 +891,17 @@ export default function App() {
             />
             <span className="brand-name">Atlas</span>
           </div>
-          <md-icon-button
-            type="button"
-            class="collapse-panel-btn"
-            onClick={() => setPanelOpen(false)}
-            aria-label="Collapse panel"
-            title="Collapse panel"
-          >
-            <md-icon class="collapse-chevron-desktop">chevron_left</md-icon>
-            <md-icon class="collapse-chevron-mobile">expand_less</md-icon>
-          </md-icon-button>
+          <ActionTip tip="Collapse panel">
+            <md-icon-button
+              type="button"
+              class="collapse-panel-btn"
+              onClick={() => setPanelOpen(false)}
+              aria-label="Collapse panel"
+            >
+              <md-icon class="collapse-chevron-desktop">chevron_left</md-icon>
+              <md-icon class="collapse-chevron-mobile">expand_less</md-icon>
+            </md-icon-button>
+          </ActionTip>
         </header>
 
         {view === "search" && (
@@ -997,26 +999,28 @@ export default function App() {
           role="toolbar"
           aria-label="Route edit actions"
         >
-          <md-icon-button
-            type="button"
-            class="mobile-edit-undo"
-            aria-label="Undo last edit"
-            title="Undo last edit"
-            onClick={undoEdit}
-            disabled={editHistory.length === 0 || undefined}
-          >
-            <md-icon>undo</md-icon>
-          </md-icon-button>
-          <md-icon-button
-            type="button"
-            class="mobile-edit-reset"
-            aria-label="Reset to suggested route"
-            title="Reset to suggested route"
-            onClick={resetToSuggested}
-            disabled={!canReset || undefined}
-          >
-            <md-icon>restart_alt</md-icon>
-          </md-icon-button>
+          <ActionTip tip="Undo last edit">
+            <md-icon-button
+              type="button"
+              class="mobile-edit-undo"
+              aria-label="Undo last edit"
+              onClick={undoEdit}
+              disabled={editHistory.length === 0 || undefined}
+            >
+              <md-icon>undo</md-icon>
+            </md-icon-button>
+          </ActionTip>
+          <ActionTip tip="Reset to suggested route">
+            <md-icon-button
+              type="button"
+              class="mobile-edit-reset"
+              aria-label="Reset to suggested route"
+              onClick={resetToSuggested}
+              disabled={!canReset || undefined}
+            >
+              <md-icon>restart_alt</md-icon>
+            </md-icon-button>
+          </ActionTip>
           {comparison?.label ? (
             <span
               className={`mobile-edit-comparison tone-${comparison.tone} md-typescale-label-medium`}
@@ -1038,16 +1042,17 @@ export default function App() {
       )}
 
       {!panelOpen && (
-        <md-icon-button
-          type="button"
-          class="expand-panel"
-          aria-label="Open panel"
-          title="Open panel"
-          onClick={() => setPanelOpen(true)}
-        >
-          <md-icon class="expand-chevron-desktop">chevron_right</md-icon>
-          <md-icon class="expand-chevron-mobile">expand_more</md-icon>
-        </md-icon-button>
+        <ActionTip tip="Open panel">
+          <md-icon-button
+            type="button"
+            class="expand-panel"
+            aria-label="Open panel"
+            onClick={() => setPanelOpen(true)}
+          >
+            <md-icon class="expand-chevron-desktop">chevron_right</md-icon>
+            <md-icon class="expand-chevron-mobile">expand_more</md-icon>
+          </md-icon-button>
+        </ActionTip>
       )}
 
       <main className="map-stage">
@@ -1123,56 +1128,61 @@ export default function App() {
 
         <div className="map-controls">
           <div className="map-ctrl-stack" role="group" aria-label="Map controls">
-            <button
-              type="button"
-              className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
-              aria-label="Map"
-              title="Map"
-              aria-pressed={layer === "map" ? "true" : "false"}
-              onClick={() => setLayer("map")}
-            >
-              <md-icon>map</md-icon>
-            </button>
-            <button
-              type="button"
-              className={
-                layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
-              }
-              aria-label="Satellite"
-              title="Satellite"
-              aria-pressed={layer === "satellite" ? "true" : "false"}
-              onClick={() => setLayer("satellite")}
-            >
-              <md-icon>satellite_alt</md-icon>
-            </button>
-            <button
-              type="button"
-              className={`map-ctrl-btn locate-btn ${followingLocation ? "is-located" : ""}`}
-              aria-label="My location"
-              title="My location"
-              aria-pressed={followingLocation ? "true" : "false"}
-              onClick={goToMyLocation}
-            >
-              <md-icon>my_location</md-icon>
-            </button>
-            <button
-              type="button"
-              className="map-ctrl-btn"
-              aria-label="Zoom in"
-              title="Zoom in"
-              onClick={() => zoomFn.current?.zoomIn?.()}
-            >
-              <md-icon>add</md-icon>
-            </button>
-            <button
-              type="button"
-              className="map-ctrl-btn"
-              aria-label="Zoom out"
-              title="Zoom out"
-              onClick={() => zoomFn.current?.zoomOut?.()}
-            >
-              <md-icon>remove</md-icon>
-            </button>
+            <ActionTip tip="Map">
+              <button
+                type="button"
+                className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
+                aria-label="Map"
+                aria-pressed={layer === "map" ? "true" : "false"}
+                onClick={() => setLayer("map")}
+              >
+                <md-icon>map</md-icon>
+              </button>
+            </ActionTip>
+            <ActionTip tip="Satellite">
+              <button
+                type="button"
+                className={
+                  layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
+                }
+                aria-label="Satellite"
+                aria-pressed={layer === "satellite" ? "true" : "false"}
+                onClick={() => setLayer("satellite")}
+              >
+                <md-icon>satellite_alt</md-icon>
+              </button>
+            </ActionTip>
+            <ActionTip tip="My location">
+              <button
+                type="button"
+                className={`map-ctrl-btn locate-btn ${followingLocation ? "is-located" : ""}`}
+                aria-label="My location"
+                aria-pressed={followingLocation ? "true" : "false"}
+                onClick={goToMyLocation}
+              >
+                <md-icon>my_location</md-icon>
+              </button>
+            </ActionTip>
+            <ActionTip tip="Zoom in">
+              <button
+                type="button"
+                className="map-ctrl-btn"
+                aria-label="Zoom in"
+                onClick={() => zoomFn.current?.zoomIn?.()}
+              >
+                <md-icon>add</md-icon>
+              </button>
+            </ActionTip>
+            <ActionTip tip="Zoom out">
+              <button
+                type="button"
+                className="map-ctrl-btn"
+                aria-label="Zoom out"
+                onClick={() => zoomFn.current?.zoomOut?.()}
+              >
+                <md-icon>remove</md-icon>
+              </button>
+            </ActionTip>
           </div>
         </div>
 

@@ -327,6 +327,14 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
 }
 
+@media (max-width: 800px) {
+  .action-tip {
+    padding: 8px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+}
+
 .atlas-via-delete {
   background: transparent !important;
   border: none !important;
@@ -1394,7 +1402,18 @@ md-filled-tonal-button.is-edit-active {
   transition: background 120ms ease, color 120ms ease;
 }
 
-.map-ctrl-stack > .map-ctrl-btn:last-child {
+.map-ctrl-stack > .action-tip-wrap {
+  display: flex;
+  width: 100%;
+  flex: 0 0 36px;
+}
+
+.map-ctrl-stack > .action-tip-wrap .map-ctrl-btn {
+  flex: 1 1 auto;
+}
+
+.map-ctrl-stack > .map-ctrl-btn:last-child,
+.map-ctrl-stack > .action-tip-wrap:last-child .map-ctrl-btn {
   border-bottom: none;
 }
 
