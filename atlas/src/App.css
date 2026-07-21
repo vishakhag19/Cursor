@@ -61,38 +61,14 @@
   box-sizing: border-box;
 }
 
+/* Same hit target as directions close (md-icon-button) */
 .collapse-panel-btn {
-  display: grid;
-  place-items: center;
   width: var(--panel-control-size);
   height: var(--panel-control-size);
   margin: 0;
-  padding: 0;
-  border: 1px solid #e8eaed;
-  border-radius: 999px;
-  background: #fff;
-  color: #5f6368;
-  cursor: pointer;
-  box-sizing: border-box;
   flex-shrink: 0;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-}
-
-.collapse-panel-btn:hover {
-  background: #f8f9fa;
-  border-color: #dadce0;
-  color: #3c4043;
-}
-
-.collapse-panel-btn:active {
-  background: #f1f3f4;
-}
-
-.collapse-panel-btn md-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  --md-icon-size: 20px;
+  color: #5f6368;
+  --md-icon-button-icon-color: #5f6368;
 }
 
 .collapse-chevron-mobile {
@@ -146,9 +122,9 @@
 }
 
 .dir-top-actions md-icon-button {
-  /* Keep close affordance comfortable; collapse uses --panel-control-size */
-  width: 40px;
-  height: 40px;
+  /* Shared with collapse / expand chevrons via --panel-control-size */
+  width: var(--panel-control-size);
+  height: var(--panel-control-size);
   margin: 0;
 }
 
@@ -1224,33 +1200,14 @@ md-filled-tonal-button.is-edit-active {
   top: 16px;
   left: 16px;
   z-index: 1100;
-  display: grid;
-  place-items: center;
   width: var(--panel-control-size);
   height: var(--panel-control-size);
   margin: 0;
-  padding: 0;
-  border: 1px solid #e8eaed;
   border-radius: 999px;
   background: #fff;
   color: #5f6368;
-  cursor: pointer;
-  box-sizing: border-box;
+  --md-icon-button-icon-color: #5f6368;
   box-shadow: none;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-}
-
-.expand-panel:hover {
-  background: #f8f9fa;
-  border-color: #dadce0;
-  color: #3c4043;
-}
-
-.expand-panel md-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  --md-icon-size: 20px;
 }
 
 .expand-chevron-mobile {

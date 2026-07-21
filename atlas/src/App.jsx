@@ -890,16 +890,16 @@ export default function App() {
             />
             <span className="brand-name">Atlas</span>
           </div>
-          <button
+          <md-icon-button
             type="button"
-            className="collapse-panel-btn"
+            class="collapse-panel-btn"
             onClick={() => setPanelOpen(false)}
             aria-label="Collapse panel"
             title="Collapse panel"
           >
             <md-icon class="collapse-chevron-desktop">chevron_left</md-icon>
             <md-icon class="collapse-chevron-mobile">expand_less</md-icon>
-          </button>
+          </md-icon-button>
         </header>
 
         {view === "search" && (
@@ -1038,16 +1038,16 @@ export default function App() {
       )}
 
       {!panelOpen && (
-        <button
+        <md-icon-button
           type="button"
-          className="expand-panel"
+          class="expand-panel"
           aria-label="Open panel"
           title="Open panel"
           onClick={() => setPanelOpen(true)}
         >
           <md-icon class="expand-chevron-desktop">chevron_right</md-icon>
           <md-icon class="expand-chevron-mobile">expand_more</md-icon>
-        </button>
+        </md-icon-button>
       )}
 
       <main className="map-stage">
