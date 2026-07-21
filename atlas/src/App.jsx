@@ -792,11 +792,13 @@ export default function App() {
           </div>
           <md-icon-button
             type="button"
+            class="collapse-panel-btn"
             onClick={() => setPanelOpen(false)}
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <md-icon>chevron_left</md-icon>
+            <md-icon class="collapse-icon-desktop">chevron_left</md-icon>
+            <md-icon class="collapse-icon-mobile">keyboard_arrow_up</md-icon>
           </md-icon-button>
         </header>
 
