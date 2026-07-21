@@ -7,8 +7,17 @@ import {
   rebuildEditedRoute,
 } from "../api/routing";
 
-function handleIcon(dragging = false, selected = false) {
-  const size = dragging || selected ? 22 : 18;
+function isCoarsePointer() {
+  try {
+    return window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+}
+
+function handleIcon(dragging = false, selected = false, coarse = false) {
+  const base = coarse ? 28 : 18;
+  const size = dragging || selected ? base + 4 : base;
   const selectedClass = selected ? "is-selected" : "";
   return L.divIcon({
     className: "atlas-drag-handle",
@@ -20,13 +29,23 @@ function handleIcon(dragging = false, selected = false) {
 
 const HANDLE_ICON_CACHE = new Map();
 function getHandleIcon(dragging = false, selected = false) {
-  const key = `${dragging ? 1 : 0}-${selected ? 1 : 0}`;
+  const coarse = isCoarsePointer();
+  const key = `${dragging ? 1 : 0}-${selected ? 1 : 0}-${coarse ? 1 : 0}`;
   let icon = HANDLE_ICON_CACHE.get(key);
   if (!icon) {
-    icon = handleIcon(dragging, selected);
+    icon = handleIcon(dragging, selected, coarse);
     HANDLE_ICON_CACHE.set(key, icon);
   }
   return icon;
+}
+
+/** Pixel hit slop for route line / via handles (larger on touch). */
+function hitPixels() {
+  return isCoarsePointer() ? 32 : 22;
+}
+
+function viaHitPixels() {
+  return isCoarsePointer() ? 36 : 24;
 }
 
 const VIA_DELETE_ICON = L.divIcon({
@@ -93,12 +112,16 @@ export default function RouteEditorLayer({
   const originRef = useRef(origin);
   const destinationRef = useRef(destination);
   const travelModeRef = useRef(travelMode);
+  const onSelectViaRef = useRef(onSelectVia);
+  const beginPolylineDragRef = useRef(null);
+  const beginViaDragRef = useRef(null);
 
   geometryRef.current = geometry;
   viasRef.current = vias;
   originRef.current = origin;
   destinationRef.current = destination;
   travelModeRef.current = travelMode;
+  onSelectViaRef.current = onSelectVia;
 
   function clearDocListeners() {
     const L = listenersRef.current;
@@ -475,16 +498,107 @@ export default function RouteEditorLayer({
     }
   }
 
-  function handleHitStart(e) {
-    L.DomEvent.stop(e);
-    const oe = e.originalEvent;
-    if (oe?.touches?.length > 1) return; // ignore multi-touch pinch
-    const closest = closestPointOnPolyline(
-      { lat: e.latlng.lat, lng: e.latlng.lng },
-      geometry,
-    );
-    beginPolylineDrag(e.latlng, closest?.segmentIndex ?? 0, oe);
-  }
+  beginPolylineDragRef.current = beginPolylineDrag;
+  beginViaDragRef.current = beginViaDrag;
+
+  /**
+   * Leaflet only bridges mouse events to vector layers — not touch/pointer.
+   * On phones, mousedown arrives too late (after the gesture), so map pan wins.
+   * Capture pointer/touch on the map container and hit-test the route ourselves.
+   */
+  useEffect(() => {
+    if (!enabled || !geometry?.length) return undefined;
+
+    const container = map.getContainer();
+
+    function clientToLatLng(clientX, clientY) {
+      const rect = container.getBoundingClientRect();
+      return map.containerPointToLatLng(
+        L.point(clientX - rect.left, clientY - rect.top),
+      );
+    }
+
+    function onPointerDown(e) {
+      if (!enabled || dragRef.current?.active) return;
+      // Prefer pointer events; ignore redundant touchstart when PointerEvent exists.
+      if (e.type === "touchstart" && typeof window.PointerEvent === "function") {
+        return;
+      }
+      if (e.pointerType === "mouse" && e.button != null && e.button !== 0) {
+        return;
+      }
+      if (e.isPrimary === false) return;
+      if (e.touches && e.touches.length > 1) return;
+
+      const target = e.target;
+      if (
+        target?.closest?.(
+          ".leaflet-control, .via-map-delete, .atlas-via-delete, button, a, input, textarea",
+        )
+      ) {
+        return;
+      }
+
+      const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+      const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+      if (clientX == null || clientY == null) return;
+
+      const latlng = clientToLatLng(clientX, clientY);
+      const pt = map.latLngToContainerPoint(latlng);
+
+      const viasNow = viasRef.current;
+      let bestVia = null;
+      let bestViaDist = Infinity;
+      for (const via of viasNow) {
+        const vp = map.latLngToContainerPoint([via.lat, via.lng]);
+        const d = Math.hypot(vp.x - pt.x, vp.y - pt.y);
+        if (d < bestViaDist) {
+          bestViaDist = d;
+          bestVia = via;
+        }
+      }
+      if (bestVia && bestViaDist <= viaHitPixels()) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+        onSelectViaRef.current?.(bestVia.id);
+        beginViaDragRef.current?.(
+          bestVia,
+          L.latLng(bestVia.lat, bestVia.lng),
+          e,
+        );
+        return;
+      }
+
+      const geom = geometryRef.current;
+      const closest = closestPointOnPolyline(
+        { lat: latlng.lat, lng: latlng.lng },
+        geom,
+      );
+      if (!closest) return;
+      const closestPt = map.latLngToContainerPoint([closest.lat, closest.lng]);
+      if (Math.hypot(closestPt.x - pt.x, closestPt.y - pt.y) > hitPixels()) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
+      beginPolylineDragRef.current?.(
+        L.latLng(closest.lat, closest.lng),
+        closest.segmentIndex ?? 0,
+        e,
+      );
+    }
+
+    const opts = { capture: true, passive: false };
+    container.addEventListener("pointerdown", onPointerDown, opts);
+    container.addEventListener("touchstart", onPointerDown, opts);
+    return () => {
+      container.removeEventListener("pointerdown", onPointerDown, opts);
+      container.removeEventListener("touchstart", onPointerDown, opts);
+    };
+  }, [enabled, map, geometry]);
 
   if (!enabled || !geometry?.length) return null;
 
@@ -495,15 +609,12 @@ export default function RouteEditorLayer({
 
   return (
     <>
-      {/* Wide invisible hit target above other route panes so drag beats map pan */}
+      {/* Visual-width guide for hit testing (events handled on map container) */}
       <Polyline
         positions={geometry}
         pane="routeEditHit"
-        pathOptions={{ color: "#000", weight: 44, opacity: 0 }}
-        eventHandlers={{
-          mousedown: handleHitStart,
-          touchstart: handleHitStart,
-        }}
+        pathOptions={{ color: "#000", weight: 44, opacity: 0.01 }}
+        interactive={false}
       />
 
       {dragState?.previewGeometry?.length > 0 && (
@@ -553,16 +664,6 @@ export default function RouteEditorLayer({
               L.DomEvent.preventDefault(e);
               onSelectVia?.(via.id);
               onDeleteVia?.(via.id);
-            },
-            mousedown: (e) => {
-              L.DomEvent.stop(e);
-              onSelectVia?.(via.id);
-              beginViaDrag(via, e.latlng, e.originalEvent);
-            },
-            touchstart: (e) => {
-              L.DomEvent.stop(e);
-              onSelectVia?.(via.id);
-              beginViaDrag(via, e.latlng, e.originalEvent);
             },
           }}
           zIndexOffset={2000}

@@ -642,11 +642,22 @@
 
 .leaflet-container.is-route-edit {
   cursor: crosshair;
+  touch-action: manipulation;
+}
+
+.leaflet-container.is-route-edit.is-route-dragging {
+  touch-action: none !important;
 }
 
 .leaflet-container.is-route-edit .leaflet-routeEditHit-pane path {
   cursor: grab;
-  pointer-events: stroke !important;
+  /* Keep a faint stroke for SVG debugging; hits are map-level now */
+  pointer-events: none !important;
+}
+
+.expand-panel.is-edit-done {
+  --md-fab-container-color: #1a73e8;
+  --md-fab-icon-color: #fff;
 }
 
 md-filled-tonal-button.is-edit-active {

@@ -602,10 +602,25 @@ export default function App() {
           setEditVias(seeded);
         }
         setEditPreview(null);
-        showStatus("Drag the route line to reshape it");
+        // Free the map on phones so the route can be dragged.
+        try {
+          if (window.matchMedia("(max-width: 800px)").matches) {
+            setPanelOpen(false);
+          }
+        } catch {
+          /* ignore */
+        }
+        showStatus("Drag the blue line to reshape the route");
       } else {
         setEditPreview(null);
         setSelectedViaId(null);
+        try {
+          if (window.matchMedia("(max-width: 800px)").matches) {
+            setPanelOpen(true);
+          }
+        } catch {
+          /* ignore */
+        }
       }
       return next;
     });
@@ -897,13 +912,19 @@ export default function App() {
 
       {!panelOpen && (
         <md-fab
-          class="expand-panel"
+          class={`expand-panel ${editMode ? "is-edit-done" : ""}`}
           variant="primary"
           size="medium"
-          aria-label="Open panel"
-          onClick={() => setPanelOpen(true)}
+          aria-label={editMode ? "Done editing" : "Open panel"}
+          onClick={() => {
+            if (editMode) {
+              toggleEditMode();
+              return;
+            }
+            setPanelOpen(true);
+          }}
         >
-          <md-icon slot="icon">menu</md-icon>
+          <md-icon slot="icon">{editMode ? "check" : "menu"}</md-icon>
         </md-fab>
       )}
 
