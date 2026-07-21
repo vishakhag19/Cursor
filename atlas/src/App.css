@@ -631,8 +631,8 @@
 .leaflet-container.is-route-edit .leaflet-overlay-pane svg,
 .leaflet-container.is-route-edit .leaflet-pane.leaflet-routeEditHit-pane,
 .leaflet-container.is-route-edit .leaflet-pane.leaflet-routeEdit-pane {
-  /* Prefer route hit-targets over map pan when starting on the line */
-  touch-action: none;
+  /* Allow pinch-zoom/pan until a reshape drag is claimed */
+  touch-action: manipulation;
 }
 
 .leaflet-container.is-route-edit {
@@ -640,7 +640,10 @@
   touch-action: manipulation;
 }
 
-.leaflet-container.is-route-edit.is-route-dragging {
+.leaflet-container.is-route-edit.is-route-dragging,
+.leaflet-container.is-route-edit.is-route-dragging .leaflet-overlay-pane svg,
+.leaflet-container.is-route-edit.is-route-dragging .leaflet-pane.leaflet-routeEditHit-pane,
+.leaflet-container.is-route-edit.is-route-dragging .leaflet-pane.leaflet-routeEdit-pane {
   touch-action: none !important;
 }
 
