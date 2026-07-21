@@ -358,7 +358,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   width: auto;
   margin: 0;
   padding: 14px 22px;
@@ -375,13 +374,6 @@
 
 .steps-fab:hover {
   background: #1765cc;
-}
-
-.steps-fab md-icon {
-  color: #fff;
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
 }
 
 @media (max-width: 800px) {
@@ -1822,6 +1814,23 @@ md-text-button {
 
 .steps-sheet-footer md-filled-button {
   width: 100%;
+  /* Give the navigation triangle room — MD icons clip at the button edge */
+  --md-filled-button-container-height: 48px;
+  --md-filled-button-leading-space: 20px;
+  --md-filled-button-trailing-space: 24px;
+  --md-filled-button-icon-size: 20px;
+  --md-filled-button-icon-space: 10px;
+  overflow: visible;
+}
+
+.steps-sheet-footer md-filled-button md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+  /* Optical inset so the filled triangle isn’t cropped by the icon box */
+  transform: scale(0.92);
+  transform-origin: center;
 }
 
 /* Keep map chrome under the nav footer (above zoom / layers / recenter) */

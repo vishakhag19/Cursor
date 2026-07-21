@@ -1110,8 +1110,7 @@ export default function App() {
                   setPanelOpen(false);
                 }}
               >
-                <md-icon>list</md-icon>
-                <span>Steps</span>
+                Steps
               </button>
             )}
             {showSteps && (
