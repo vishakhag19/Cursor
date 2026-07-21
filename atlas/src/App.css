@@ -740,23 +740,6 @@ md-filled-tonal-button.is-edit-active {
   right: auto;
 }
 
-/* Suggestions sit in the panel below the search pill — not a floating overlay */
-.search-panel .place-suggest-panel {
-  position: static;
-  left: auto;
-  right: auto;
-  top: auto;
-  width: auto;
-  margin: 0;
-  border: 1px solid #e8eaed;
-  border-radius: 16px;
-  box-shadow: none;
-  background: #fff;
-  max-height: min(320px, 40dvh);
-  box-sizing: border-box;
-  overflow: auto;
-}
-
 .search-block {
   position: relative;
 }
