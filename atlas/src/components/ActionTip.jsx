@@ -41,10 +41,10 @@ export default function ActionTip({ tip, children, className = "" }) {
     if (!el || !tip) return;
     clearHideTimer();
     const r = el.getBoundingClientRect();
-    const left = Math.min(window.innerWidth - 8, Math.max(8, r.right));
+    // Prefer below the control so tips are not clipped by the browser chrome.
     setBox({
-      top: Math.max(8, r.top - 8),
-      left,
+      top: r.bottom + 6,
+      left: r.left + r.width / 2,
     });
   }
 
