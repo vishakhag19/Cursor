@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -14,6 +14,35 @@ import RouteEditorLayer from "./RouteEditorLayer";
 
 const DEFAULT_CENTER = [37.7749, -122.4194];
 const DEFAULT_ZOOM = 13;
+
+/** Selected route must stay above alternatives (Leaflet appends new layers on top). */
+function RoutePolyline({
+  positions,
+  pathOptions,
+  bringToFront = false,
+  stackEpoch = 0,
+  interactive = true,
+  eventHandlers,
+}) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!bringToFront) return;
+    const layer = ref.current;
+    if (!layer?.bringToFront) return;
+    // After siblings mount (e.g. leaving edit mode), re-assert stacking.
+    const id = requestAnimationFrame(() => layer.bringToFront());
+    return () => cancelAnimationFrame(id);
+  }, [bringToFront, positions, stackEpoch]);
+  return (
+    <Polyline
+      ref={ref}
+      positions={positions}
+      pathOptions={pathOptions}
+      interactive={interactive}
+      eventHandlers={eventHandlers}
+    />
+  );
+}
 
 function pinIcon(kind = "default", label = "") {
   const colors = {
@@ -172,6 +201,8 @@ export default function MapView({
     return null;
   })();
 
+  const stackEpoch = `${editMode ? 1 : 0}-${routeOptions.length}-${selectedRouteId || ""}`;
+
   return (
     <MapContainer
       center={DEFAULT_CENTER}
@@ -301,12 +332,12 @@ export default function MapView({
           );
         })}
 
-      {/* Inactive routes first so the selected route paints on top */}
+      {/* Inactive routes first; selected is brought to front after mount */}
       {routeOptions
         .filter((opt) => opt?.geometry?.length && opt.id !== selectedRouteId)
         .filter(() => !editMode)
         .map((opt) => (
-          <Polyline
+          <RoutePolyline
             key={opt.id}
             positions={opt.geometry}
             pathOptions={{
@@ -316,7 +347,6 @@ export default function MapView({
               lineJoin: "round",
               lineCap: "round",
             }}
-            interactive
             eventHandlers={{
               click: (e) => {
                 L.DomEvent.stopPropagation(e);
@@ -335,9 +365,11 @@ export default function MapView({
       {routeOptions
         .filter((opt) => opt?.geometry?.length && opt.id === selectedRouteId)
         .map((opt) => (
-          <Polyline
+          <RoutePolyline
             key={opt.id}
             positions={opt.geometry}
+            bringToFront
+            stackEpoch={stackEpoch}
             pathOptions={{
               color: "#1A73E8",
               weight: 6,
@@ -362,10 +394,13 @@ export default function MapView({
           ...routeOptions.filter((o) => o.id === selectedRouteId),
         ].map((opt) => {
           if (!opt?.geometry?.length) return null;
+          const isSelected = opt.id === selectedRouteId;
           return (
-            <Polyline
+            <RoutePolyline
               key={`hit-${opt.id}`}
               positions={opt.geometry}
+              bringToFront={isSelected}
+              stackEpoch={stackEpoch}
               pathOptions={{
                 color: "#000",
                 weight: 18,

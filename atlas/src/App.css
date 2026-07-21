@@ -1482,21 +1482,21 @@ md-text-button {
   pointer-events: auto;
 }
 
+/* Edge-anchored navigation chrome (not floating cards) */
 .nav-banner {
   position: absolute;
-  /* Sit below the menu / expand FAB */
-  top: 72px;
-  left: 12px;
-  right: 12px;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 1200;
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 8px 14px 14px;
+  padding: 14px 8px 16px 14px;
   background: #1a73e8;
   color: #fff;
-  border-radius: 16px;
-  box-shadow: var(--atlas-elevation-3);
+  border-radius: 0 0 16px 16px;
+  box-shadow: var(--atlas-elevation-2);
 }
 
 .nav-banner-icon {
@@ -1541,19 +1541,18 @@ md-text-button {
 
 .nav-footer {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  /* Above zoom / layer / recenter cluster */
-  bottom: 96px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: var(--atlas-elevation-3);
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--atlas-elevation-2);
 }
 
 .nav-footer-eta {
@@ -1565,6 +1564,28 @@ md-text-button {
 .nav-footer-meta {
   color: #5f6368;
   margin-top: 2px;
+}
+
+/* Hide menu FAB during nav — Exit covers leaving; avoids floating chrome clash */
+.app.nav-mode .expand-panel {
+  display: none;
+}
+
+/* Map chrome sits above the anchored nav footer */
+.app.nav-mode .leaflet-bottom.leaflet-right {
+  bottom: 88px;
+  right: 16px;
+  margin-bottom: 0;
+}
+
+.app.nav-mode .map-controls {
+  top: auto;
+  bottom: 156px;
+  right: 16px;
+}
+
+.app.nav-mode .leaflet-control-attribution {
+  margin-bottom: 72px;
 }
 
 .steps-sheet {
@@ -1601,6 +1622,16 @@ md-text-button {
 
 .steps-bottom-sheet {
   animation: steps-sheet-up 0.28s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (max-width: 800px) {
+  .steps-bottom-sheet {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 16px 16px 0 0;
+    max-height: min(72dvh, 580px);
+  }
 }
 
 @keyframes steps-sheet-up {
@@ -1679,48 +1710,20 @@ md-text-button {
 }
 
 /* Keep map chrome under the nav footer (above zoom / layers / recenter) */
-.app:has(.nav-active) .leaflet-bottom.leaflet-right {
-  bottom: 16px;
-  right: 16px;
-  margin-bottom: 0;
-}
-
-.app:has(.nav-active) .map-controls {
-  top: auto;
-  bottom: 84px;
-  right: 16px;
-}
-
-.app:has(.nav-active) .nav-footer {
-  bottom: 196px;
-}
-
 @media (max-width: 800px) {
-  .nav-sheet,
-  .nav-footer,
-  .steps-sheet,
   .nav-banner {
-    left: 8px;
-    right: 8px;
+    padding-top: max(14px, env(safe-area-inset-top, 0px));
   }
 
-  .nav-banner {
-    top: 68px;
-  }
-
-  .app:has(.nav-active) .leaflet-bottom.leaflet-right {
-    bottom: 12px;
+  .app.nav-mode .leaflet-bottom.leaflet-right {
+    bottom: 84px;
     right: 12px;
   }
 
-  .app:has(.nav-active) .map-controls {
+  .app.nav-mode .map-controls {
     top: auto;
-    bottom: 78px;
+    bottom: 148px;
     right: 12px;
-  }
-
-  .app:has(.nav-active) .nav-footer {
-    bottom: 188px;
   }
 
   /* Raise map chrome above the steps FAB; sheet covers chrome while open */

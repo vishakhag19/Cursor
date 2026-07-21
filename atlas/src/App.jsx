@@ -299,9 +299,8 @@ export default function App() {
       setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 14 });
       setView("search");
       setPanelOpen(true);
-      showStatus(placeLabel(place));
     },
-    [showStatus, rememberPlace],
+    [rememberPlace],
   );
 
   const handleMapClick = useCallback(
@@ -347,7 +346,6 @@ export default function App() {
         setSelectedPlace(place);
         setSearchQuery(place.name);
         rememberPlace(place);
-        showStatus(placeLabel(place));
       } catch {
         const place = {
           id: uid(),
@@ -608,7 +606,15 @@ export default function App() {
       } else {
         setEditPreview(null);
         setSelectedViaId(null);
-        showStatus("Finished editing");
+        // Keep the active (edited) route first in the list and selected.
+        setRouteOptions((prev) => {
+          const id = selectedRouteIdRef.current;
+          const selected = prev.find((r) => r.id === id);
+          if (!selected) return prev;
+          const nextOpts = [selected, ...prev.filter((r) => r.id !== id)];
+          routeOptionsRef.current = nextOpts;
+          return nextOpts;
+        });
       }
       return next;
     });
@@ -763,7 +769,9 @@ export default function App() {
       selectedRouteId !== baselineRoute.id);
 
   return (
-    <div className={`app ${panelOpen ? "" : "panel-collapsed"}`}>
+    <div
+      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""}`}
+    >
       <aside className="panel m3-surface" aria-label="Map tools">
         <header className="panel-header">
           <div className="brand">
@@ -1000,7 +1008,10 @@ export default function App() {
                 type="button"
                 className="steps-fab"
                 aria-label="Steps"
-                onClick={() => setShowSteps(true)}
+                onClick={() => {
+                  setShowSteps(true);
+                  setPanelOpen(false);
+                }}
               >
                 <md-icon>list</md-icon>
                 <span>Steps</span>
