@@ -37,7 +37,7 @@
   overflow: visible;
   transition: transform 0.22s ease, opacity 0.22s ease;
   --panel-pad-x: 16px;
-  --panel-control-size: 40px;
+  --panel-control-size: 32px;
   --md-sys-color-surface: #ffffff;
   --md-sys-color-surface-container-low: #ffffff;
   --md-sys-color-surface-container-lowest: #ffffff;
@@ -88,10 +88,10 @@
 }
 
 .collapse-panel-btn md-icon {
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
-  --md-icon-size: 22px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
 }
 
 .collapse-chevron-mobile {
@@ -145,9 +145,9 @@
 }
 
 .dir-top-actions md-icon-button {
-  /* Match .collapse-panel-btn footprint (standard MD icon button = 40px) */
-  width: var(--panel-control-size, 40px);
-  height: var(--panel-control-size, 40px);
+  /* Keep close affordance comfortable; collapse uses --panel-control-size */
+  width: 40px;
+  height: 40px;
   margin: 0;
 }
 
@@ -1225,8 +1225,8 @@ md-filled-tonal-button.is-edit-active {
   z-index: 1100;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: var(--panel-control-size, 32px);
+  height: var(--panel-control-size, 32px);
   margin: 0;
   padding: 0;
   border: 1px solid #e8eaed;
@@ -1246,10 +1246,10 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .expand-panel md-icon {
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
-  --md-icon-size: 22px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
 }
 
 .expand-chevron-mobile {
@@ -1261,7 +1261,7 @@ md-filled-tonal-button.is-edit-active {
   position: absolute;
   /* Align vertically with .expand-panel (same top + height) */
   top: 16px;
-  left: 64px;
+  left: 56px;
   right: auto;
   translate: none;
   z-index: 1100;
@@ -1269,10 +1269,10 @@ md-filled-tonal-button.is-edit-active {
   align-items: center;
   gap: 2px;
   width: max-content;
-  max-width: calc(100% - 88px);
-  height: 40px;
-  min-height: 40px;
-  padding: 2px 4px 2px 2px;
+  max-width: calc(100% - 80px);
+  height: var(--panel-control-size, 32px);
+  min-height: var(--panel-control-size, 32px);
+  padding: 0 4px 0 2px;
   box-sizing: border-box;
   background: #fff;
   border: 1px solid #e8eaed;
@@ -1331,19 +1331,19 @@ md-filled-tonal-button.is-edit-active {
     top: 12px;
     left: auto;
     right: 12px;
-    width: 40px;
-    height: 40px;
+    width: var(--panel-control-size, 32px);
+    height: var(--panel-control-size, 32px);
   }
 
   .mobile-edit-bar {
     top: 12px;
     left: 12px;
-    right: 60px;
+    right: 52px;
     translate: none;
     width: auto;
     max-width: none;
-    height: 40px;
-    min-height: 40px;
+    height: var(--panel-control-size, 32px);
+    min-height: var(--panel-control-size, 32px);
   }
 
   .mobile-edit-spacer {
