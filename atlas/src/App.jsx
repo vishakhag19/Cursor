@@ -321,17 +321,18 @@ export default function App() {
         try {
           const place = await reverseGeocode(latlng.lat, latlng.lng);
           rememberPlace(place);
-          setStops((prev) => {
-            const next = [...prev];
-            next[emptyIdx] = place;
-            return next;
-          });
+          const nextStops = [...stops];
+          nextStops[emptyIdx] = place;
+          setStops(nextStops);
           setStopTexts((prev) => {
             const next = [...prev];
             next[emptyIdx] = place.name;
             return next;
           });
           clearRoutes();
+          if (nextStops.filter(Boolean).length >= 2) {
+            runDirections(nextStops, travelMode);
+          }
         } catch {
           showStatus("Could not identify that place");
         }
@@ -362,9 +363,11 @@ export default function App() {
       view,
       editMode,
       stops,
+      travelMode,
       showStatus,
       clearRoutes,
       rememberPlace,
+      runDirections,
     ],
   );
 
@@ -378,11 +381,9 @@ export default function App() {
 
   const setStopPlace = useCallback(
     (index, place) => {
-      setStops((prev) => {
-        const next = [...prev];
-        next[index] = place;
-        return next;
-      });
+      const nextStops = [...stops];
+      nextStops[index] = place;
+      setStops(nextStops);
       setStopTexts((prev) => {
         const next = [...prev];
         next[index] = place.isCurrentLocation ? "Your location" : place.name;
@@ -392,8 +393,11 @@ export default function App() {
       if (!place.isCurrentLocation) {
         setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 13 });
       }
+      if (nextStops.filter(Boolean).length >= 2) {
+        runDirections(nextStops, travelMode);
+      }
     },
-    [clearRoutes],
+    [stops, clearRoutes, runDirections, travelMode],
   );
 
   const addStop = useCallback(() => {
@@ -404,24 +408,27 @@ export default function App() {
 
   const removeStop = useCallback(
     (index) => {
-      setStops((prev) => {
-        if (prev.length <= 2) return prev;
-        return prev.filter((_, i) => i !== index);
-      });
-      setStopTexts((prev) => {
-        if (prev.length <= 2) return prev;
-        return prev.filter((_, i) => i !== index);
-      });
+      if (stops.length <= 2) return;
+      const nextStops = stops.filter((_, i) => i !== index);
+      setStops(nextStops);
+      setStopTexts((prev) => prev.filter((_, i) => i !== index));
       clearRoutes();
+      if (nextStops.filter(Boolean).length >= 2) {
+        runDirections(nextStops, travelMode);
+      }
     },
-    [clearRoutes],
+    [stops, clearRoutes, runDirections, travelMode],
   );
 
   const swapStops = useCallback(() => {
-    setStops((prev) => [...prev].reverse());
+    const nextStops = [...stops].reverse();
+    setStops(nextStops);
     setStopTexts((prev) => [...prev].reverse());
     clearRoutes();
-  }, [clearRoutes]);
+    if (nextStops.filter(Boolean).length >= 2) {
+      runDirections(nextStops, travelMode);
+    }
+  }, [stops, clearRoutes, runDirections, travelMode]);
 
   const filledStops = stops.filter(Boolean);
   const editOrigin = filledStops[0] || null;
@@ -792,7 +799,6 @@ export default function App() {
               setView("search");
               clearRoutes();
             }}
-            onSearch={() => runDirections()}
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
             onSelectRoute={(opt) => {
@@ -957,7 +963,6 @@ export default function App() {
                 route={selectedRoute}
                 destinationName={destinationName}
                 currentStepIndex={navStepIndex}
-                onStart={startNavigation}
                 onExit={exitNavigation}
                 onShowSteps={() => setShowSteps(true)}
               />

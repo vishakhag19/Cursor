@@ -350,7 +350,7 @@
   position: absolute;
   top: 16px;
   left: 50%;
-  transform: translateX(-50%);
+  translate: -50% 0;
   z-index: 1000;
   padding: 8px 14px;
   border-radius: 999px;
@@ -373,11 +373,22 @@
 @keyframes comparison-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-6px);
+    translate: -50% -6px;
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    translate: -50% 0;
+  }
+}
+
+@keyframes comparison-in-mobile {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
   }
 }
 
@@ -407,6 +418,12 @@
 .leaflet-container.is-route-dragging,
 .leaflet-container.is-route-dragging .leaflet-interactive {
   cursor: grabbing !important;
+  touch-action: none !important;
+}
+
+.leaflet-container.is-route-edit .leaflet-overlay-pane svg {
+  /* Prefer route hit-targets over map pan when starting on the line */
+  touch-action: none;
 }
 
 md-filled-tonal-button.is-edit-active {
@@ -892,7 +909,7 @@ md-filled-tonal-button.is-edit-active {
   position: absolute;
   left: 50%;
   bottom: 28px;
-  transform: translateX(-50%);
+  translate: -50% 0;
   z-index: 1100;
   max-width: min(420px, calc(100% - 32px));
   padding: 12px 20px;
@@ -902,16 +919,28 @@ md-filled-tonal-button.is-edit-active {
   box-shadow: var(--atlas-elevation-2);
   text-align: center;
   animation: rise 0.25s ease;
+  pointer-events: none;
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translate(-50%, 8px);
+    translate: -50% 8px;
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
+    translate: -50% 0;
+  }
+}
+
+@keyframes rise-mobile {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
   }
 }
 
@@ -1026,16 +1055,40 @@ md-text-button {
     bottom: 88px;
     left: 12px;
     right: 12px;
-    transform: none;
+    width: auto;
+    max-width: none;
+    translate: 0 0;
     text-align: center;
+    animation: comparison-in-mobile 180ms ease-out;
   }
 
   .map-status {
-    bottom: 96px;
+    bottom: 24px;
     left: 12px;
     right: 12px;
-    transform: none;
+    width: auto;
     max-width: none;
+    translate: 0 0;
+    animation: rise-mobile 0.25s ease;
+  }
+
+  /* Keep status toast near the bottom, above nav / steps chrome */
+  .app:has(.nav-sheet) .map-status,
+  .app:has(.steps-sheet) .map-status,
+  .app:has(.nav-footer) .map-status {
+    bottom: 132px;
+  }
+
+  .app:has(.nav-sheet) .map-comparison,
+  .app:has(.steps-sheet) .map-comparison {
+    top: 12px;
+    bottom: auto;
+  }
+
+  .app.panel-collapsed:has(.nav-sheet) .map-status,
+  .app.panel-collapsed:has(.steps-sheet) .map-status,
+  .app.panel-collapsed:has(.nav-footer) .map-status {
+    bottom: 132px;
   }
 
   .expand-panel {

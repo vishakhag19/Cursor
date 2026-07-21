@@ -80,6 +80,9 @@ export default function RouteEditorLayer({
     document.removeEventListener("pointercancel", L.up);
     document.removeEventListener("mousemove", L.moveMouse);
     document.removeEventListener("mouseup", L.up);
+    document.removeEventListener("touchmove", L.moveTouch, L.touchOpts);
+    document.removeEventListener("touchend", L.up);
+    document.removeEventListener("touchcancel", L.up);
     window.removeEventListener("pointerup", L.up, true);
     window.removeEventListener("mouseup", L.up, true);
     listenersRef.current = null;
@@ -92,6 +95,7 @@ export default function RouteEditorLayer({
     setDragState(null);
     onPreview?.(null);
     map.dragging.enable();
+    if (map.touchZoom?.enable) map.touchZoom.enable();
     map.getContainer().classList.remove("is-route-dragging");
     clearDocListeners();
   }
@@ -101,12 +105,20 @@ export default function RouteEditorLayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, map]);
 
+  useEffect(() => {
+    const el = map.getContainer();
+    if (enabled) el.classList.add("is-route-edit");
+    else el.classList.remove("is-route-edit");
+    return () => el.classList.remove("is-route-edit");
+  }, [enabled, map]);
+
   useEffect(
     () => () => {
       clearTimeout(snapTimer.current);
       previewSeq.current += 1;
       clearDocListeners();
       map.dragging.enable();
+      if (map.touchZoom?.enable) map.touchZoom.enable();
       map.getContainer().classList.remove("is-route-dragging");
     },
     [map],
@@ -218,6 +230,7 @@ export default function RouteEditorLayer({
     setDragState(null);
     onPreview?.(null);
     map.dragging.enable();
+    if (map.touchZoom?.enable) map.touchZoom.enable();
     map.getContainer().classList.remove("is-route-dragging");
     clearDocListeners();
 
@@ -250,6 +263,28 @@ export default function RouteEditorLayer({
     }
   }
 
+  function eventToLatLng(ev) {
+    const src =
+      ev?.touches?.[0] ||
+      ev?.changedTouches?.[0] ||
+      (ev?.clientX != null ? ev : null);
+    if (!src) return null;
+    try {
+      if (ev.touches || ev.changedTouches) {
+        const rect = map.getContainer().getBoundingClientRect();
+        return map.containerPointToLatLng(
+          L.point(src.clientX - rect.left, src.clientY - rect.top),
+        );
+      }
+      return map.mouseEventToLatLng(ev);
+    } catch {
+      const rect = map.getContainer().getBoundingClientRect();
+      return map.containerPointToLatLng(
+        L.point(src.clientX - rect.left, src.clientY - rect.top),
+      );
+    }
+  }
+
   function bindDocListeners(session) {
     clearDocListeners();
     const startedAt = performance.now();
@@ -257,31 +292,34 @@ export default function RouteEditorLayer({
     const origin = dragRef.current
       ? map.latLngToContainerPoint([dragRef.current.lat, dragRef.current.lng])
       : null;
-    const DRAG_PX = 10;
+    const DRAG_PX = 8;
 
     const onMove = (ev) => {
       if (session !== dragSession.current) return;
       if (!dragRef.current?.active) return;
-      if (typeof ev.buttons === "number") {
-        if (ev.buttons > 0) seenPressed = true;
-        if (
-          seenPressed &&
-          ev.buttons === 0 &&
-          performance.now() - startedAt > 80
-        ) {
-          onUp();
-          return;
+
+      // Mouse: detect button release if pointerup was missed.
+      // Touch / pen pointer events keep buttons === 1 while down.
+      if (ev.pointerType === "mouse" || ev.type === "mousemove") {
+        if (typeof ev.buttons === "number") {
+          if (ev.buttons > 0) seenPressed = true;
+          if (
+            seenPressed &&
+            ev.buttons === 0 &&
+            performance.now() - startedAt > 80
+          ) {
+            onUp();
+            return;
+          }
         }
       }
-      let latlng;
-      try {
-        latlng = map.mouseEventToLatLng(ev);
-      } catch {
-        const rect = map.getContainer().getBoundingClientRect();
-        latlng = map.containerPointToLatLng(
-          L.point(ev.clientX - rect.left, ev.clientY - rect.top),
-        );
+
+      if (ev.cancelable && (ev.touches || ev.pointerType === "touch")) {
+        ev.preventDefault();
       }
+
+      const latlng = eventToLatLng(ev);
+      if (!latlng) return;
       const { lat, lng } = latlng;
 
       let movedEnough = dragRef.current.movedEnough;
@@ -321,16 +359,22 @@ export default function RouteEditorLayer({
       finishDrag(session);
     }
 
+    const touchOpts = { passive: false };
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
     document.addEventListener("pointercancel", onUp);
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove, touchOpts);
+    document.addEventListener("touchend", onUp);
+    document.addEventListener("touchcancel", onUp);
     window.addEventListener("pointerup", onUp, true);
     window.addEventListener("mouseup", onUp, true);
     listenersRef.current = {
       move: onMove,
       moveMouse: onMove,
+      moveTouch: onMove,
+      touchOpts,
       up: onUp,
     };
   }
@@ -340,6 +384,7 @@ export default function RouteEditorLayer({
     const session = ++dragSession.current;
     previewSeq.current += 1;
     map.dragging.disable();
+    if (map.touchZoom?.disable) map.touchZoom.disable();
     map.getContainer().classList.add("is-route-dragging");
     const start = {
       active: true,
@@ -364,11 +409,12 @@ export default function RouteEditorLayer({
     }
   }
 
-  function beginViaDrag(via, latlng) {
+  function beginViaDrag(via, latlng, originalEvent) {
     if (!enabled) return;
     const session = ++dragSession.current;
     previewSeq.current += 1;
     map.dragging.disable();
+    if (map.touchZoom?.disable) map.touchZoom.disable();
     map.getContainer().classList.add("is-route-dragging");
     const start = {
       active: true,
@@ -384,6 +430,25 @@ export default function RouteEditorLayer({
     dragRef.current = start;
     setDragState(start);
     bindDocListeners(session);
+    if (originalEvent?.pointerId != null) {
+      try {
+        map.getContainer().setPointerCapture?.(originalEvent.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  function handleHitStart(e) {
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
+    const oe = e.originalEvent;
+    if (oe?.touches?.length > 1) return; // ignore multi-touch pinch
+    const closest = closestPointOnPolyline(
+      { lat: e.latlng.lat, lng: e.latlng.lng },
+      geometry,
+    );
+    beginPolylineDrag(e.latlng, closest?.segmentIndex ?? 0, oe);
   }
 
   if (!enabled || !geometry?.length) return null;
@@ -397,21 +462,10 @@ export default function RouteEditorLayer({
     <>
       <Polyline
         positions={geometry}
-        pathOptions={{ color: "#000", weight: 28, opacity: 0 }}
+        pathOptions={{ color: "#000", weight: 36, opacity: 0 }}
         eventHandlers={{
-          mousedown: (e) => {
-            L.DomEvent.stopPropagation(e);
-            L.DomEvent.preventDefault(e);
-            const closest = closestPointOnPolyline(
-              { lat: e.latlng.lat, lng: e.latlng.lng },
-              geometry,
-            );
-            beginPolylineDrag(
-              e.latlng,
-              closest?.segmentIndex ?? 0,
-              e.originalEvent,
-            );
-          },
+          mousedown: handleHitStart,
+          touchstart: handleHitStart,
         }}
       />
 
@@ -451,7 +505,12 @@ export default function RouteEditorLayer({
             mousedown: (e) => {
               L.DomEvent.stopPropagation(e);
               L.DomEvent.preventDefault(e);
-              beginViaDrag(via, e.latlng);
+              beginViaDrag(via, e.latlng, e.originalEvent);
+            },
+            touchstart: (e) => {
+              L.DomEvent.stopPropagation(e);
+              L.DomEvent.preventDefault(e);
+              beginViaDrag(via, e.latlng, e.originalEvent);
             },
           }}
           zIndexOffset={2000}

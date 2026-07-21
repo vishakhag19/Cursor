@@ -15,7 +15,6 @@ export default function DirectionsPanel({
   onRemoveStop,
   onSwap,
   onClose,
-  onSearch,
   routeOptions,
   selectedRouteId,
   onSelectRoute,
@@ -34,7 +33,6 @@ export default function DirectionsPanel({
   comparison = null,
   editBusy = false,
 }) {
-  const canRoute = stops.filter(Boolean).length >= 2;
   const hasRoutes = routeOptions.length > 0;
   const [activeStop, setActiveStop] = useState(null);
   const [placeList, setPlaceList] = useState({
@@ -161,15 +159,11 @@ export default function DirectionsPanel({
         <span className="md-typescale-body-medium">Add Stops</span>
       </button>
 
-      <div className="btn-row">
-        <md-filled-button
-          type="button"
-          onClick={onSearch}
-          disabled={!canRoute || loading || undefined}
-        >
-          {loading ? "Finding routes…" : "Get directions"}
-        </md-filled-button>
-      </div>
+      {loading && (
+        <p className="hint tight md-typescale-body-medium" role="status">
+          Finding routes…
+        </p>
+      )}
 
       {editMode && (
         <div className="edit-toolbar">
@@ -292,12 +286,6 @@ export default function DirectionsPanel({
             );
           })}
         </div>
-      )}
-
-      {!routeOptions.length && !error && !loading && !placeList.open && (
-        <p className="hint md-typescale-body-medium">
-          Enter start and destination, then get directions.
-        </p>
       )}
 
       {hasRoutes && stops.some(Boolean) && (

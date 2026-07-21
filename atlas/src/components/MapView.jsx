@@ -314,6 +314,7 @@ export default function MapView({
               lineJoin: "round",
               lineCap: "round",
             }}
+            interactive={!editMode}
             eventHandlers={{
               click: (e) => {
                 if (editMode) return;

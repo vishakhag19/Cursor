@@ -10,7 +10,6 @@ export default function NavigationUI({
   route,
   destinationName = "Destination",
   currentStepIndex = 0,
-  onStart,
   onExit,
   onShowSteps,
 }) {
@@ -36,14 +35,15 @@ export default function NavigationUI({
           </div>
         </div>
         <div className="nav-sheet-actions">
-          <md-filled-button class="nav-start-btn" type="button" onClick={onStart}>
-            <md-icon slot="icon">navigation</md-icon>
-            Start
-          </md-filled-button>
-          {steps.length > 0 && (
-            <md-outlined-button type="button" onClick={onShowSteps}>
+          {steps.length > 0 ? (
+            <md-filled-button class="nav-start-btn" type="button" onClick={onShowSteps}>
+              <md-icon slot="icon">list</md-icon>
               Steps
-            </md-outlined-button>
+            </md-filled-button>
+          ) : (
+            <p className="nav-sheet-meta md-typescale-body-medium">
+              Route details unavailable
+            </p>
           )}
         </div>
       </div>
