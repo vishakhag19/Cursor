@@ -652,7 +652,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel {
-  padding-bottom: 0;
+  padding-bottom: 12px;
   overflow: visible;
 }
 
