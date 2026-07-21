@@ -139,7 +139,6 @@ export default function MapView({
   onMarkerClick,
   routeOptions = [],
   selectedRouteId = null,
-  hiddenRouteIds = null,
   onSelectRoute,
   editMode = false,
   editOrigin = null,
@@ -302,21 +301,47 @@ export default function MapView({
           );
         })}
 
-      {routeOptions.map((opt) => {
-        if (!opt?.geometry?.length) return null;
-        const active = opt.id === selectedRouteId;
-        // While editing, hide alternate routes so the drag target is clear.
-        if (editMode && !active) return null;
-        // User toggles can hide non-active alternatives on the map.
-        if (!active && hiddenRouteIds?.has?.(opt.id)) return null;
-        return (
+      {/* Inactive routes first so the selected route paints on top */}
+      {routeOptions
+        .filter((opt) => opt?.geometry?.length && opt.id !== selectedRouteId)
+        .filter(() => !editMode)
+        .map((opt) => (
           <Polyline
             key={opt.id}
             positions={opt.geometry}
             pathOptions={{
-              color: active ? "#1A73E8" : "#64B5F6",
-              weight: active ? 6 : 5,
-              opacity: active ? (editMode ? 0.35 : 0.95) : 0.82,
+              color: "#64B5F6",
+              weight: 5,
+              opacity: 0.82,
+              lineJoin: "round",
+              lineCap: "round",
+            }}
+            interactive
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onSelectRoute?.(opt);
+              },
+              mouseover: (e) => {
+                e.target.setStyle({ opacity: 0.95, weight: 6 });
+              },
+              mouseout: (e) => {
+                e.target.setStyle({ opacity: 0.82, weight: 5 });
+              },
+            }}
+          />
+        ))}
+
+      {routeOptions
+        .filter((opt) => opt?.geometry?.length && opt.id === selectedRouteId)
+        .map((opt) => (
+          <Polyline
+            key={opt.id}
+            positions={opt.geometry}
+            pathOptions={{
+              color: "#1A73E8",
+              weight: 6,
+              opacity: editMode ? 0.35 : 0.95,
               lineJoin: "round",
               lineCap: "round",
             }}
@@ -327,25 +352,13 @@ export default function MapView({
                 L.DomEvent.stopPropagation(e);
                 onSelectRoute?.(opt);
               },
-              mouseover: (e) => {
-                if (editMode || active) return;
-                e.target.setStyle({ opacity: 0.95, weight: 6 });
-              },
-              mouseout: (e) => {
-                if (editMode || active) return;
-                e.target.setStyle({ opacity: 0.82, weight: 5 });
-              },
             }}
           />
-        );
-      })}
+        ))}
 
       {!editMode &&
         routeOptions.map((opt) => {
           if (!opt?.geometry?.length) return null;
-          if (opt.id !== selectedRouteId && hiddenRouteIds?.has?.(opt.id)) {
-            return null;
-          }
           return (
             <Polyline
               key={`hit-${opt.id}`}

@@ -68,7 +68,6 @@ export default function App() {
   const [showSteps, setShowSteps] = useState(false);
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
-  const [hiddenRouteIds, setHiddenRouteIds] = useState(() => new Set());
   const [selectedViaId, setSelectedViaId] = useState(null);
 
   const [flyTarget, setFlyTarget] = useState(null);
@@ -249,7 +248,6 @@ export default function App() {
         }
         setRouteOptions(options);
         setBaselineRoute(options[0]);
-        setHiddenRouteIds(new Set());
         selectRoute(options[0]);
         showStatus(
           `${options.length} shortest option${options.length === 1 ? "" : "s"}`,
@@ -542,15 +540,6 @@ export default function App() {
       }),
     [enqueueEdit, rebuildFromVias, showStatus],
   );
-
-  const toggleRouteVisibility = useCallback((routeId) => {
-    setHiddenRouteIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(routeId)) next.delete(routeId);
-      else next.add(routeId);
-      return next;
-    });
-  }, []);
 
   const undoEdit = useCallback(() => {
     setEditHistory((prev) => {
@@ -852,8 +841,6 @@ export default function App() {
             }}
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
-            hiddenRouteIds={hiddenRouteIds}
-            onToggleRouteVisibility={toggleRouteVisibility}
             onSelectRoute={(opt) => {
               if (editMode) return;
               selectRoute(opt);
@@ -918,7 +905,6 @@ export default function App() {
           }}
           routeOptions={view === "directions" ? routeOptions : []}
           selectedRouteId={selectedRouteId}
-          hiddenRouteIds={hiddenRouteIds}
           onSelectRoute={(opt) => {
             if (editMode) return;
             selectRoute(opt);
