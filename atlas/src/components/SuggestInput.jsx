@@ -5,13 +5,25 @@ import MdTextField from "./MdTextField";
 const LOCATION_QUERY = /^(your|my|current)\s+loc/i;
 
 function currentPlace(loc) {
+  if (loc?.lat != null && loc?.lng != null) {
+    return {
+      id: "current-location",
+      name: "Your location",
+      display_name: "Use your current GPS position",
+      lat: loc.lat,
+      lng: loc.lng,
+      isCurrentLocation: true,
+      type: "current",
+    };
+  }
   return {
     id: "current-location",
     name: "Your location",
-    display_name: "Use your current GPS position",
-    lat: loc.lat,
-    lng: loc.lng,
+    display_name: "Locating… tap to retry",
+    lat: null,
+    lng: null,
     isCurrentLocation: true,
+    pending: true,
     type: "current",
   };
 }
@@ -34,9 +46,8 @@ function labelForPlace(place) {
 }
 
 /**
- * Search-as-you-type field. Searching is driven by user typing only —
- * programmatic value updates (map pin, selected suggestion) must not
- * leave the spinner running.
+ * Place picker: text field + inline list below (not a floating dropdown).
+ * When allowCurrentLocation is on, "Your location" appears at the top on focus.
  */
 export default function SuggestInput({
   value,
@@ -50,6 +61,8 @@ export default function SuggestInput({
   allowCurrentLocation = false,
   recentPlaces = [],
   near = null,
+  onRequestLocation = null,
+  inlineList = true,
 }) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState([]);
@@ -75,11 +88,20 @@ export default function SuggestInput({
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
+  // Keep "Your location" coords fresh if GPS arrives while the list is open.
+  useEffect(() => {
+    if (!open || !allowCurrentLocation) return;
+    setSuggestions((prev) => {
+      if (!prev.some((s) => s.isCurrentLocation)) return prev;
+      const rest = prev.filter((s) => !s.isCurrentLocation);
+      return dedupe([currentPlace(currentLocation), ...rest]);
+    });
+  }, [currentLocation, open, allowCurrentLocation]);
+
   function emptySuggestions() {
     const items = [];
-    const loc = currentLocationRef.current;
-    if (allowCurrentLocation && loc) {
-      items.push(currentPlace(loc));
+    if (allowCurrentLocation) {
+      items.push(currentPlace(currentLocationRef.current));
     }
     const recent = recentPlacesRef.current;
     if (recent?.length) {
@@ -95,13 +117,31 @@ export default function SuggestInput({
     return dedupe(items);
   }
 
+  function showDefaultList() {
+    const items = emptySuggestions();
+    setSuggestions(items);
+    setOpen(items.length > 0);
+    setLoading(false);
+  }
+
   function stopSearch() {
     clearTimeout(debounceRef.current);
     requestSeq.current += 1;
     setLoading(false);
   }
 
-  function choosePlace(place) {
+  async function choosePlace(place) {
+    if (place?.isCurrentLocation && (place.pending || place.lat == null)) {
+      try {
+        const loc = onRequestLocation
+          ? await onRequestLocation()
+          : currentLocationRef.current;
+        if (!loc?.lat) return;
+        place = currentPlace(loc);
+      } catch {
+        return;
+      }
+    }
     committedRef.current = labelForPlace(place);
     typingRef.current = false;
     stopSearch();
@@ -124,16 +164,12 @@ export default function SuggestInput({
     }
 
     if (allowCurrentLocation && q.toLowerCase() === "your location") {
-      setSuggestions([]);
-      setOpen(false);
-      setLoading(false);
+      showDefaultList();
       return;
     }
 
     if (q.length < 2) {
-      const items = emptySuggestions();
-      setSuggestions(items);
-      setLoading(false);
+      showDefaultList();
       return;
     }
 
@@ -153,7 +189,9 @@ export default function SuggestInput({
           return;
         }
         const merged = [];
-        if (allowCurrentLocation && loc && LOCATION_QUERY.test(q)) {
+        if (allowCurrentLocation) {
+          merged.push(currentPlace(loc));
+        } else if (loc && LOCATION_QUERY.test(q)) {
           merged.push(currentPlace(loc));
         }
         merged.push(...results);
@@ -162,15 +200,14 @@ export default function SuggestInput({
         setOpen(unique.length > 0);
       } catch {
         if (seq !== requestSeq.current) return;
-        setSuggestions([]);
+        // Fall back to Your location / recent so the list never goes blank.
+        showDefaultList();
       } finally {
         if (seq === requestSeq.current) setLoading(false);
       }
     }, 280);
   }
 
-  // Programmatic value updates (map pin / parent setStopPlace): stop spinner.
-  // Typed updates set typingRef so we don't cancel the search we just scheduled.
   useEffect(() => {
     if (typingRef.current) {
       typingRef.current = false;
@@ -180,7 +217,6 @@ export default function SuggestInput({
     if (q.toLowerCase() === "your location") {
       committedRef.current = "Your location";
     } else if (q.length >= 2) {
-      // Treat externally filled destinations as committed selections.
       committedRef.current = q;
     } else {
       committedRef.current = null;
@@ -199,7 +235,10 @@ export default function SuggestInput({
   );
 
   return (
-    <div className="suggest-wrap" ref={wrapRef}>
+    <div
+      className={`suggest-wrap ${inlineList ? "is-inline-list" : ""} ${open ? "is-open" : ""}`}
+      ref={wrapRef}
+    >
       <MdTextField
         id={id}
         label={label}
@@ -213,25 +252,8 @@ export default function SuggestInput({
           scheduleSearch(v);
         }}
         onFocus={() => {
-          const q = value.trim();
-          if (
-            committedRef.current != null &&
-            q.toLowerCase() === committedRef.current.toLowerCase()
-          ) {
-            setOpen(false);
-            return;
-          }
-          if (q.toLowerCase() === "your location") {
-            setOpen(false);
-            return;
-          }
-          if (q.length < 2) {
-            const items = emptySuggestions();
-            setSuggestions(items);
-            setOpen(items.length > 0);
-          } else if (suggestions.length > 0) {
-            setOpen(true);
-          }
+          // Always show defaults (Your location + recent) when focusing the field.
+          showDefaultList();
         }}
       />
       {loading && (
@@ -242,7 +264,11 @@ export default function SuggestInput({
         />
       )}
       {open && suggestions.length > 0 && (
-        <md-list class="suggestions" id={listId} role="listbox">
+        <md-list
+          class={`suggestions place-list ${inlineList ? "is-inline" : ""}`}
+          id={listId}
+          role="listbox"
+        >
           {suggestions.map((s) => (
             <md-list-item
               key={s.isCurrentLocation ? "current-location" : String(s.id)}

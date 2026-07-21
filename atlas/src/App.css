@@ -139,11 +139,16 @@
   display: flex;
   align-items: flex-start;
   gap: 2px;
+  flex-wrap: wrap;
 }
 
 .dir-stop-row .suggest-wrap {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.dir-stop-row .suggest-wrap.is-open {
+  flex: 1 1 100%;
 }
 
 .dir-swap {
@@ -466,20 +471,30 @@ md-filled-tonal-button.is-edit-active {
   --md-circular-progress-size: 24px;
 }
 
-/* In-flow dropdown so the hugging panel grows and keeps suggestions visible */
-.suggestions {
+/* Inline place list under the field (not a floating dropdown) */
+.suggestions,
+.place-list.is-inline {
   position: relative;
   left: auto;
   right: auto;
   top: auto;
-  margin-top: 6px;
+  margin-top: 8px;
   z-index: 30;
-  max-height: min(280px, 40dvh);
+  max-height: min(320px, 45dvh);
   overflow: auto;
   border-radius: var(--md-sys-shape-corner-medium);
   background: var(--md-sys-color-surface-container-lowest);
-  box-shadow: var(--atlas-elevation-2);
+  box-shadow: none;
   border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.suggest-wrap.is-inline-list.is-open {
+  z-index: 40;
+}
+
+.suggestions md-list-item.is-current,
+.place-list md-list-item.is-current {
+  --md-list-item-label-text-color: var(--md-sys-color-primary);
 }
 
 .suggestions.md-list,

@@ -21,6 +21,7 @@ export default function DirectionsPanel({
   error,
   currentLocation,
   near = null,
+  onRequestLocation = null,
   editMode = false,
   onToggleEdit,
   canUndo = false,
@@ -75,8 +76,12 @@ export default function DirectionsPanel({
                       : "Add stop"
                 }
                 currentLocation={currentLocation}
-                allowCurrentLocation={i === 0}
+                allowCurrentLocation={
+                  i === 0 || i === stops.length - 1
+                }
                 near={near}
+                onRequestLocation={onRequestLocation}
+                inlineList
               />
               {stops.length > 2 && (
                 <md-icon-button

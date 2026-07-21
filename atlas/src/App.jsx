@@ -724,6 +724,17 @@ export default function App() {
             error={dirError}
             currentLocation={userLocation}
             near={userLocation}
+            onRequestLocation={async () => {
+              showStatus("Locating…", 0);
+              try {
+                const loc = await refreshLocation();
+                showStatus("Location found");
+                return loc;
+              } catch {
+                showStatus(geoError || "Could not get your location");
+                throw new Error("location");
+              }
+            }}
             editMode={editMode}
             onToggleEdit={toggleEditMode}
             canUndo={editHistory.length > 0}
