@@ -202,6 +202,9 @@ export default function App() {
     setRouteGeometry(opt.geometry);
     setRouteLocked(true);
     setFitKey((k) => k + 1);
+    setNavigating(false);
+    setNavStepIndex(0);
+    setShowSteps(false);
     if (!opt.edited) {
       setBaselineRoute(opt);
       editViasRef.current = [];

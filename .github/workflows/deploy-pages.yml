@@ -29,6 +29,8 @@ jobs:
           cache-dependency-path: atlas/package-lock.json
       - name: Install & build
         working-directory: atlas
+        env:
+          GITHUB_PAGES: "true"
         run: |
           npm ci
           npm run build
