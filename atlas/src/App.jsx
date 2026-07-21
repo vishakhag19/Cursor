@@ -985,16 +985,6 @@ export default function App() {
         >
           <md-icon-button
             type="button"
-            class="mobile-edit-panel"
-            aria-label="Open panel"
-            title="Open panel"
-            onClick={() => setPanelOpen(true)}
-          >
-            <md-icon>menu</md-icon>
-          </md-icon-button>
-          <span className="mobile-edit-divider" aria-hidden />
-          <md-icon-button
-            type="button"
             class="mobile-edit-undo"
             aria-label="Undo last edit"
             title="Undo last edit"
@@ -1033,7 +1023,7 @@ export default function App() {
         </div>
       )}
 
-      {!panelOpen && !editMode && (
+      {!panelOpen && (
         <button
           type="button"
           className="expand-panel"
@@ -1041,7 +1031,8 @@ export default function App() {
           title="Open panel"
           onClick={() => setPanelOpen(true)}
         >
-          <md-icon>menu</md-icon>
+          <md-icon class="expand-chevron-desktop">chevron_right</md-icon>
+          <md-icon class="expand-chevron-mobile">expand_more</md-icon>
         </button>
       )}
 

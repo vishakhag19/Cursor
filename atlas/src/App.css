@@ -1211,16 +1211,17 @@ md-filled-tonal-button.is-edit-active {
   border: 1px solid #e8eaed;
   border-radius: 999px;
   background: #fff;
-  color: #3c4043;
+  color: #5f6368;
   cursor: pointer;
   box-sizing: border-box;
   box-shadow: none;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .expand-panel:hover {
   background: #f8f9fa;
   border-color: #dadce0;
+  color: #3c4043;
 }
 
 .expand-panel md-icon {
@@ -1230,19 +1231,24 @@ md-filled-tonal-button.is-edit-active {
   --md-icon-size: 22px;
 }
 
+.expand-chevron-mobile {
+  display: none;
+}
+
 /* Floating undo / reset / done when the panel is collapsed during edit */
 .mobile-edit-bar {
   position: absolute;
-  top: 12px;
-  left: 50%;
+  /* Sit to the right of the desktop expand control */
+  top: 16px;
+  left: 72px;
   right: auto;
-  translate: -50% 0;
+  translate: none;
   z-index: 1100;
   display: flex;
   align-items: center;
   gap: 2px;
   width: max-content;
-  max-width: calc(100% - 24px);
+  max-width: calc(100% - 96px);
   min-height: 48px;
   padding: 4px 6px 4px 4px;
   box-sizing: border-box;
@@ -1250,14 +1256,6 @@ md-filled-tonal-button.is-edit-active {
   border: 1px solid #e8eaed;
   border-radius: 999px;
   box-shadow: none;
-}
-
-.mobile-edit-divider {
-  flex: 0 0 1px;
-  align-self: stretch;
-  width: 1px;
-  margin: 8px 4px;
-  background: #e8eaed;
 }
 
 .mobile-edit-spacer {
@@ -1294,7 +1292,7 @@ md-filled-tonal-button.is-edit-active {
   margin: 0;
   padding: 0 18px;
   border: none;
-  border-radius: 20px;
+  border-radius: 999px;
   background: #1a73e8;
   color: #fff;
   font: 500 14px/1 Roboto, sans-serif;
@@ -1305,11 +1303,12 @@ md-filled-tonal-button.is-edit-active {
   background: #1765cc;
 }
 
-/* Mobile: stretch the edit bar edge-to-edge for easier taps */
+/* Mobile: expand stays top-right (same corner as collapse); edit bar leaves room */
 @media (max-width: 800px) {
   .mobile-edit-bar {
+    top: 12px;
     left: 12px;
-    right: 12px;
+    right: 64px;
     translate: none;
     width: auto;
     max-width: none;
@@ -1556,6 +1555,20 @@ md-text-button {
     display: inline-block;
   }
 
+  .expand-chevron-desktop {
+    display: none;
+  }
+
+  .expand-chevron-mobile {
+    display: block;
+  }
+
+  .expand-panel {
+    top: 12px;
+    left: auto;
+    right: 12px;
+  }
+
   .mode-panel {
     padding: 6px 14px 14px;
     gap: 10px;
@@ -1584,11 +1597,6 @@ md-text-button {
   .app:has(.steps-fab) .map-status,
   .app:has(.nav-footer) .map-status {
     bottom: 72px;
-  }
-
-  .expand-panel {
-    top: 12px;
-    left: 12px;
   }
 
   .btn-row md-filled-button,
