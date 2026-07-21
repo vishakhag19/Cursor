@@ -67,6 +67,9 @@
   height: var(--panel-control-size);
   margin: 0;
   flex-shrink: 0;
+  /* Larger glyph only — button hit target stays --panel-control-size */
+  --md-icon-button-icon-size: 28px;
+  --md-icon-size: 28px;
 }
 
 .collapse-chevron-mobile {
@@ -1202,6 +1205,9 @@ md-filled-tonal-button.is-edit-active {
   height: var(--panel-control-size);
   margin: 0;
   background: transparent;
+  /* Larger glyph only — button hit target stays --panel-control-size */
+  --md-icon-button-icon-size: 28px;
+  --md-icon-size: 28px;
 }
 
 .expand-chevron-mobile {
