@@ -671,25 +671,12 @@ export default function App() {
           setEditVias(seeded);
         }
         setEditPreview(null);
-        // Free the map on phones so the route can be dragged.
-        try {
-          if (window.matchMedia("(max-width: 800px)").matches) {
-            setPanelOpen(false);
-          }
-        } catch {
-          /* ignore */
-        }
+        // Keep the panel open so time delta / undo stay visible while editing.
+        setPanelOpen(true);
         showStatus("Drag the blue line to reshape the route");
       } else {
         setEditPreview(null);
         setSelectedViaId(null);
-        try {
-          if (window.matchMedia("(max-width: 800px)").matches) {
-            setPanelOpen(true);
-          }
-        } catch {
-          /* ignore */
-        }
       }
       return next;
     });

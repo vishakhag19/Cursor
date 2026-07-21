@@ -206,7 +206,6 @@ export default function DirectionsPanel({
                 key={opt.id}
                 className={`dir-route-card ${active ? "is-active" : ""} ${editMode && active ? "is-editing" : ""}`}
               >
-                {active && <span className="dir-route-bar" aria-hidden />}
                 <button
                   type="button"
                   className="dir-route-select"

@@ -235,12 +235,12 @@
 
 .dir-route-card.is-active {
   background: #e8f0fe;
-  border-color: #1a73e8;
+  border-color: #dadce0;
 }
 
 .dir-route-card.is-editing {
   background: color-mix(in srgb, var(--md-sys-color-tertiary) 10%, #fff);
-  border-color: color-mix(in srgb, var(--md-sys-color-tertiary) 45%, #e8eaed);
+  border-color: #dadce0;
 }
 
 .dir-route-select {
