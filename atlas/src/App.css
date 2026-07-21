@@ -59,24 +59,34 @@
 .collapse-panel-btn {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   margin: 0;
   padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid #e8eaed;
+  border-radius: 999px;
+  background: #fff;
+  color: #5f6368;
   cursor: pointer;
+  box-sizing: border-box;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .collapse-panel-btn:hover {
-  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+  background: #f8f9fa;
+  border-color: #dadce0;
+  color: #3c4043;
 }
 
-.collapse-panel-btn .material-symbols-outlined {
-  font-size: 24px;
-  line-height: 1;
+.collapse-panel-btn:active {
+  background: #f1f3f4;
+}
+
+.collapse-panel-btn md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
 }
 
 .collapse-chevron-mobile {
@@ -401,16 +411,6 @@
 .dir-route-edit-btn.is-edit-active {
   --md-icon-button-icon-color: var(--md-sys-color-on-tertiary-container);
   --md-icon-button-hover-state-layer-color: var(--md-sys-color-tertiary);
-}
-
-.dir-route-bar {
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 4px;
-  border-radius: 0 4px 4px 0;
-  background: #1a73e8;
 }
 
 .dir-route-title-row {
@@ -1049,7 +1049,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .route-option-card.is-active {
-  border-color: #1a73e8;
+  border-color: #dadce0;
   background: #e8f0fe;
   color: inherit;
 }
@@ -1202,11 +1202,32 @@ md-filled-tonal-button.is-edit-active {
   top: 16px;
   left: 16px;
   z-index: 1100;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e8eaed;
+  border-radius: 999px;
+  background: #fff;
+  color: #3c4043;
+  cursor: pointer;
+  box-sizing: border-box;
+  box-shadow: none;
+  transition: background 120ms ease, border-color 120ms ease;
 }
 
-.expand-panel.is-edit-done {
-  --md-fab-container-color: #1a73e8;
-  --md-fab-icon-color: #fff;
+.expand-panel:hover {
+  background: #f8f9fa;
+  border-color: #dadce0;
+}
+
+.expand-panel md-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  --md-icon-size: 22px;
 }
 
 /* Floating undo / reset / done when the panel is collapsed during edit */
@@ -1226,9 +1247,17 @@ md-filled-tonal-button.is-edit-active {
   padding: 4px 6px 4px 4px;
   box-sizing: border-box;
   background: #fff;
-  border: 1px solid #dadce0;
-  border-radius: 28px;
-  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+  border: 1px solid #e8eaed;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.mobile-edit-divider {
+  flex: 0 0 1px;
+  align-self: stretch;
+  width: 1px;
+  margin: 8px 4px;
+  background: #e8eaed;
 }
 
 .mobile-edit-spacer {

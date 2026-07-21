@@ -671,8 +671,17 @@ export default function App() {
           setEditVias(seeded);
         }
         setEditPreview(null);
-        // Keep the panel open so time delta / undo stay visible while editing.
-        setPanelOpen(true);
+        // Phones: collapse for map space; desktop keeps the panel open.
+        // Floating edit bar includes a control to reopen the panel.
+        try {
+          if (window.matchMedia("(max-width: 800px)").matches) {
+            setPanelOpen(false);
+          } else {
+            setPanelOpen(true);
+          }
+        } catch {
+          setPanelOpen(true);
+        }
         showStatus("Drag the blue line to reshape the route");
       } else {
         setEditPreview(null);
@@ -874,12 +883,8 @@ export default function App() {
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <span className="material-symbols-outlined collapse-chevron-desktop" aria-hidden="true">
-              chevron_left
-            </span>
-            <span className="material-symbols-outlined collapse-chevron-mobile" aria-hidden="true">
-              expand_less
-            </span>
+            <md-icon class="collapse-chevron-desktop">chevron_left</md-icon>
+            <md-icon class="collapse-chevron-mobile">expand_less</md-icon>
           </button>
         </header>
 
@@ -980,6 +985,16 @@ export default function App() {
         >
           <md-icon-button
             type="button"
+            class="mobile-edit-panel"
+            aria-label="Open panel"
+            title="Open panel"
+            onClick={() => setPanelOpen(true)}
+          >
+            <md-icon>menu</md-icon>
+          </md-icon-button>
+          <span className="mobile-edit-divider" aria-hidden />
+          <md-icon-button
+            type="button"
             class="mobile-edit-undo"
             aria-label="Undo last edit"
             title="Undo last edit"
@@ -1019,15 +1034,15 @@ export default function App() {
       )}
 
       {!panelOpen && !editMode && (
-        <md-fab
-          class="expand-panel"
-          variant="primary"
-          size="medium"
+        <button
+          type="button"
+          className="expand-panel"
           aria-label="Open panel"
+          title="Open panel"
           onClick={() => setPanelOpen(true)}
         >
-          <md-icon slot="icon">menu</md-icon>
-        </md-fab>
+          <md-icon>menu</md-icon>
+        </button>
       )}
 
       <main className="map-stage">
