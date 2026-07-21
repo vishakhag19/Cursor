@@ -293,18 +293,23 @@
   background: #a50e0e;
 }
 
-/* Desktop: Steps sits beside Edit in the route card */
+/* Desktop: Steps sits beside Edit in the route card; sheet lives in the panel */
 @media (min-width: 801px) {
   .dir-route-steps-btn {
     display: inline-flex;
   }
 
-  .steps-fab {
+  .steps-fab,
+  .steps-bottom-sheet {
     display: none !important;
+  }
+
+  .panel:has(.steps-in-panel) .directions-panel {
+    display: none;
   }
 }
 
-/* Mobile & tablet: floating Steps at the bottom of the map */
+/* Mobile & tablet: floating Steps FAB; steps open as a bottom sheet */
 .steps-fab {
   position: absolute;
   left: 50%;
@@ -339,8 +344,8 @@
 }
 
 @media (max-width: 800px) {
-  .app:has(.steps-fab) .map-controls {
-    bottom: 96px;
+  .steps-in-panel {
+    display: none !important;
   }
 }
 
@@ -1325,7 +1330,12 @@ md-text-button {
 
   .map-controls {
     top: auto;
-    bottom: 96px;
+    bottom: 78px;
+    right: 12px;
+  }
+
+  .leaflet-bottom.leaflet-right {
+    bottom: 12px;
     right: 12px;
   }
 
@@ -1474,7 +1484,8 @@ md-text-button {
 
 .nav-banner {
   position: absolute;
-  top: 12px;
+  /* Sit below the menu / expand FAB */
+  top: 72px;
   left: 12px;
   right: 12px;
   z-index: 1200;
@@ -1532,7 +1543,8 @@ md-text-button {
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: 12px;
+  /* Above zoom / layer / recenter cluster */
+  bottom: 96px;
   z-index: 1200;
   display: flex;
   align-items: center;
@@ -1584,6 +1596,22 @@ md-text-button {
   border: none;
   flex: 1;
   min-height: 0;
+  animation: none;
+}
+
+.steps-bottom-sheet {
+  animation: steps-sheet-up 0.28s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes steps-sheet-up {
+  from {
+    opacity: 0.85;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .steps-sheet-header {
@@ -1650,10 +1678,21 @@ md-text-button {
   width: 100%;
 }
 
-.app.panel-collapsed .nav-sheet,
-.app.panel-collapsed .nav-footer,
-.app.panel-collapsed .steps-sheet {
-  /* full width when side panel is collapsed (nav mode) */
+/* Keep map chrome under the nav footer (above zoom / layers / recenter) */
+.app:has(.nav-active) .leaflet-bottom.leaflet-right {
+  bottom: 16px;
+  right: 16px;
+  margin-bottom: 0;
+}
+
+.app:has(.nav-active) .map-controls {
+  top: auto;
+  bottom: 84px;
+  right: 16px;
+}
+
+.app:has(.nav-active) .nav-footer {
+  bottom: 196px;
 }
 
 @media (max-width: 800px) {
@@ -1665,11 +1704,36 @@ md-text-button {
     right: 8px;
   }
 
-  .map-controls {
-    bottom: 140px;
+  .nav-banner {
+    top: 68px;
+  }
+
+  .app:has(.nav-active) .leaflet-bottom.leaflet-right {
+    bottom: 12px;
+    right: 12px;
   }
 
   .app:has(.nav-active) .map-controls {
-    bottom: 110px;
+    top: auto;
+    bottom: 78px;
+    right: 12px;
+  }
+
+  .app:has(.nav-active) .nav-footer {
+    bottom: 188px;
+  }
+
+  /* Raise map chrome above the steps FAB; sheet covers chrome while open */
+  .app:has(.steps-fab) .map-controls {
+    bottom: 84px;
+  }
+
+  .app:has(.steps-fab) .leaflet-bottom.leaflet-right {
+    bottom: 12px;
+  }
+
+  .app:has(.steps-bottom-sheet) .map-controls,
+  .app:has(.steps-bottom-sheet) .leaflet-bottom.leaflet-right {
+    visibility: hidden;
   }
 }

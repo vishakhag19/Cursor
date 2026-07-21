@@ -9,7 +9,6 @@ export default function ExplorePanel({
   onClear,
   onDirectionsFrom,
   onDirectionsTo,
-  onAddToRoute,
   currentLocation,
 }) {
   return (
@@ -41,7 +40,6 @@ export default function ExplorePanel({
           onClose={onClear}
           onDirectionsTo={onDirectionsTo}
           onDirectionsFrom={onDirectionsFrom}
-          onAddToRoute={onAddToRoute}
         />
       ) : (
         <p className="hint md-typescale-body-medium">

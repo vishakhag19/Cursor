@@ -806,10 +806,6 @@ export default function App() {
               if (!selectedPlace) return;
               openDirections({ from: selectedPlace });
             }}
-            onAddToRoute={() => {
-              if (!selectedPlace) return;
-              openDirections({ to: selectedPlace });
-            }}
           />
         )}
 
@@ -817,12 +813,13 @@ export default function App() {
           <StepsSheet
             route={selectedRoute}
             embedded
+            className="steps-in-panel"
             onClose={() => setShowSteps(false)}
             onStart={startNavigation}
           />
         )}
 
-        {view === "directions" && !showSteps && (
+        {view === "directions" && (
           <DirectionsPanel
             stops={stops}
             stopTexts={stopTexts}
@@ -1003,14 +1000,19 @@ export default function App() {
                 type="button"
                 className="steps-fab"
                 aria-label="Steps"
-                onClick={() => {
-                  setShowSteps(true);
-                  setPanelOpen(true);
-                }}
+                onClick={() => setShowSteps(true)}
               >
                 <md-icon>list</md-icon>
                 <span>Steps</span>
               </button>
+            )}
+            {showSteps && (
+              <StepsSheet
+                route={selectedRoute}
+                className="steps-bottom-sheet"
+                onClose={() => setShowSteps(false)}
+                onStart={startNavigation}
+              />
             )}
           </>
         )}

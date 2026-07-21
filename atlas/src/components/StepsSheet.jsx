@@ -6,13 +6,14 @@ export default function StepsSheet({
   onClose,
   onStart,
   embedded = false,
+  className = "",
 }) {
   if (!route) return null;
   const steps = route.steps || [];
 
   return (
     <div
-      className={`steps-sheet ${embedded ? "is-embedded" : ""}`}
+      className={`steps-sheet ${embedded ? "is-embedded" : ""} ${className}`.trim()}
       role={embedded ? "region" : "dialog"}
       aria-label="Trip steps"
     >

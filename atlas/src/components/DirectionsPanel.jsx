@@ -35,6 +35,7 @@ export default function DirectionsPanel({
   onShowSteps = null,
 }) {
   const [activeStop, setActiveStop] = useState(null);
+  const [forceShowStops, setForceShowStops] = useState(false);
   const [placeList, setPlaceList] = useState({
     open: false,
     items: [],
@@ -68,7 +69,6 @@ export default function DirectionsPanel({
 
   const bothEndsSet = stops.filter(Boolean).length >= 2;
   const hasRouteResults = bothEndsSet && routeOptions.length > 0;
-  const [forceShowStops, setForceShowStops] = useState(false);
 
   return (
     <section

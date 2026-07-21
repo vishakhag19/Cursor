@@ -357,7 +357,10 @@ export default function MapView({
         ))}
 
       {!editMode &&
-        routeOptions.map((opt) => {
+        [
+          ...routeOptions.filter((o) => o.id !== selectedRouteId),
+          ...routeOptions.filter((o) => o.id === selectedRouteId),
+        ].map((opt) => {
           if (!opt?.geometry?.length) return null;
           return (
             <Polyline

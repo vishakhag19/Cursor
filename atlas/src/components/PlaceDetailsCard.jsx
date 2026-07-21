@@ -5,7 +5,6 @@ export default function PlaceDetailsCard({
   onClose,
   onDirectionsTo,
   onDirectionsFrom,
-  onAddToRoute,
 }) {
   if (!place) return null;
   const lines = formatAddressLines(place);
@@ -67,9 +66,6 @@ export default function PlaceDetailsCard({
         <md-outlined-button type="button" onClick={onDirectionsFrom}>
           From here
         </md-outlined-button>
-        <md-text-button type="button" onClick={onAddToRoute}>
-        Add stop
-      </md-text-button>
       </div>
     </div>
   );

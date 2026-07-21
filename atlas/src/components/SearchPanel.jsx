@@ -10,7 +10,6 @@ export default function SearchPanel({
   onClear,
   onDirectionsTo,
   onDirectionsFrom,
-  onAddToRoute,
   recentPlaces = [],
   near = null,
 }) {
@@ -53,7 +52,6 @@ export default function SearchPanel({
           onClose={onClear}
           onDirectionsTo={onDirectionsTo}
           onDirectionsFrom={onDirectionsFrom}
-          onAddToRoute={onAddToRoute}
         />
       )}
     </section>
