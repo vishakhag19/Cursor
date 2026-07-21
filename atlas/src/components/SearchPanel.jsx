@@ -2,7 +2,6 @@ import { useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
-import ActionTip from "./ActionTip";
 
 /**
  * Landing search — same suggestion pattern as Directions:
@@ -65,18 +64,16 @@ export default function SearchPanel({
           </div>
           <div className="search-bar-actions">
             {query ? (
-              <ActionTip tip="Clear search">
-                <md-icon-button
-                  class="search-clear-btn"
-                  aria-label="Clear search"
-                  onClick={() => {
-                    onClear();
-                    clearPlaceList();
-                  }}
-                >
-                  <md-icon>close</md-icon>
-                </md-icon-button>
-              </ActionTip>
+              <md-icon-button
+                class="search-clear-btn"
+                aria-label="Clear search"
+                onClick={() => {
+                  onClear();
+                  clearPlaceList();
+                }}
+              >
+                <md-icon>close</md-icon>
+              </md-icon-button>
             ) : (
               <span className="search-bar-glyph" aria-hidden>
                 <md-icon>search</md-icon>

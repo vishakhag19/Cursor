@@ -114,15 +114,13 @@ export default function DirectionsPanel({
               </span>
             </button>
           )}
-          <ActionTip tip="Close directions">
-            <md-icon-button
-              type="button"
-              aria-label="Close directions"
-              onClick={onClose}
-            >
-              <md-icon>close</md-icon>
-            </md-icon-button>
-          </ActionTip>
+          <md-icon-button
+            type="button"
+            aria-label="Close directions"
+            onClick={onClose}
+          >
+            <md-icon>close</md-icon>
+          </md-icon-button>
         </div>
       </div>
 
@@ -174,15 +172,13 @@ export default function DirectionsPanel({
                     onListChange={(payload) => handleListChange(i, payload)}
                   />
                   {stops.length > 2 && (
-                    <ActionTip tip="Remove stop">
-                      <md-icon-button
-                        type="button"
-                        aria-label="Remove stop"
-                        onClick={() => onRemoveStop(i)}
-                      >
-                        <md-icon>close</md-icon>
-                      </md-icon-button>
-                    </ActionTip>
+                    <md-icon-button
+                      type="button"
+                      aria-label="Remove stop"
+                      onClick={() => onRemoveStop(i)}
+                    >
+                      <md-icon>close</md-icon>
+                    </md-icon-button>
                   )}
                 </div>
               ))}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+const HOVER_DELAY_MS = 2000;
 const LONG_PRESS_MS = 420;
 const TOUCH_TIP_MS = 2200;
 const MOVE_CANCEL_PX = 8;
@@ -9,18 +10,26 @@ const EST_TIP_HEIGHT = 36;
 /**
  * Hover/focus tip that uses position:fixed so it is never clipped by
  * overflow:hidden ancestors (route cards, scroll panels, md-icon-button).
- * On touch, a short press-and-hold shows the same tip.
+ * Hover waits a few seconds (discovery); touch uses press-and-hold.
  * Prefers below the control; flips above when the viewport is tight.
  */
 export default function ActionTip({ tip, children, className = "" }) {
   const wrapRef = useRef(null);
   const tipRef = useRef(null);
   const [box, setBox] = useState(null);
+  const hoverTimerRef = useRef(null);
   const pressTimerRef = useRef(null);
   const hideTimerRef = useRef(null);
   const longPressedRef = useRef(false);
   const startPosRef = useRef(null);
   const refinedRef = useRef(false);
+
+  function clearHoverTimer() {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  }
 
   function clearPressTimer() {
     if (pressTimerRef.current) {
@@ -37,6 +46,7 @@ export default function ActionTip({ tip, children, className = "" }) {
   }
 
   function clearTimers() {
+    clearHoverTimer();
     clearPressTimer();
     clearHideTimer();
   }
@@ -73,7 +83,17 @@ export default function ActionTip({ tip, children, className = "" }) {
   }
 
   function hide() {
+    clearHoverTimer();
     setBox(null);
+  }
+
+  function scheduleShow() {
+    clearHoverTimer();
+    clearHideTimer();
+    hoverTimerRef.current = setTimeout(() => {
+      hoverTimerRef.current = null;
+      show();
+    }, HOVER_DELAY_MS);
   }
 
   function scheduleHide(ms = TOUCH_TIP_MS) {
@@ -82,7 +102,7 @@ export default function ActionTip({ tip, children, className = "" }) {
   }
 
   function onPointerDown(e) {
-    // Mouse / keyboard use hover + focus; touch/pen use press-and-hold.
+    // Mouse / keyboard use delayed hover + focus; touch/pen use press-and-hold.
     if (e.pointerType === "mouse") return;
     longPressedRef.current = false;
     startPosRef.current = { x: e.clientX, y: e.clientY };
@@ -154,7 +174,7 @@ export default function ActionTip({ tip, children, className = "" }) {
 
   useEffect(() => {
     function onScroll() {
-      if (!box) return;
+      if (!box && !hoverTimerRef.current) return;
       clearTimers();
       hide();
     }
@@ -169,9 +189,9 @@ export default function ActionTip({ tip, children, className = "" }) {
     <span
       className={["action-tip-wrap", className].filter(Boolean).join(" ")}
       ref={wrapRef}
-      onMouseEnter={show}
+      onMouseEnter={scheduleShow}
       onMouseLeave={hide}
-      onFocus={show}
+      onFocus={scheduleShow}
       onBlur={hide}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

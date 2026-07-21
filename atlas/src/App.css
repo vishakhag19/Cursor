@@ -206,11 +206,6 @@
   align-self: center;
 }
 
-.dir-stops > .action-tip-wrap {
-  align-self: center;
-  justify-self: center;
-}
-
 .dir-stop-row > .action-tip-wrap {
   flex-shrink: 0;
 }
