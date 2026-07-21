@@ -683,6 +683,7 @@ md-filled-tonal-button.is-edit-active {
 
 /* Minimal search bar — no shadows, flex-contained actions */
 .search-bar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -725,6 +726,8 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-bar .suggest-wrap {
+  /* Let the dropdown position against .search-bar (full pill width) */
+  position: static;
   width: 100%;
 }
 
@@ -745,6 +748,7 @@ md-filled-tonal-button.is-edit-active {
   left: 0;
   right: 0;
   top: calc(100% + 6px);
+  width: auto;
   z-index: 50;
   margin: 0;
   border: 1px solid #dadce0;
@@ -752,6 +756,7 @@ md-filled-tonal-button.is-edit-active {
   box-shadow: none;
   background: #fff;
   max-height: min(360px, 48dvh);
+  box-sizing: border-box;
 }
 
 .search-bar .suggest-wrap.is-inline-list.is-open {
