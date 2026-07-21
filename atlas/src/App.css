@@ -222,6 +222,10 @@
   color: inherit;
 }
 
+.dir-route-card:last-child {
+  border-bottom: none;
+}
+
 .dir-route-card:hover {
   background: var(--md-sys-color-surface-container);
 }
@@ -578,7 +582,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  border-radius: 8px;
+  border-radius: 9999px;
   background: #f8f9fa;
   padding: 2px 2px 2px 8px;
 }
@@ -693,7 +697,7 @@ md-filled-tonal-button.is-edit-active {
   padding: 4px 6px 4px 4px;
   background: #fff;
   border: 1px solid #dadce0;
-  border-radius: 24px;
+  border-radius: 9999px;
   box-shadow: none;
   overflow: visible;
   min-height: 48px;
@@ -737,7 +741,7 @@ md-filled-tonal-button.is-edit-active {
 
 .search-bar .suggest-wrap md-outlined-text-field {
   width: 100%;
-  --md-outlined-text-field-container-shape: 20px;
+  --md-outlined-text-field-container-shape: 9999px;
   --md-outlined-text-field-outline-width: 0px;
   --md-outlined-text-field-hover-outline-width: 0px;
   --md-outlined-text-field-focus-outline-width: 0px;
@@ -755,12 +759,13 @@ md-filled-tonal-button.is-edit-active {
   width: auto;
   z-index: 50;
   margin: 0;
-  border: 1px solid #dadce0;
-  border-radius: 12px;
+  border: 1px solid #e8eaed;
+  border-radius: 20px;
   box-shadow: none;
   background: #fff;
   max-height: min(360px, 48dvh);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .search-bar .suggest-wrap.is-inline-list.is-open {
@@ -795,6 +800,33 @@ md-filled-tonal-button.is-edit-active {
 
 .suggest-wrap md-outlined-text-field {
   width: 100%;
+}
+
+/* Shared pill inputs — match landing search across directions / create */
+.suggest-wrap md-outlined-text-field,
+.create-panel md-outlined-text-field {
+  --md-outlined-text-field-container-shape: 9999px;
+  --md-outlined-text-field-outline-width: 1px;
+  --md-outlined-text-field-hover-outline-width: 1px;
+  --md-outlined-text-field-focus-outline-width: 2px;
+  --md-outlined-text-field-outline-color: #dadce0;
+  --md-outlined-text-field-hover-outline-color: #bdc1c6;
+  --md-outlined-text-field-focus-outline-color: #1a73e8;
+  --md-outlined-text-field-container-height: 48px;
+  --md-outlined-text-field-top-space: 12px;
+  --md-outlined-text-field-bottom-space: 12px;
+  --md-outlined-text-field-leading-space: 16px;
+  --md-outlined-text-field-trailing-space: 12px;
+}
+
+/* Landing search keeps outline on the outer pill, not the inner field */
+.search-bar .suggest-wrap md-outlined-text-field {
+  --md-outlined-text-field-outline-width: 0px;
+  --md-outlined-text-field-hover-outline-width: 0px;
+  --md-outlined-text-field-focus-outline-width: 0px;
+  --md-outlined-text-field-container-height: 40px;
+  --md-outlined-text-field-top-space: 8px;
+  --md-outlined-text-field-bottom-space: 8px;
 }
 
 .suggest-spinner {
@@ -837,6 +869,10 @@ md-filled-tonal-button.is-edit-active {
   padding: 4px 0 8px;
 }
 
+.place-suggest-list > li:not(:last-child) .place-suggest-item {
+  border-bottom: 1px solid #f1f3f4;
+}
+
 .place-suggest-item {
   display: flex;
   align-items: center;
@@ -844,6 +880,7 @@ md-filled-tonal-button.is-edit-active {
   width: 100%;
   padding: 12px 16px;
   border: none;
+  border-radius: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -917,8 +954,9 @@ md-filled-tonal-button.is-edit-active {
 
 .suggest-wrap.is-inline-list .place-suggest-panel {
   margin: 8px 0 0;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-medium);
+  border: 1px solid #e8eaed;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 /* Inline place list under the field (search panel) */
@@ -953,6 +991,7 @@ md-filled-tonal-button.is-edit-active {
 .place-details.m3-card {
   box-shadow: none;
   border: 1px solid #e8eaed;
+  border-radius: 20px;
 }
 
 .place-details-header {
@@ -1804,6 +1843,10 @@ md-text-button {
   gap: 14px;
   padding: 14px 16px;
   border-bottom: 1px solid #f1f3f4;
+}
+
+.steps-item:last-child {
+  border-bottom: none;
 }
 
 .steps-item-icon {
