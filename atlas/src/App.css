@@ -310,18 +310,21 @@
   display: none;
 }
 
-/* Hover tooltips for icon actions */
+/* Hover tooltips for icon actions — wrapper must own the tip so
+   md-icon-button overflow/ripple does not clip it */
 .has-tip {
   position: relative;
+  display: inline-flex;
   overflow: visible;
 }
 
 .has-tip::after {
   content: attr(data-tip);
   position: absolute;
-  left: 50%;
+  right: 0;
+  left: auto;
   bottom: calc(100% + 6px);
-  translate: -50% 0;
+  translate: 0;
   padding: 5px 8px;
   border-radius: 4px;
   background: #202124;
@@ -331,11 +334,11 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease;
-  z-index: 30;
+  z-index: 40;
 }
 
 .has-tip:hover::after,
-.has-tip:focus-visible::after {
+.has-tip:focus-within::after {
   opacity: 1;
 }
 
