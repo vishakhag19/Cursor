@@ -656,6 +656,11 @@ md-filled-tonal-button.is-edit-active {
   overflow: visible;
 }
 
+/* Only the open location list sits flush — panel chrome keeps its padding */
+.search-panel:has(.place-suggest-panel) {
+  padding-bottom: 0;
+}
+
 .directions-panel {
   overflow-x: visible;
   overflow-y: auto;
@@ -754,6 +759,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel .place-suggest-list {
+  padding-top: 4px;
   padding-bottom: 0;
 }
 
