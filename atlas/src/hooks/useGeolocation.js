@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const GEO_OPTIONS = {
+  enableHighAccuracy: false,
+  timeout: 10000,
+  // Prefer a recently known / browser-provided fix so recenter works
+  // even when a fresh high-accuracy reading is unavailable.
+  maximumAge: 120000,
+};
+
+const GEO_WATCH_OPTIONS = {
   enableHighAccuracy: true,
-  timeout: 15000,
-  maximumAge: 10000,
+  timeout: 20000,
+  maximumAge: 15000,
 };
 
 /**
@@ -15,16 +23,19 @@ export default function useGeolocation({ autoStart = true } = {}) {
   const [error, setError] = useState(null);
   const watchId = useRef(null);
   const centeredOnce = useRef(false);
+  const locationRef = useRef(null);
 
   const applyPosition = useCallback((pos) => {
-    setLocation({
+    const next = {
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
       accuracy: pos.coords.accuracy,
       heading: pos.coords.heading,
       speed: pos.coords.speed,
       timestamp: pos.timestamp,
-    });
+    };
+    locationRef.current = next;
+    setLocation(next);
     setStatus("ready");
     setError(null);
   }, []);
@@ -62,8 +73,11 @@ export default function useGeolocation({ autoStart = true } = {}) {
     setStatus((s) => (s === "ready" ? s : "locating"));
     watchId.current = navigator.geolocation.watchPosition(
       applyPosition,
-      applyError,
-      GEO_OPTIONS,
+      (err) => {
+        // Keep last known fix when a watch update fails.
+        if (!locationRef.current) applyError(err);
+      },
+      GEO_WATCH_OPTIONS,
     );
   }, [applyPosition, applyError, stopWatching]);
 
@@ -71,6 +85,10 @@ export default function useGeolocation({ autoStart = true } = {}) {
     if (!navigator.geolocation) {
       setStatus("unavailable");
       setError("Geolocation is not supported in this browser");
+      // Still usable if we already have a fix from elsewhere.
+      if (locationRef.current) {
+        return Promise.resolve(locationRef.current);
+      }
       return Promise.reject(new Error("unavailable"));
     }
     setStatus((s) => (s === "ready" ? s : "locating"));
@@ -86,6 +104,14 @@ export default function useGeolocation({ autoStart = true } = {}) {
           });
         },
         (err) => {
+          // Recenter should still work from the last known / magic base fix.
+          const known = locationRef.current;
+          if (known?.lat != null && known?.lng != null) {
+            setStatus("ready");
+            startWatching();
+            resolve(known);
+            return;
+          }
           applyError(err);
           reject(err);
         },

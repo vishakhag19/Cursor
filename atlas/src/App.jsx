@@ -631,15 +631,30 @@ export default function App() {
   }, [editMode, selectedViaId, deleteVia]);
 
   const goToMyLocation = useCallback(async () => {
-    showStatus("Locating…", 0);
+    // If we already have a fix (browser / magic base location), recenter now.
+    if (userLocation?.lat != null && userLocation?.lng != null) {
+      locateFn.current?.([userLocation.lat, userLocation.lng], 16);
+    } else {
+      showStatus("Locating…", 0);
+    }
+
     try {
       const loc = await refreshLocation();
-      locateFn.current?.([loc.lat, loc.lng], 16);
-      showStatus("Location found");
+      if (loc?.lat != null && loc?.lng != null) {
+        locateFn.current?.([loc.lat, loc.lng], 16);
+        showStatus("Centered on your location");
+        return;
+      }
+      throw new Error("no location");
     } catch {
+      if (userLocation?.lat != null && userLocation?.lng != null) {
+        locateFn.current?.([userLocation.lat, userLocation.lng], 16);
+        showStatus("Centered on your location");
+        return;
+      }
       showStatus(geoError || "Could not get your location");
     }
-  }, [refreshLocation, geoError, showStatus]);
+  }, [refreshLocation, geoError, showStatus, userLocation]);
 
   const ctxActions = ctx
     ? [
@@ -853,6 +868,10 @@ export default function App() {
                 showStatus("Location found");
                 return loc;
               } catch {
+                if (userLocation?.lat != null) {
+                  showStatus("Using your last known location");
+                  return userLocation;
+                }
                 showStatus(geoError || "Could not get your location");
                 throw new Error("location");
               }
