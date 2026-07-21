@@ -61,12 +61,15 @@
   box-sizing: border-box;
 }
 
-/* Match directions close: plain md-icon-button, no outline chrome */
+/* White circular chip, no border — md-icon-button hover/press states */
 .collapse-panel-btn {
   width: var(--panel-control-size);
   height: var(--panel-control-size);
   margin: 0;
   flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
   /* Larger glyph only — button hit target stays --panel-control-size */
   --md-icon-button-icon-size: 28px;
   --md-icon-size: 28px;
@@ -1204,7 +1207,9 @@ md-filled-tonal-button.is-edit-active {
   width: var(--panel-control-size);
   height: var(--panel-control-size);
   margin: 0;
-  background: transparent;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
   /* Larger glyph only — button hit target stays --panel-control-size */
   --md-icon-button-icon-size: 28px;
   --md-icon-size: 28px;
