@@ -28,6 +28,25 @@ function emptyStops() {
   return [null, null];
 }
 
+function cloneGeometry(geometry) {
+  if (!geometry?.length) return geometry ?? null;
+  return geometry.map((p) => (Array.isArray(p) ? [...p] : p));
+}
+
+function cloneRouteOptions(options) {
+  if (!options?.length) return [];
+  return options.map((r) => ({
+    ...r,
+    geometry: cloneGeometry(r.geometry),
+    steps: r.steps ? r.steps.map((s) => ({ ...s })) : r.steps,
+  }));
+}
+
+function cloneVias(vias) {
+  if (!vias?.length) return [];
+  return vias.map((v) => ({ ...v }));
+}
+
 function orderViasAlongGeometry(vias, geometry) {
   if (!vias.length) return [];
   return [...vias]
@@ -79,6 +98,8 @@ export default function App() {
   const routeGeometryRef = useRef(null);
   const selectedRouteIdRef = useRef(null);
   const routeOptionsRef = useRef([]);
+  const editHistoryRef = useRef([]);
+  const editEpochRef = useRef(0);
   const editCommitChain = useRef(Promise.resolve());
 
   const {
@@ -130,18 +151,38 @@ export default function App() {
     });
   }, [userLocation, routeLocked]);
 
+  const clearEditHistory = useCallback(() => {
+    editHistoryRef.current = [];
+    setEditHistory([]);
+  }, []);
+
+  const pushEditHistory = useCallback(() => {
+    const entry = {
+      vias: cloneVias(editViasRef.current),
+      routeId: selectedRouteIdRef.current,
+      geometry: cloneGeometry(routeGeometryRef.current),
+      options: cloneRouteOptions(routeOptionsRef.current),
+    };
+    const next = [...editHistoryRef.current, entry];
+    editHistoryRef.current = next;
+    setEditHistory(next);
+  }, []);
+
   const clearEditState = useCallback(() => {
     setEditMode(false);
     setBaselineRoute(null);
     editViasRef.current = [];
     setEditVias([]);
-    setEditHistory([]);
+    clearEditHistory();
     setEditPreview(null);
     setEditBusy(false);
     setNavigating(false);
     setNavStepIndex(0);
     setShowSteps(false);
-  }, []);
+    setSelectedViaId(null);
+    editEpochRef.current += 1;
+    editCommitChain.current = Promise.resolve();
+  }, [clearEditHistory]);
 
   const clearRoutes = useCallback(() => {
     setRouteOptions([]);
@@ -157,7 +198,9 @@ export default function App() {
     setRecentPlaces((prev) => pushRecentSearch(place, prev));
   }, []);
 
-  const applyEditedRoute = useCallback((route, vias, { pushHistory = true } = {}) => {
+  const applyEditedRoute = useCallback((route, vias, { pushHistory = true, epoch = null } = {}) => {
+    if (epoch != null && epoch !== editEpochRef.current) return false;
+
     const edited = {
       ...route,
       id: `edited-${Math.round(route.distance)}-${Math.round(route.duration)}-${vias.length}-${Date.now()}`,
@@ -169,17 +212,7 @@ export default function App() {
       edited: true,
     };
 
-    if (pushHistory) {
-      setEditHistory((prev) => [
-        ...prev,
-        {
-          vias: editViasRef.current,
-          routeId: selectedRouteIdRef.current,
-          geometry: routeGeometryRef.current,
-          options: routeOptionsRef.current,
-        },
-      ]);
-    }
+    if (pushHistory) pushEditHistory();
 
     editViasRef.current = vias;
     setEditVias(vias);
@@ -194,7 +227,8 @@ export default function App() {
     routeGeometryRef.current = edited.geometry;
     setRouteGeometry(edited.geometry);
     setRouteLocked(true);
-  }, []);
+    return true;
+  }, [pushEditHistory]);
 
   const selectRoute = useCallback((opt) => {
     if (!opt) return;
@@ -210,10 +244,10 @@ export default function App() {
       setBaselineRoute(opt);
       editViasRef.current = [];
       setEditVias([]);
-      setEditHistory([]);
+      clearEditHistory();
       setEditPreview(null);
     }
-  }, []);
+  }, [clearEditHistory]);
 
   const runDirections = useCallback(
     async (nextStops = stops, mode = travelMode) => {
@@ -437,6 +471,7 @@ export default function App() {
   const rebuildFromVias = useCallback(
     async (nextVias, { pushHistory = true, preserveOrder = false } = {}) => {
       if (!editOrigin || !editDestination) return;
+      const epoch = editEpochRef.current;
       setEditBusy(true);
       showStatus("Recalculating shortest route…", 0);
       try {
@@ -452,12 +487,17 @@ export default function App() {
           editDestination,
           travelMode,
         );
-        applyEditedRoute(route, ordered, { pushHistory });
-        showStatus("Shortest route via your points");
+        if (epoch !== editEpochRef.current) return;
+        const applied = applyEditedRoute(route, ordered, {
+          pushHistory,
+          epoch,
+        });
+        if (applied) showStatus("Shortest route via your points");
       } catch (err) {
+        if (epoch !== editEpochRef.current) return;
         showStatus(err.message || "Could not update route");
       } finally {
-        setEditBusy(false);
+        if (epoch === editEpochRef.current) setEditBusy(false);
       }
     },
     [
@@ -540,38 +580,54 @@ export default function App() {
   );
 
   const undoEdit = useCallback(() => {
-    setEditHistory((prev) => {
-      if (!prev.length) return prev;
-      const next = [...prev];
-      const snapshot = next.pop();
-      const vias = snapshot.vias || [];
-      editViasRef.current = vias;
-      setEditVias(vias);
-      if (snapshot.options) {
-        routeOptionsRef.current = snapshot.options;
-        setRouteOptions(snapshot.options);
-      }
-      if (snapshot.routeId) {
-        selectedRouteIdRef.current = snapshot.routeId;
-        setSelectedRouteId(snapshot.routeId);
-      }
-      if (snapshot.geometry) {
-        routeGeometryRef.current = snapshot.geometry;
-        setRouteGeometry(snapshot.geometry);
-      }
-      setEditPreview(null);
-      showStatus("Undid last edit");
-      return next;
-    });
+    const prev = editHistoryRef.current;
+    if (!prev.length) return;
+
+    // Invalidate in-flight rebuilds so they can't overwrite this undo.
+    editEpochRef.current += 1;
+    editCommitChain.current = Promise.resolve();
+    setEditBusy(false);
+
+    const snapshot = prev[prev.length - 1];
+    const nextHistory = prev.slice(0, -1);
+    editHistoryRef.current = nextHistory;
+    setEditHistory(nextHistory);
+
+    const vias = cloneVias(snapshot.vias);
+    editViasRef.current = vias;
+    setEditVias(vias);
+    setSelectedViaId(null);
+    setEditPreview(null);
+
+    if (snapshot.options) {
+      const options = cloneRouteOptions(snapshot.options);
+      routeOptionsRef.current = options;
+      setRouteOptions(options);
+    }
+    if (snapshot.routeId) {
+      selectedRouteIdRef.current = snapshot.routeId;
+      setSelectedRouteId(snapshot.routeId);
+    }
+    if (snapshot.geometry) {
+      const geometry = cloneGeometry(snapshot.geometry);
+      routeGeometryRef.current = geometry;
+      setRouteGeometry(geometry);
+    }
+
+    showStatus("Undid last edit");
   }, [showStatus]);
 
   const resetToSuggested = useCallback(() => {
     if (!baselineRoute) return;
+    editEpochRef.current += 1;
+    editCommitChain.current = Promise.resolve();
+    setEditBusy(false);
     const seeded = seedViasFromStops(stops);
     editViasRef.current = seeded;
     setEditVias(seeded);
-    setEditHistory([]);
+    clearEditHistory();
     setEditPreview(null);
+    setSelectedViaId(null);
     setRouteOptions((prev) => {
       const clean = prev.filter((r) => !r.edited);
       const hasBaseline = clean.some((r) => r.id === baselineRoute.id);
@@ -585,7 +641,7 @@ export default function App() {
     setRouteGeometry(baselineRoute.geometry);
     setFitKey((k) => k + 1);
     showStatus("Reset to suggested route");
-  }, [baselineRoute, stops, showStatus]);
+  }, [baselineRoute, stops, showStatus, clearEditHistory]);
 
   const toggleEditMode = useCallback(() => {
     setEditMode((v) => {
