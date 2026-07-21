@@ -34,10 +34,9 @@ function labelForPlace(place) {
 }
 
 /**
- * @param {object} props
- * @param {boolean} [props.allowCurrentLocation] Only for directions start — never on landing search.
- * @param {array} [props.recentPlaces] Shown when the field is focused/empty (landing search).
- * @param {{lat:number,lng:number}|null} [props.near] Sort remote results nearest-first.
+ * Search-as-you-type field. Searching is driven by user typing only —
+ * programmatic value updates (map pin, selected suggestion) must not
+ * leave the spinner running.
  */
 export default function SuggestInput({
   value,
@@ -58,9 +57,15 @@ export default function SuggestInput({
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef(null);
   const wrapRef = useRef(null);
-  /** When set, value matches a chosen place — do not keep searching. */
   const committedRef = useRef(null);
+  const typingRef = useRef(false);
   const requestSeq = useRef(0);
+  const nearRef = useRef(near);
+  const currentLocationRef = useRef(currentLocation);
+  const recentPlacesRef = useRef(recentPlaces);
+  nearRef.current = near;
+  currentLocationRef.current = currentLocation;
+  recentPlacesRef.current = recentPlaces;
 
   useEffect(() => {
     function onDocClick(e) {
@@ -72,11 +77,13 @@ export default function SuggestInput({
 
   function emptySuggestions() {
     const items = [];
-    if (allowCurrentLocation && currentLocation) {
-      items.push(currentPlace(currentLocation));
+    const loc = currentLocationRef.current;
+    if (allowCurrentLocation && loc) {
+      items.push(currentPlace(loc));
     }
-    if (recentPlaces?.length) {
-      recentPlaces.forEach((p) => {
+    const recent = recentPlacesRef.current;
+    if (recent?.length) {
+      recent.forEach((p) => {
         if (p?.isCurrentLocation) return;
         items.push({
           ...p,
@@ -88,49 +95,46 @@ export default function SuggestInput({
     return dedupe(items);
   }
 
+  function stopSearch() {
+    clearTimeout(debounceRef.current);
+    requestSeq.current += 1;
+    setLoading(false);
+  }
+
   function choosePlace(place) {
     committedRef.current = labelForPlace(place);
-    requestSeq.current += 1;
-    clearTimeout(debounceRef.current);
-    setLoading(false);
+    typingRef.current = false;
+    stopSearch();
     setOpen(false);
     setSuggestions([]);
     onSelect(place);
   }
 
-  useEffect(() => {
+  function scheduleSearch(raw) {
     clearTimeout(debounceRef.current);
-    const q = value.trim();
+    const q = raw.trim();
 
-    // Value still matches the place the user picked — stop spinner / search.
-    if (
-      committedRef.current != null &&
-      q.toLowerCase() === committedRef.current.toLowerCase()
-    ) {
-      setLoading(false);
-      setSuggestions([]);
-      setOpen(false);
-      return undefined;
-    }
-
-    // User edited the field after a selection — allow search again.
     if (committedRef.current != null) {
+      if (q.toLowerCase() === committedRef.current.toLowerCase()) {
+        setLoading(false);
+        setOpen(false);
+        return;
+      }
       committedRef.current = null;
     }
 
-    // Don't re-query when the field already shows the selected "Your location".
     if (allowCurrentLocation && q.toLowerCase() === "your location") {
       setSuggestions([]);
       setOpen(false);
       setLoading(false);
-      return undefined;
+      return;
     }
 
     if (q.length < 2) {
       const items = emptySuggestions();
       setSuggestions(items);
       setLoading(false);
-      return undefined;
+      return;
     }
 
     const seq = ++requestSeq.current;
@@ -138,18 +142,19 @@ export default function SuggestInput({
       if (seq !== requestSeq.current) return;
       setLoading(true);
       try {
+        const loc = currentLocationRef.current;
         const results = await searchPlaces(q, {
-          near: near || currentLocation,
+          near: nearRef.current || loc,
           limit: 8,
         });
         if (seq !== requestSeq.current) return;
+        if (committedRef.current) {
+          setLoading(false);
+          return;
+        }
         const merged = [];
-        if (
-          allowCurrentLocation &&
-          currentLocation &&
-          LOCATION_QUERY.test(q)
-        ) {
-          merged.push(currentPlace(currentLocation));
+        if (allowCurrentLocation && loc && LOCATION_QUERY.test(q)) {
+          merged.push(currentPlace(loc));
         }
         merged.push(...results);
         const unique = dedupe(merged);
@@ -162,15 +167,36 @@ export default function SuggestInput({
         if (seq === requestSeq.current) setLoading(false);
       }
     }, 280);
+  }
 
-    return () => {
+  // Programmatic value updates (map pin / parent setStopPlace): stop spinner.
+  // Typed updates set typingRef so we don't cancel the search we just scheduled.
+  useEffect(() => {
+    if (typingRef.current) {
+      typingRef.current = false;
+      return;
+    }
+    const q = (value || "").trim();
+    if (q.toLowerCase() === "your location") {
+      committedRef.current = "Your location";
+    } else if (q.length >= 2) {
+      // Treat externally filled destinations as committed selections.
+      committedRef.current = q;
+    } else {
+      committedRef.current = null;
+    }
+    stopSearch();
+    setOpen(false);
+    setSuggestions([]);
+  }, [value]);
+
+  useEffect(
+    () => () => {
       clearTimeout(debounceRef.current);
-      // Drop stale in-flight work and clear spinner until the next search starts.
       requestSeq.current += 1;
-      setLoading(false);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, currentLocation, allowCurrentLocation, recentPlaces, near]);
+    },
+    [],
+  );
 
   return (
     <div className="suggest-wrap" ref={wrapRef}>
@@ -181,13 +207,10 @@ export default function SuggestInput({
         disabled={disabled}
         placeholder={placeholder}
         onChange={(v) => {
-          if (
-            committedRef.current != null &&
-            v.trim().toLowerCase() !== committedRef.current.toLowerCase()
-          ) {
-            committedRef.current = null;
-          }
+          typingRef.current = true;
+          committedRef.current = null;
           onChange(v);
+          scheduleSearch(v);
         }}
         onFocus={() => {
           const q = value.trim();

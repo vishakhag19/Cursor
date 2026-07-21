@@ -80,6 +80,8 @@ export default function RouteEditorLayer({
     document.removeEventListener("pointercancel", L.up);
     document.removeEventListener("mousemove", L.moveMouse);
     document.removeEventListener("mouseup", L.up);
+    window.removeEventListener("pointerup", L.up, true);
+    window.removeEventListener("mouseup", L.up, true);
     listenersRef.current = null;
   }
 
@@ -238,8 +240,8 @@ export default function RouteEditorLayer({
 
       if (session !== dragSession.current) return;
 
-      if (state.viaId) onMoveVia?.(state.viaId, snapped);
-      else onCommitVia?.(snapped, state.segmentIndex);
+      if (state.viaId) await onMoveVia?.(state.viaId, snapped);
+      else await onCommitVia?.(snapped, state.segmentIndex);
     } catch (err) {
       onError?.(err.message || "No road nearby");
     }
@@ -247,12 +249,20 @@ export default function RouteEditorLayer({
 
   function bindDocListeners(session) {
     clearDocListeners();
+    const startedAt = performance.now();
 
     const onMove = (ev) => {
       if (session !== dragSession.current) return;
       if (!dragRef.current?.active) return;
-      // Avoid double-handling when both pointer and mouse events fire.
-      if (ev.type === "mousemove" && ev.pointerType != null) return;
+      // If the button was released but we missed pointerup/mouseup, end the drag.
+      if (
+        typeof ev.buttons === "number" &&
+        ev.buttons === 0 &&
+        performance.now() - startedAt > 80
+      ) {
+        onUp();
+        return;
+      }
       let latlng;
       try {
         latlng = map.mouseEventToLatLng(ev);
@@ -282,18 +292,20 @@ export default function RouteEditorLayer({
     };
 
     let finished = false;
-    const onUp = (ev) => {
+    function onUp() {
       if (finished) return;
-      if (ev?.type === "mouseup" && window.PointerEvent) return;
       finished = true;
       finishDrag(session);
-    };
+    }
 
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
     document.addEventListener("pointercancel", onUp);
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
+    // Capture phase so we still end the drag if something stops propagation.
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("mouseup", onUp, true);
     listenersRef.current = {
       move: onMove,
       moveMouse: onMove,

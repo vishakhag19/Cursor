@@ -86,10 +86,15 @@ export async function searchPlaces(query, { limit = 8, near = null } = {}) {
     url.searchParams.set("bounded", "0");
   }
   const res = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "AtlasMaps/1.0 (route editor)",
+    },
+    signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) throw new Error("Search failed");
   const data = await res.json();
+  if (!Array.isArray(data)) throw new Error("Search failed");
   let places = data.map((item) => mapPlace(item));
 
   if (near?.lat != null && near?.lng != null) {

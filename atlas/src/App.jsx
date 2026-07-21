@@ -68,6 +68,11 @@ export default function App() {
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
   const locateFn = useRef(null);
+  const editViasRef = useRef([]);
+  const routeGeometryRef = useRef(null);
+  const selectedRouteIdRef = useRef(null);
+  const routeOptionsRef = useRef([]);
+  const editCommitChain = useRef(Promise.resolve());
 
   const {
     location: userLocation,
@@ -86,6 +91,11 @@ export default function App() {
   }, []);
 
   useEffect(() => () => clearTimeout(statusTimer.current), []);
+
+  editViasRef.current = editVias;
+  routeGeometryRef.current = routeGeometry;
+  selectedRouteIdRef.current = selectedRouteId;
+  routeOptionsRef.current = routeOptions;
 
   useEffect(() => {
     if (!userLocation) return;
@@ -116,6 +126,7 @@ export default function App() {
   const clearEditState = useCallback(() => {
     setEditMode(false);
     setBaselineRoute(null);
+    editViasRef.current = [];
     setEditVias([]);
     setEditHistory([]);
     setEditPreview(null);
@@ -139,7 +150,7 @@ export default function App() {
   const applyEditedRoute = useCallback((route, vias, { pushHistory = true } = {}) => {
     const edited = {
       ...route,
-      id: `edited-${Math.round(route.distance)}-${Math.round(route.duration)}-${vias.length}`,
+      id: `edited-${Math.round(route.distance)}-${Math.round(route.duration)}-${vias.length}-${Date.now()}`,
       label: vias.length
         ? `Custom · ${vias.length} drag point${vias.length === 1 ? "" : "s"}`
         : route.label || "Custom route",
@@ -152,33 +163,40 @@ export default function App() {
       setEditHistory((prev) => [
         ...prev,
         {
-          vias: editVias,
-          routeId: selectedRouteId,
-          geometry: routeGeometry,
-          options: routeOptions,
+          vias: editViasRef.current,
+          routeId: selectedRouteIdRef.current,
+          geometry: routeGeometryRef.current,
+          options: routeOptionsRef.current,
         },
       ]);
     }
 
+    editViasRef.current = vias;
     setEditVias(vias);
     setRouteOptions((prev) => {
       const withoutEdited = prev.filter((r) => !r.edited);
-      return [edited, ...withoutEdited];
+      const next = [edited, ...withoutEdited];
+      routeOptionsRef.current = next;
+      return next;
     });
+    selectedRouteIdRef.current = edited.id;
     setSelectedRouteId(edited.id);
+    routeGeometryRef.current = edited.geometry;
     setRouteGeometry(edited.geometry);
     setRouteLocked(true);
-    setFitKey((k) => k + 1);
-  }, [editVias, selectedRouteId, routeGeometry, routeOptions]);
+  }, []);
 
   const selectRoute = useCallback((opt) => {
     if (!opt) return;
+    selectedRouteIdRef.current = opt.id;
     setSelectedRouteId(opt.id);
+    routeGeometryRef.current = opt.geometry;
     setRouteGeometry(opt.geometry);
     setRouteLocked(true);
     setFitKey((k) => k + 1);
     if (!opt.edited) {
       setBaselineRoute(opt);
+      editViasRef.current = [];
       setEditVias([]);
       setEditHistory([]);
       setEditPreview(null);
@@ -407,7 +425,7 @@ export default function App() {
       try {
         const ordered = orderViasAlongGeometry(
           nextVias,
-          routeGeometry || baselineRoute?.geometry || [],
+          routeGeometryRef.current || baselineRoute?.geometry || [],
         );
         const route = await rebuildEditedRoute(
           editOrigin,
@@ -426,7 +444,6 @@ export default function App() {
     [
       editOrigin,
       editDestination,
-      routeGeometry,
       baselineRoute,
       travelMode,
       applyEditedRoute,
@@ -434,50 +451,62 @@ export default function App() {
     ],
   );
 
+  const enqueueEdit = useCallback((task) => {
+    const run = editCommitChain.current.then(task, task);
+    editCommitChain.current = run.catch(() => {});
+    return run;
+  }, []);
+
   const commitVia = useCallback(
-    async (snapped, segmentIndex) => {
-      const newVia = {
-        id: uid(),
-        lat: snapped.lat,
-        lng: snapped.lng,
-        name: snapped.name || "Via point",
-      };
-      const geometry = routeGeometry || [];
-      const withMeta = editVias.map((v) => {
-        const c = closestPointOnPolyline({ lat: v.lat, lng: v.lng }, geometry);
-        return { via: v, seg: c?.segmentIndex ?? 0 };
-      });
-      withMeta.sort((a, b) => a.seg - b.seg);
-      const next = [];
-      let inserted = false;
-      for (const item of withMeta) {
-        if (!inserted && segmentIndex <= item.seg) {
-          next.push(newVia);
-          inserted = true;
+    (snapped, segmentIndex) =>
+      enqueueEdit(async () => {
+        const currentVias = editViasRef.current;
+        const geometry = routeGeometryRef.current || [];
+        const newVia = {
+          id: uid(),
+          lat: snapped.lat,
+          lng: snapped.lng,
+          name: snapped.name || "Via point",
+        };
+        const withMeta = currentVias.map((v) => {
+          const c = closestPointOnPolyline(
+            { lat: v.lat, lng: v.lng },
+            geometry,
+          );
+          return { via: v, seg: c?.segmentIndex ?? 0 };
+        });
+        withMeta.sort((a, b) => a.seg - b.seg);
+        const next = [];
+        let inserted = false;
+        for (const item of withMeta) {
+          if (!inserted && segmentIndex <= item.seg) {
+            next.push(newVia);
+            inserted = true;
+          }
+          next.push(item.via);
         }
-        next.push(item.via);
-      }
-      if (!inserted) next.push(newVia);
-      await rebuildFromVias(next, { pushHistory: true });
-    },
-    [editVias, routeGeometry, rebuildFromVias],
+        if (!inserted) next.push(newVia);
+        await rebuildFromVias(next, { pushHistory: true });
+      }),
+    [enqueueEdit, rebuildFromVias],
   );
 
   const moveVia = useCallback(
-    async (viaId, snapped) => {
-      const next = editVias.map((v) =>
-        v.id === viaId
-          ? {
-              ...v,
-              lat: snapped.lat,
-              lng: snapped.lng,
-              name: snapped.name || v.name,
-            }
-          : v,
-      );
-      await rebuildFromVias(next, { pushHistory: true });
-    },
-    [editVias, rebuildFromVias],
+    (viaId, snapped) =>
+      enqueueEdit(async () => {
+        const next = editViasRef.current.map((v) =>
+          v.id === viaId
+            ? {
+                ...v,
+                lat: snapped.lat,
+                lng: snapped.lng,
+                name: snapped.name || v.name,
+              }
+            : v,
+        );
+        await rebuildFromVias(next, { pushHistory: true });
+      }),
+    [enqueueEdit, rebuildFromVias],
   );
 
   const undoEdit = useCallback(() => {
@@ -485,10 +514,21 @@ export default function App() {
       if (!prev.length) return prev;
       const next = [...prev];
       const snapshot = next.pop();
-      setEditVias(snapshot.vias || []);
-      if (snapshot.options) setRouteOptions(snapshot.options);
-      if (snapshot.routeId) setSelectedRouteId(snapshot.routeId);
-      if (snapshot.geometry) setRouteGeometry(snapshot.geometry);
+      const vias = snapshot.vias || [];
+      editViasRef.current = vias;
+      setEditVias(vias);
+      if (snapshot.options) {
+        routeOptionsRef.current = snapshot.options;
+        setRouteOptions(snapshot.options);
+      }
+      if (snapshot.routeId) {
+        selectedRouteIdRef.current = snapshot.routeId;
+        setSelectedRouteId(snapshot.routeId);
+      }
+      if (snapshot.geometry) {
+        routeGeometryRef.current = snapshot.geometry;
+        setRouteGeometry(snapshot.geometry);
+      }
       setEditPreview(null);
       showStatus("Undid last edit");
       return next;
@@ -497,15 +537,21 @@ export default function App() {
 
   const resetToSuggested = useCallback(() => {
     if (!baselineRoute) return;
-    setEditVias(seedViasFromStops(stops));
+    const seeded = seedViasFromStops(stops);
+    editViasRef.current = seeded;
+    setEditVias(seeded);
     setEditHistory([]);
     setEditPreview(null);
     setRouteOptions((prev) => {
       const clean = prev.filter((r) => !r.edited);
       const hasBaseline = clean.some((r) => r.id === baselineRoute.id);
-      return hasBaseline ? clean : [baselineRoute, ...clean];
+      const next = hasBaseline ? clean : [baselineRoute, ...clean];
+      routeOptionsRef.current = next;
+      return next;
     });
+    selectedRouteIdRef.current = baselineRoute.id;
     setSelectedRouteId(baselineRoute.id);
+    routeGeometryRef.current = baselineRoute.geometry;
     setRouteGeometry(baselineRoute.geometry);
     setFitKey((k) => k + 1);
     showStatus("Reset to suggested route");
@@ -516,10 +562,14 @@ export default function App() {
       const next = !v;
       if (next) {
         const selected =
-          routeOptions.find((r) => r.id === selectedRouteId) || baselineRoute;
+          routeOptionsRef.current.find(
+            (r) => r.id === selectedRouteIdRef.current,
+          ) || baselineRoute;
         if (selected && !baselineRoute) setBaselineRoute(selected);
         if (!selected?.edited) {
-          setEditVias(seedViasFromStops(stops));
+          const seeded = seedViasFromStops(stops);
+          editViasRef.current = seeded;
+          setEditVias(seeded);
         }
         setEditPreview(null);
         showStatus("Drag the route line to reshape it");
@@ -529,13 +579,7 @@ export default function App() {
       }
       return next;
     });
-  }, [
-    routeOptions,
-    selectedRouteId,
-    baselineRoute,
-    stops,
-    showStatus,
-  ]);
+  }, [baselineRoute, stops, showStatus]);
 
   const goToMyLocation = useCallback(async () => {
     showStatus("Locating…", 0);
