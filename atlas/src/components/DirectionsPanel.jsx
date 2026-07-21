@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
@@ -44,6 +44,7 @@ export default function DirectionsPanel({
     loading: false,
     select: null,
   });
+  const wasLoadingRef = useRef(false);
 
   function handleListChange(index, payload) {
     if (activeStop !== index && !payload.open) return;
@@ -63,12 +64,18 @@ export default function DirectionsPanel({
     setActiveStop(null);
   }
 
-  // After Change → re-route, collapse stops again once new results arrive.
+  // After Change → re-route, collapse stops again once fetching finishes.
   useEffect(() => {
-    if (loading || routeOptions.length === 0) return;
-    setForceShowStops(false);
-    clearPlaceList();
-  }, [loading, routeOptions]);
+    if (loading) {
+      wasLoadingRef.current = true;
+      return;
+    }
+    if (wasLoadingRef.current && routeOptions.length > 0) {
+      wasLoadingRef.current = false;
+      setForceShowStops(false);
+      clearPlaceList();
+    }
+  }, [loading, routeOptions.length]);
 
   const orderedRoutes = routeOptions.filter(
     (opt) => !editMode || opt.id === selectedRouteId,
