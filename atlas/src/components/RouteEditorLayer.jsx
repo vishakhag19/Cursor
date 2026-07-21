@@ -250,18 +250,23 @@ export default function RouteEditorLayer({
   function bindDocListeners(session) {
     clearDocListeners();
     const startedAt = performance.now();
+    let seenPressed = false;
 
     const onMove = (ev) => {
       if (session !== dragSession.current) return;
       if (!dragRef.current?.active) return;
-      // If the button was released but we missed pointerup/mouseup, end the drag.
-      if (
-        typeof ev.buttons === "number" &&
-        ev.buttons === 0 &&
-        performance.now() - startedAt > 80
-      ) {
-        onUp();
-        return;
+      if (typeof ev.buttons === "number") {
+        if (ev.buttons > 0) seenPressed = true;
+        // Only auto-end after we've observed a pressed button, then a release.
+        // Avoids ending the drag on the first move before button state is known.
+        if (
+          seenPressed &&
+          ev.buttons === 0 &&
+          performance.now() - startedAt > 80
+        ) {
+          onUp();
+          return;
+        }
       }
       let latlng;
       try {
