@@ -1213,10 +1213,35 @@ md-filled-tonal-button.is-edit-active {
 
 .mobile-edit-done {
   flex-shrink: 0;
-  --md-filled-button-container-shape: 20px;
-  --md-filled-button-container-height: 36px;
-  --md-filled-button-leading-space: 12px;
-  --md-filled-button-trailing-space: 14px;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 16px 0 12px;
+  border: none;
+  border-radius: 20px;
+  background: #1a73e8;
+  color: #fff;
+  font: 500 14px/1 Roboto, sans-serif;
+  cursor: pointer;
+}
+
+.mobile-edit-done:hover {
+  background: #1765cc;
+}
+
+.mobile-edit-done .material-symbols-outlined {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 20;
 }
 
 .map-stage {

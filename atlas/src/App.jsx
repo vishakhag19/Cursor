@@ -943,15 +943,17 @@ export default function App() {
           ) : (
             <span className="mobile-edit-spacer" aria-hidden />
           )}
-          <md-filled-button
+          <button
             type="button"
-            class="mobile-edit-done"
+            className="mobile-edit-done"
             aria-label="Done editing"
             onClick={toggleEditMode}
           >
-            <md-icon slot="icon">check</md-icon>
+            <span className="material-symbols-outlined" aria-hidden="true">
+              check
+            </span>
             Done
-          </md-filled-button>
+          </button>
         </div>
       )}
 
