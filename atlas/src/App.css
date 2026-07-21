@@ -61,14 +61,12 @@
   box-sizing: border-box;
 }
 
-/* Same hit target as directions close (md-icon-button) */
+/* Match directions close: plain md-icon-button, no outline chrome */
 .collapse-panel-btn {
   width: var(--panel-control-size);
   height: var(--panel-control-size);
   margin: 0;
   flex-shrink: 0;
-  color: #5f6368;
-  --md-icon-button-icon-color: #5f6368;
 }
 
 .collapse-chevron-mobile {
@@ -1203,11 +1201,7 @@ md-filled-tonal-button.is-edit-active {
   width: var(--panel-control-size);
   height: var(--panel-control-size);
   margin: 0;
-  border-radius: 999px;
-  background: #fff;
-  color: #5f6368;
-  --md-icon-button-icon-color: #5f6368;
-  box-shadow: none;
+  background: transparent;
 }
 
 .expand-chevron-mobile {
