@@ -185,9 +185,11 @@
 
 .dir-route-card {
   position: relative;
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px;
+  align-items: center;
   width: 100%;
+  min-height: 76px;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   background: transparent;
   color: inherit;
@@ -206,7 +208,6 @@
 }
 
 .dir-route-select {
-  flex: 1;
   min-width: 0;
   display: block;
   text-align: left;
@@ -223,9 +224,16 @@
   cursor: default;
 }
 
+.dir-route-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  padding-right: 4px;
+  min-height: 48px;
+}
+
 .dir-route-edit-btn {
-  align-self: center;
-  margin-right: 6px;
   flex-shrink: 0;
 }
 
@@ -1128,9 +1136,6 @@ md-filled-tonal-button.is-edit-active {
   top: 16px;
   right: 16px;
   z-index: 1100;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
   pointer-events: none;
 }
 
@@ -1138,33 +1143,53 @@ md-filled-tonal-button.is-edit-active {
   pointer-events: auto;
 }
 
+/* One column, one shadow — keeps every control pixel-aligned */
 .map-ctrl-stack {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   width: 34px;
-  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* Match a single column width for layers / locate / zoom */
 .map-ctrl-btn {
   display: grid;
   place-items: center;
   width: 34px;
+  min-width: 34px;
+  max-width: 34px;
   height: 34px;
+  min-height: 34px;
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 2px;
+  border-bottom: 1px solid #ccc;
+  border-radius: 0;
   background: #fff;
   color: #333;
   cursor: pointer;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   box-sizing: border-box;
+  flex: 0 0 34px;
+}
+
+.map-ctrl-stack > .map-ctrl-btn:last-child {
+  border-bottom: none;
 }
 
 .map-ctrl-btn:hover {
   background: #f4f4f4;
+}
+
+.map-ctrl-btn.is-selected {
+  background: #e8f0fe;
+  color: #1a73e8;
 }
 
 .map-ctrl-btn md-icon {
@@ -1172,43 +1197,7 @@ md-filled-tonal-button.is-edit-active {
   width: 18px;
   height: 18px;
   color: inherit;
-}
-
-.layer-toggle,
-.zoom-toggle {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 100%;
-  gap: 0;
-  background: #fff;
-  border-radius: 2px;
-  padding: 0;
-  overflow: hidden;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
-  box-sizing: border-box;
-}
-
-.layer-toggle .map-ctrl-btn,
-.zoom-toggle .map-ctrl-btn {
-  width: 100%;
-  box-shadow: none;
-  border-radius: 0;
-  border-bottom: 1px solid #ccc;
-}
-
-.layer-toggle .map-ctrl-btn:last-child,
-.zoom-toggle .map-ctrl-btn:last-child {
-  border-bottom: none;
-}
-
-.layer-toggle .map-ctrl-btn.is-selected {
-  background: #e8f0fe;
-  color: #1a73e8;
-}
-
-.locate-btn {
-  width: 100%;
+  --md-icon-size: 18px;
 }
 
 .locate-btn.is-located {

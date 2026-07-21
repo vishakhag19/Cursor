@@ -269,68 +269,70 @@ export default function DirectionsPanel({
                     </div>
                   </div>
                 </button>
-                {active && !editMode && onShowSteps && (
-                  <md-icon-button
-                    type="button"
-                    class="dir-route-steps-btn has-tip"
-                    aria-label="View turn-by-turn steps"
-                    title="View turn-by-turn steps"
-                    data-tip="Steps"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onShowSteps();
-                    }}
-                  >
-                    <md-icon>list</md-icon>
-                  </md-icon-button>
-                )}
-                {active && editMode && (
-                  <>
+                <div className="dir-route-actions">
+                  {active && !editMode && onShowSteps ? (
                     <md-icon-button
                       type="button"
-                      class="dir-route-undo-btn has-tip"
-                      aria-label="Undo last edit"
-                      title="Undo last edit"
-                      data-tip="Undo last edit"
+                      class="dir-route-steps-btn has-tip"
+                      aria-label="View turn-by-turn steps"
+                      title="View turn-by-turn steps"
+                      data-tip="Steps"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onUndo?.();
+                        onShowSteps();
                       }}
-                      disabled={!canUndo || undefined}
                     >
-                      <md-icon>undo</md-icon>
+                      <md-icon>list</md-icon>
                     </md-icon-button>
+                  ) : null}
+                  {active && editMode ? (
+                    <>
+                      <md-icon-button
+                        type="button"
+                        class="dir-route-undo-btn has-tip"
+                        aria-label="Undo last edit"
+                        title="Undo last edit"
+                        data-tip="Undo last edit"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUndo?.();
+                        }}
+                        disabled={!canUndo || undefined}
+                      >
+                        <md-icon>undo</md-icon>
+                      </md-icon-button>
+                      <md-icon-button
+                        type="button"
+                        class="dir-route-reset-btn has-tip"
+                        aria-label="Reset to suggested route"
+                        title="Reset to suggested route"
+                        data-tip="Reset to suggested route"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onResetSuggested?.();
+                        }}
+                        disabled={!canReset || undefined}
+                      >
+                        <md-icon>restart_alt</md-icon>
+                      </md-icon-button>
+                    </>
+                  ) : null}
+                  {active ? (
                     <md-icon-button
                       type="button"
-                      class="dir-route-reset-btn has-tip"
-                      aria-label="Reset to suggested route"
-                      title="Reset to suggested route"
-                      data-tip="Reset to suggested route"
+                      class={`dir-route-edit-btn has-tip ${editMode ? "is-edit-active" : ""}`}
+                      aria-label={editMode ? "Finish editing" : "Edit route"}
+                      title={editMode ? "Finish editing" : "Edit route"}
+                      data-tip={editMode ? "Finish editing" : "Edit route"}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onResetSuggested?.();
+                        onToggleEdit();
                       }}
-                      disabled={!canReset || undefined}
                     >
-                      <md-icon>restart_alt</md-icon>
+                      <md-icon>{editMode ? "check" : "edit"}</md-icon>
                     </md-icon-button>
-                  </>
-                )}
-                {active && (
-                  <md-icon-button
-                    type="button"
-                    class={`dir-route-edit-btn has-tip ${editMode ? "is-edit-active" : ""}`}
-                    aria-label={editMode ? "Finish editing" : "Edit route"}
-                    title={editMode ? "Finish editing" : "Edit route"}
-                    data-tip={editMode ? "Finish editing" : "Edit route"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleEdit();
-                    }}
-                  >
-                    <md-icon>{editMode ? "check" : "edit"}</md-icon>
-                  </md-icon-button>
-                )}
+                  ) : null}
+                </div>
               </div>
             );
           })}

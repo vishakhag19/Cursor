@@ -203,7 +203,6 @@ export default function App() {
     routeGeometryRef.current = opt.geometry;
     setRouteGeometry(opt.geometry);
     setRouteLocked(true);
-    setFitKey((k) => k + 1);
     setNavigating(false);
     setNavStepIndex(0);
     setShowSteps(false);
@@ -954,30 +953,28 @@ export default function App() {
 
         <div className="map-controls">
           <div className="map-ctrl-stack" role="group" aria-label="Map controls">
-            <div className="layer-toggle" role="group" aria-label="Map type">
-              <button
-                type="button"
-                className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
-                aria-label="Map"
-                title="Map"
-                aria-pressed={layer === "map" ? "true" : "false"}
-                onClick={() => setLayer("map")}
-              >
-                <md-icon>map</md-icon>
-              </button>
-              <button
-                type="button"
-                className={
-                  layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
-                }
-                aria-label="Satellite"
-                title="Satellite"
-                aria-pressed={layer === "satellite" ? "true" : "false"}
-                onClick={() => setLayer("satellite")}
-              >
-                <md-icon>satellite_alt</md-icon>
-              </button>
-            </div>
+            <button
+              type="button"
+              className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
+              aria-label="Map"
+              title="Map"
+              aria-pressed={layer === "map" ? "true" : "false"}
+              onClick={() => setLayer("map")}
+            >
+              <md-icon>map</md-icon>
+            </button>
+            <button
+              type="button"
+              className={
+                layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
+              }
+              aria-label="Satellite"
+              title="Satellite"
+              aria-pressed={layer === "satellite" ? "true" : "false"}
+              onClick={() => setLayer("satellite")}
+            >
+              <md-icon>satellite_alt</md-icon>
+            </button>
             <button
               type="button"
               className={`map-ctrl-btn locate-btn ${geoStatus === "ready" ? "is-located" : ""}`}
@@ -987,26 +984,24 @@ export default function App() {
             >
               <md-icon>my_location</md-icon>
             </button>
-            <div className="zoom-toggle" role="group" aria-label="Zoom">
-              <button
-                type="button"
-                className="map-ctrl-btn"
-                aria-label="Zoom in"
-                title="Zoom in"
-                onClick={() => zoomFn.current?.zoomIn?.()}
-              >
-                <md-icon>add</md-icon>
-              </button>
-              <button
-                type="button"
-                className="map-ctrl-btn"
-                aria-label="Zoom out"
-                title="Zoom out"
-                onClick={() => zoomFn.current?.zoomOut?.()}
-              >
-                <md-icon>remove</md-icon>
-              </button>
-            </div>
+            <button
+              type="button"
+              className="map-ctrl-btn"
+              aria-label="Zoom in"
+              title="Zoom in"
+              onClick={() => zoomFn.current?.zoomIn?.()}
+            >
+              <md-icon>add</md-icon>
+            </button>
+            <button
+              type="button"
+              className="map-ctrl-btn"
+              aria-label="Zoom out"
+              title="Zoom out"
+              onClick={() => zoomFn.current?.zoomOut?.()}
+            >
+              <md-icon>remove</md-icon>
+            </button>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -14,6 +14,7 @@ import RouteEditorLayer from "./RouteEditorLayer";
 const DEFAULT_CENTER = [37.7749, -122.4194];
 const DEFAULT_ZOOM = 13;
 
+/** Stable pin icon cache — recreating DivIcons mid-drag resets the marker. */
 const PIN_ICON_CACHE = new Map();
 
 function pinIcon(kind = "default", label = "") {
@@ -49,16 +50,69 @@ function pinIcon(kind = "default", label = "") {
   return icon;
 }
 
-function userLocationIcon() {
-  return L.divIcon({
-    className: "atlas-user-loc",
-    html: `<div class="user-loc-dot" aria-hidden="true">
+const USER_LOC_ICON = L.divIcon({
+  className: "atlas-user-loc",
+  html: `<div class="user-loc-dot" aria-hidden="true">
       <span class="user-loc-pulse"></span>
       <span class="user-loc-core"></span>
     </div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-  });
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+});
+
+function userLocationIcon() {
+  return USER_LOC_ICON;
+}
+
+/**
+ * Controlled Marker + drag: ignore prop position updates while dragging so
+ * parent re-renders don't yank the pin back mid-gesture.
+ */
+function DraggableStopMarker({
+  position,
+  icon,
+  draggable = true,
+  onClick,
+  onDragEnd,
+}) {
+  const markerRef = useRef(null);
+  const draggingRef = useRef(false);
+  const [livePos, setLivePos] = useState(position);
+
+  useEffect(() => {
+    if (draggingRef.current) return;
+    setLivePos(position);
+  }, [position?.[0], position?.[1]]);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={livePos}
+      icon={icon}
+      draggable={draggable}
+      autoPan={false}
+      zIndexOffset={2500}
+      eventHandlers={{
+        click: () => {
+          if (draggingRef.current) return;
+          onClick?.();
+        },
+        dragstart: () => {
+          draggingRef.current = true;
+        },
+        drag: (e) => {
+          const { lat, lng } = e.target.getLatLng();
+          setLivePos([lat, lng]);
+        },
+        dragend: (e) => {
+          const { lat, lng } = e.target.getLatLng();
+          setLivePos([lat, lng]);
+          draggingRef.current = false;
+          onDragEnd?.(lat, lng);
+        },
+      }}
+    />
+  );
 }
 
 function MapClickHandler({ onMapClick, onContextMenu }) {
@@ -286,19 +340,13 @@ export default function MapView({
         const label =
           i === 0 ? "A" : i === last ? "B" : String(i + 1);
         return (
-          <Marker
+          <DraggableStopMarker
             key={wp.id || `dir-wp-${i}`}
             position={[wp.lat, wp.lng]}
             icon={pinIcon(kind, label)}
             draggable={!editMode}
-            autoPan={false}
-            eventHandlers={{
-              click: () => onMarkerClick?.(wp),
-              dragend: (e) => {
-                const { lat, lng } = e.target.getLatLng();
-                onWaypointDrag?.(i, lat, lng);
-              },
-            }}
+            onClick={() => onMarkerClick?.(wp)}
+            onDragEnd={(lat, lng) => onWaypointDrag?.(i, lat, lng)}
           />
         );
       })}
@@ -314,19 +362,13 @@ export default function MapView({
                 ? "end"
                 : "stop";
           return (
-            <Marker
+            <DraggableStopMarker
               key={wp.id}
               position={[wp.lat, wp.lng]}
               icon={pinIcon(kind, String(i + 1))}
               draggable
-              autoPan={false}
-              eventHandlers={{
-                click: () => onMarkerClick?.(wp),
-                dragend: (e) => {
-                  const { lat, lng } = e.target.getLatLng();
-                  onWaypointDrag?.(i, lat, lng);
-                },
-              }}
+              onClick={() => onMarkerClick?.(wp)}
+              onDragEnd={(lat, lng) => onWaypointDrag?.(i, lat, lng)}
             />
           );
         })}
