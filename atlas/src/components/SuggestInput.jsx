@@ -67,6 +67,8 @@ export default function SuggestInput({
   externalList = false,
   onListChange = null,
   onFocusField = null,
+  /** Native <input> — pixel-exact padding (landing search). */
+  bare = false,
 }) {
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
@@ -285,28 +287,48 @@ export default function SuggestInput({
     [],
   );
 
+  function handleValueChange(v) {
+    typingRef.current = true;
+    committedRef.current = null;
+    onChange(v);
+    scheduleSearch(v);
+  }
+
+  function handleFocus() {
+    onFocusField?.();
+    showDefaultList();
+  }
+
   return (
     <div
-      className={`suggest-wrap ${externalList ? "is-external-list" : "is-inline-list"} ${open && !externalList ? "is-open" : ""}`}
+      className={`suggest-wrap ${externalList ? "is-external-list" : "is-inline-list"} ${bare ? "is-bare" : ""} ${open && !externalList ? "is-open" : ""}`}
       ref={wrapRef}
     >
-      <MdTextField
-        id={id}
-        label={label}
-        value={value}
-        disabled={disabled}
-        placeholder={placeholder}
-        onChange={(v) => {
-          typingRef.current = true;
-          committedRef.current = null;
-          onChange(v);
-          scheduleSearch(v);
-        }}
-        onFocus={() => {
-          onFocusField?.();
-          showDefaultList();
-        }}
-      />
+      {bare ? (
+        <input
+          id={id}
+          className="suggest-bare-input"
+          type="text"
+          value={value}
+          disabled={disabled}
+          placeholder={placeholder}
+          autoComplete="off"
+          spellCheck={false}
+          aria-label={label || placeholder || "Search"}
+          onChange={(e) => handleValueChange(e.target.value)}
+          onFocus={handleFocus}
+        />
+      ) : (
+        <MdTextField
+          id={id}
+          label={label}
+          value={value}
+          disabled={disabled}
+          placeholder={placeholder}
+          onChange={handleValueChange}
+          onFocus={handleFocus}
+        />
+      )}
       {loading && (
         <md-circular-progress
           class="suggest-spinner"

@@ -27,6 +27,7 @@ export default function SearchPanel({
             allowCurrentLocation={false}
             recentPlaces={recentPlaces}
             near={near}
+            bare
           />
         </div>
         <div className="search-bar-actions">

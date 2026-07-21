@@ -691,11 +691,14 @@ md-filled-tonal-button.is-edit-active {
 
 /* Minimal search bar — no shadows, flex-contained actions */
 .search-bar {
+  --search-pad-l: 16px;
+  --search-pad-r: 8px;
+  --search-action-w: 40px;
   position: relative;
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 4px 8px 4px 12px;
+  padding: 4px var(--search-pad-r) 4px var(--search-pad-l);
   background: #fff;
   border: 1px solid #dadce0;
   border-radius: 24px;
@@ -716,13 +719,15 @@ md-filled-tonal-button.is-edit-active {
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+  width: var(--search-action-w);
+  justify-content: center;
   padding-right: 0;
 }
 
 .search-bar-glyph {
   display: grid;
   place-items: center;
-  width: 40px;
+  width: var(--search-action-w);
   height: 40px;
   color: #5f6368;
 }
@@ -738,33 +743,45 @@ md-filled-tonal-button.is-edit-active {
   width: 100%;
 }
 
-.search-bar .suggest-wrap md-outlined-text-field {
+/* Native input — padding is fully controllable (no Material shadow-DOM insets) */
+.search-bar .suggest-bare-input {
+  display: block;
   width: 100%;
-  /* 24px ≈ half of 48px field → fully pill without enormous shape tokens */
-  --md-outlined-text-field-container-shape: 24px;
-  --md-outlined-text-field-outline-width: 0px;
-  --md-outlined-text-field-hover-outline-width: 0px;
-  --md-outlined-text-field-focus-outline-width: 0px;
-  /* Left inset comes from .search-bar padding (12px); keep field padding at 0 */
-  --md-outlined-text-field-input-text-padding: 12px 4px 12px 0;
-  --md-outlined-text-field-leading-space: 0px;
-  --md-outlined-text-field-trailing-space: 0px;
-  --md-outlined-text-field-top-space: 8px;
-  --md-outlined-text-field-bottom-space: 8px;
-  --md-outlined-text-field-container-height: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0 4px 0 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #202124;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 40px;
+  box-sizing: border-box;
 }
 
+.search-bar .suggest-bare-input::placeholder {
+  color: #70757a;
+  opacity: 1;
+}
+
+.search-bar .suggest-bare-input:disabled {
+  color: #9aa0a6;
+}
+
+/* Dropdown spans the full search pill (field + icon + bar padding) */
 .search-bar .suggest-wrap.is-inline-list .place-suggest-panel {
   position: absolute;
-  /* Span the full search pill (field + trailing icon) */
-  left: 0;
-  right: calc(-1 * 40px);
-  top: calc(100% + 6px);
-  width: auto;
+  left: calc(-1 * var(--search-pad-l));
+  width: calc(
+    100% + var(--search-pad-l) + var(--search-pad-r) + var(--search-action-w)
+  );
+  right: auto;
+  top: calc(100% + 10px);
   z-index: 50;
   margin: 0;
   border: 1px solid #e8eaed;
-  border-radius: 20px;
+  border-radius: 16px;
   box-shadow: none;
   background: #fff;
   max-height: min(360px, 48dvh);
@@ -823,19 +840,7 @@ md-filled-tonal-button.is-edit-active {
   --md-outlined-text-field-trailing-space: 12px;
 }
 
-/* Landing search keeps outline on the outer pill, not the inner field */
-.search-bar .suggest-wrap md-outlined-text-field {
-  --md-outlined-text-field-outline-width: 0px;
-  --md-outlined-text-field-hover-outline-width: 0px;
-  --md-outlined-text-field-focus-outline-width: 0px;
-  --md-outlined-text-field-container-height: 40px;
-  --md-outlined-text-field-top-space: 8px;
-  --md-outlined-text-field-bottom-space: 8px;
-  --md-outlined-text-field-leading-space: 0px;
-  --md-outlined-text-field-trailing-space: 0px;
-  --md-outlined-text-field-input-text-padding: 12px 4px 12px 0;
-}
-
+/* Landing search uses a native bare input — no Material field overrides needed */
 .suggest-spinner {
   position: absolute;
   right: 12px;
@@ -850,7 +855,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-bar .suggest-spinner {
-  right: 8px;
+  right: 4px;
   top: 50%;
   translate: 0 -50%;
 }
