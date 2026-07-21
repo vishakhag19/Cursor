@@ -1352,7 +1352,7 @@ md-filled-tonal-button.is-edit-active {
   pointer-events: auto;
 }
 
-/* Match left panel: white surface, soft border, rounded, no heavy shadow */
+/* Match left panel: white surface, soft border, fully circular ends, no heavy shadow */
 .map-ctrl-stack {
   display: flex;
   flex-direction: column;
@@ -1361,7 +1361,7 @@ md-filled-tonal-button.is-edit-active {
   width: 44px;
   margin: 0;
   padding: 4px;
-  border-radius: 16px;
+  border-radius: 999px;
   background: #ffffff;
   border: 1px solid #e8eaed;
   box-shadow: none;
