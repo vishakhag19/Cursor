@@ -93,19 +93,36 @@ export default function DirectionsPanel({
           {editMode ? "Edit route" : "Directions"}
         </span>
         <div className="dir-top-actions">
-          {!editMode && hasRouteResults && !forceShowStops && (
+          {!editMode && hasRouteResults && (
             <button
               type="button"
               className="dir-change-stops"
-              onClick={() => setForceShowStops(true)}
+              onClick={() => {
+                if (forceShowStops) {
+                  setForceShowStops(false);
+                  clearPlaceList();
+                } else {
+                  setForceShowStops(true);
+                }
+              }}
             >
-              <md-icon>edit_location_alt</md-icon>
-              <span className="md-typescale-label-large">Change</span>
+              <md-icon>
+                {forceShowStops ? "check" : "edit_location_alt"}
+              </md-icon>
+              <span className="md-typescale-label-large">
+                {forceShowStops ? "Done" : "Change"}
+              </span>
             </button>
           )}
-          <md-icon-button type="button" aria-label="Close directions" onClick={onClose}>
-            <md-icon>close</md-icon>
-          </md-icon-button>
+          <ActionTip tip="Close directions">
+            <md-icon-button
+              type="button"
+              aria-label="Close directions"
+              onClick={onClose}
+            >
+              <md-icon>close</md-icon>
+            </md-icon-button>
+          </ActionTip>
         </div>
       </div>
 
@@ -157,26 +174,30 @@ export default function DirectionsPanel({
                     onListChange={(payload) => handleListChange(i, payload)}
                   />
                   {stops.length > 2 && (
-                    <md-icon-button
-                      type="button"
-                      aria-label="Remove stop"
-                      onClick={() => onRemoveStop(i)}
-                    >
-                      <md-icon>close</md-icon>
-                    </md-icon-button>
+                    <ActionTip tip="Remove stop">
+                      <md-icon-button
+                        type="button"
+                        aria-label="Remove stop"
+                        onClick={() => onRemoveStop(i)}
+                      >
+                        <md-icon>close</md-icon>
+                      </md-icon-button>
+                    </ActionTip>
                   )}
                 </div>
               ))}
             </div>
 
-            <md-icon-button
-              class="dir-swap"
-              type="button"
-              aria-label="Swap start and destination"
-              onClick={onSwap}
-            >
-              <md-icon>swap_vert</md-icon>
-            </md-icon-button>
+            <ActionTip tip="Swap start and destination">
+              <md-icon-button
+                class="dir-swap"
+                type="button"
+                aria-label="Swap start and destination"
+                onClick={onSwap}
+              >
+                <md-icon>swap_vert</md-icon>
+              </md-icon-button>
+            </ActionTip>
           </div>
 
           {placeList.open && (placeList.items.length > 0 || placeList.loading) && (

@@ -3,19 +3,24 @@ import { useEffect, useRef, useState } from "react";
 const LONG_PRESS_MS = 420;
 const TOUCH_TIP_MS = 2200;
 const MOVE_CANCEL_PX = 8;
+const TIP_GAP = 6;
+const EST_TIP_HEIGHT = 36;
 
 /**
  * Hover/focus tip that uses position:fixed so it is never clipped by
  * overflow:hidden ancestors (route cards, scroll panels, md-icon-button).
  * On touch, a short press-and-hold shows the same tip.
+ * Prefers below the control; flips above when the viewport is tight.
  */
 export default function ActionTip({ tip, children, className = "" }) {
   const wrapRef = useRef(null);
+  const tipRef = useRef(null);
   const [box, setBox] = useState(null);
   const pressTimerRef = useRef(null);
   const hideTimerRef = useRef(null);
   const longPressedRef = useRef(false);
   const startPosRef = useRef(null);
+  const refinedRef = useRef(false);
 
   function clearPressTimer() {
     if (pressTimerRef.current) {
@@ -36,16 +41,35 @@ export default function ActionTip({ tip, children, className = "" }) {
     clearHideTimer();
   }
 
+  function placeTip(anchorRect, tipHeight = EST_TIP_HEIGHT, tipWidth = 0) {
+    const spaceBelow = window.innerHeight - anchorRect.bottom - TIP_GAP;
+    const spaceAbove = anchorRect.top - TIP_GAP;
+    const placeBelow =
+      spaceBelow >= tipHeight || spaceBelow >= spaceAbove;
+
+    let left = anchorRect.left + anchorRect.width / 2;
+    if (tipWidth > 0) {
+      const half = tipWidth / 2;
+      left = Math.min(
+        window.innerWidth - 8 - half,
+        Math.max(8 + half, left),
+      );
+    }
+
+    return {
+      top: placeBelow
+        ? anchorRect.bottom + TIP_GAP
+        : anchorRect.top - TIP_GAP,
+      left,
+      placement: placeBelow ? "below" : "above",
+    };
+  }
+
   function show() {
     const el = wrapRef.current;
     if (!el || !tip) return;
     clearHideTimer();
-    const r = el.getBoundingClientRect();
-    // Prefer below the control so tips are not clipped by the browser chrome.
-    setBox({
-      top: r.bottom + 6,
-      left: r.left + r.width / 2,
-    });
+    setBox(placeTip(el.getBoundingClientRect()));
   }
 
   function hide() {
@@ -108,6 +132,26 @@ export default function ActionTip({ tip, children, className = "" }) {
     e.stopPropagation();
   }
 
+  // Refine placement once the tip is measured (avoids edge / bottom clipping).
+  useEffect(() => {
+    if (!box) {
+      refinedRef.current = false;
+      return;
+    }
+    if (refinedRef.current || !wrapRef.current || !tipRef.current) return;
+    refinedRef.current = true;
+    const anchor = wrapRef.current.getBoundingClientRect();
+    const tipRect = tipRef.current.getBoundingClientRect();
+    const next = placeTip(anchor, tipRect.height, tipRect.width);
+    if (
+      Math.abs(next.top - box.top) > 0.5 ||
+      Math.abs(next.left - box.left) > 0.5 ||
+      next.placement !== box.placement
+    ) {
+      setBox(next);
+    }
+  }, [box]);
+
   useEffect(() => {
     function onScroll() {
       if (!box) return;
@@ -138,7 +182,8 @@ export default function ActionTip({ tip, children, className = "" }) {
       {children}
       {box ? (
         <span
-          className="action-tip"
+          ref={tipRef}
+          className={`action-tip${box.placement === "above" ? " is-above" : ""}`}
           role="tooltip"
           style={{ top: `${box.top}px`, left: `${box.left}px` }}
         >

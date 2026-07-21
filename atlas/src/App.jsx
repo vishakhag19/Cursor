@@ -165,6 +165,12 @@ export default function App() {
     setFollowingLocation(false);
   }, [flyTarget]);
 
+  // Route fitBounds moves the camera away from a pure follow lock.
+  useEffect(() => {
+    if (!fitKey) return;
+    setFollowingLocation(false);
+  }, [fitKey]);
+
   // Sync "Your location" stop pins only when route is unlocked.
   useEffect(() => {
     if (!userLocation || routeLocked) return;
@@ -1181,7 +1187,10 @@ export default function App() {
                 type="button"
                 className="map-ctrl-btn"
                 aria-label="Zoom in"
-                onClick={() => zoomFn.current?.zoomIn?.()}
+                onClick={() => {
+                  setFollowingLocation(false);
+                  zoomFn.current?.zoomIn?.();
+                }}
               >
                 <md-icon>add</md-icon>
               </button>
@@ -1191,7 +1200,10 @@ export default function App() {
                 type="button"
                 className="map-ctrl-btn"
                 aria-label="Zoom out"
-                onClick={() => zoomFn.current?.zoomOut?.()}
+                onClick={() => {
+                  setFollowingLocation(false);
+                  zoomFn.current?.zoomOut?.();
+                }}
               >
                 <md-icon>remove</md-icon>
               </button>
