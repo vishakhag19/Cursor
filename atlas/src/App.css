@@ -1208,8 +1208,8 @@ md-filled-tonal-button.is-edit-active {
   z-index: 1100;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   margin: 0;
   padding: 0;
   border: 1px solid #e8eaed;
@@ -1242,7 +1242,7 @@ md-filled-tonal-button.is-edit-active {
 /* Floating undo / reset / done when the panel is collapsed during edit */
 .mobile-edit-bar {
   position: absolute;
-  /* Sit to the right of the desktop expand control */
+  /* Align vertically with .expand-panel (same top + height) */
   top: 16px;
   left: 72px;
   right: auto;
@@ -1253,6 +1253,7 @@ md-filled-tonal-button.is-edit-active {
   gap: 2px;
   width: max-content;
   max-width: calc(100% - 96px);
+  height: 48px;
   min-height: 48px;
   padding: 4px 6px 4px 4px;
   box-sizing: border-box;
@@ -1309,13 +1310,23 @@ md-filled-tonal-button.is-edit-active {
 
 /* Mobile: expand stays top-right (same corner as collapse); edit bar leaves room */
 @media (max-width: 800px) {
+  .expand-panel {
+    top: 12px;
+    left: auto;
+    right: 12px;
+    width: 48px;
+    height: 48px;
+  }
+
   .mobile-edit-bar {
     top: 12px;
     left: 12px;
-    right: 64px;
+    right: 68px;
     translate: none;
     width: auto;
     max-width: none;
+    height: 48px;
+    min-height: 48px;
   }
 
   .mobile-edit-spacer {
@@ -1565,12 +1576,6 @@ md-text-button {
 
   .expand-chevron-mobile {
     display: block;
-  }
-
-  .expand-panel {
-    top: 12px;
-    left: auto;
-    right: 12px;
   }
 
   .mode-panel {
