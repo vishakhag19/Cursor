@@ -650,9 +650,13 @@ export default function App() {
       <aside className="panel m3-surface" aria-label="Map tools">
         <header className="panel-header">
           <div className="brand">
-            <span className="brand-mark" aria-hidden>
-              <md-icon>location_on</md-icon>
-            </span>
+            <img
+              className="brand-logo"
+              src="/favicon.svg"
+              alt=""
+              width="28"
+              height="28"
+            />
             <span className="brand-name md-typescale-title-large">Atlas</span>
           </div>
           <md-icon-button
@@ -704,13 +708,6 @@ export default function App() {
             onAddStop={addStop}
             onRemoveStop={removeStop}
             onSwap={swapStops}
-            travelMode={travelMode}
-            onTravelMode={(m) => {
-              setTravelMode(m);
-              clearRoutes();
-              const filled = stops.filter(Boolean);
-              if (filled.length >= 2) runDirections(stops, m);
-            }}
             onClose={() => {
               setView("search");
               clearRoutes();
@@ -815,22 +812,30 @@ export default function App() {
         />
 
         <div className="map-controls">
-          <md-chip-set class="layer-toggle" role="group" aria-label="Map type">
-            <md-filter-chip
-              label="Map"
-              selected={layer === "map" || undefined}
+          <div className="layer-toggle" role="group" aria-label="Map type">
+            <md-icon-button
+              type="button"
+              class={layer === "map" ? "layer-btn is-selected" : "layer-btn"}
+              aria-label="Map"
+              title="Map"
+              aria-pressed={layer === "map" ? "true" : "false"}
               onClick={() => setLayer("map")}
             >
-              <md-icon slot="icon">map</md-icon>
-            </md-filter-chip>
-            <md-filter-chip
-              label="Satellite"
-              selected={layer === "satellite" || undefined}
+              <md-icon>map</md-icon>
+            </md-icon-button>
+            <md-icon-button
+              type="button"
+              class={
+                layer === "satellite" ? "layer-btn is-selected" : "layer-btn"
+              }
+              aria-label="Satellite"
+              title="Satellite"
+              aria-pressed={layer === "satellite" ? "true" : "false"}
               onClick={() => setLayer("satellite")}
             >
-              <md-icon slot="icon">satellite_alt</md-icon>
-            </md-filter-chip>
-          </md-chip-set>
+              <md-icon>satellite_alt</md-icon>
+            </md-icon-button>
+          </div>
           <md-fab
             class={`locate-fab ${geoStatus === "ready" ? "is-located" : ""}`}
             variant="surface"

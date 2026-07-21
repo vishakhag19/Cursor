@@ -208,7 +208,7 @@ export default function RouteEditorLayer({
     }, 100);
   }
 
-  async function finishDrag(session) {
+  async function finishDrag(session, { cancel = false } = {}) {
     if (session !== dragSession.current) return;
     clearTimeout(snapTimer.current);
     const state = dragRef.current;
@@ -221,7 +221,10 @@ export default function RouteEditorLayer({
     map.getContainer().classList.remove("is-route-dragging");
     clearDocListeners();
 
-    if (!state?.active) return;
+    if (cancel || !state?.active) return;
+
+    // Require a real drag — a plain click must not create/move a via.
+    if (!state.movedEnough) return;
 
     try {
       const snapped =
@@ -251,14 +254,16 @@ export default function RouteEditorLayer({
     clearDocListeners();
     const startedAt = performance.now();
     let seenPressed = false;
+    const origin = dragRef.current
+      ? map.latLngToContainerPoint([dragRef.current.lat, dragRef.current.lng])
+      : null;
+    const DRAG_PX = 10;
 
     const onMove = (ev) => {
       if (session !== dragSession.current) return;
       if (!dragRef.current?.active) return;
       if (typeof ev.buttons === "number") {
         if (ev.buttons > 0) seenPressed = true;
-        // Only auto-end after we've observed a pressed button, then a release.
-        // Avoids ending the drag on the first move before button state is known.
         if (
           seenPressed &&
           ev.buttons === 0 &&
@@ -278,22 +283,35 @@ export default function RouteEditorLayer({
         );
       }
       const { lat, lng } = latlng;
+
+      let movedEnough = dragRef.current.movedEnough;
+      if (!movedEnough && origin) {
+        const cur = map.latLngToContainerPoint([lat, lng]);
+        const dx = cur.x - origin.x;
+        const dy = cur.y - origin.y;
+        if (dx * dx + dy * dy >= DRAG_PX * DRAG_PX) movedEnough = true;
+      }
+
       dragRef.current = {
         ...dragRef.current,
         lat,
         lng,
         snapped: false,
+        movedEnough,
       };
       setDragState((prev) =>
-        prev ? { ...prev, lat, lng, snapped: false } : prev,
+        prev ? { ...prev, lat, lng, snapped: false, movedEnough } : prev,
       );
-      schedulePreview(
-        lat,
-        lng,
-        dragRef.current.segmentIndex,
-        dragRef.current.viaId || null,
-        session,
-      );
+
+      if (movedEnough) {
+        schedulePreview(
+          lat,
+          lng,
+          dragRef.current.segmentIndex,
+          dragRef.current.viaId || null,
+          session,
+        );
+      }
     };
 
     let finished = false;
@@ -308,7 +326,6 @@ export default function RouteEditorLayer({
     document.addEventListener("pointercancel", onUp);
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
-    // Capture phase so we still end the drag if something stops propagation.
     window.addEventListener("pointerup", onUp, true);
     window.addEventListener("mouseup", onUp, true);
     listenersRef.current = {
@@ -333,6 +350,7 @@ export default function RouteEditorLayer({
       segmentIndex,
       viaId: null,
       previewGeometry: null,
+      movedEnough: false,
     };
     dragRef.current = start;
     setDragState(start);
@@ -344,7 +362,6 @@ export default function RouteEditorLayer({
         /* ignore */
       }
     }
-    schedulePreview(latlng.lat, latlng.lng, segmentIndex, null, session);
   }
 
   function beginViaDrag(via, latlng) {
@@ -362,11 +379,11 @@ export default function RouteEditorLayer({
       segmentIndex: 0,
       viaId: via.id,
       previewGeometry: null,
+      movedEnough: false,
     };
     dragRef.current = start;
     setDragState(start);
     bindDocListeners(session);
-    schedulePreview(latlng.lat, latlng.lng, 0, via.id, session);
   }
 
   if (!enabled || !geometry?.length) return null;

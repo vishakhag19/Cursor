@@ -21,12 +21,14 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  bottom: 12px;
+  bottom: auto;
   width: var(--atlas-panel-width);
+  max-height: calc(100dvh - 24px);
   z-index: 5;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: auto;
   background: var(--md-sys-color-surface-container-low);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-large);
@@ -51,13 +53,16 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--md-sys-color-primary);
 }
 
-.brand-mark md-icon {
-  color: var(--md-sys-color-primary);
-  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: block;
+  border-radius: 50%;
 }
 
 .brand-name {
@@ -65,38 +70,16 @@
   letter-spacing: -0.01em;
 }
 
-.mode-tabs {
-  width: 100%;
-  --md-primary-tab-container-color: transparent;
-}
-
-/* —— Directions (Google Maps–style) —— */
-.dir-modes {
+.dir-top-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-bottom: 4px;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
 }
 
-.dir-mode {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--md-sys-color-on-surface-variant);
-  cursor: pointer;
-}
-
-.dir-mode.is-active {
-  background: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-}
-
-.dir-modes-spacer {
-  flex: 1;
+.dir-title {
+  color: var(--md-sys-color-on-surface);
 }
 
 .dir-stops {
@@ -192,16 +175,12 @@
 
 .dir-route-card {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: stretch;
   width: 100%;
-  text-align: left;
-  border: none;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   background: transparent;
-  padding: 14px 12px 14px 16px;
-  cursor: pointer;
   color: inherit;
-  font: inherit;
 }
 
 .dir-route-card:hover {
@@ -210,6 +189,39 @@
 
 .dir-route-card.is-active {
   background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+}
+
+.dir-route-card.is-editing {
+  background: color-mix(in srgb, var(--md-sys-color-tertiary) 10%, transparent);
+}
+
+.dir-route-select {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 14px 8px 14px 16px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.dir-route-select:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.dir-route-edit-btn {
+  align-self: center;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.dir-route-edit-btn.is-edit-active {
+  --md-icon-button-icon-color: var(--md-sys-color-on-tertiary-container);
+  --md-icon-button-hover-state-layer-color: var(--md-sys-color-tertiary);
 }
 
 .dir-route-bar {
@@ -260,6 +272,7 @@
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
   margin: 0;
+  flex: 1;
 }
 
 .edit-toolbar {
@@ -268,8 +281,22 @@
   gap: 10px;
 }
 
+.edit-toolbar-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.edit-toolbar-head md-filled-tonal-button {
+  flex-shrink: 0;
+}
+
 .edit-actions {
   margin-top: 0;
+}
+
+.dir-stops-summary {
+  word-break: break-word;
 }
 
 .comparison-chip {
@@ -382,12 +409,17 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .mode-panel {
-  flex: 1;
+  flex: 0 1 auto;
   overflow: auto;
-  padding: 16px;
+  padding: 8px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  min-height: 0;
+}
+
+.search-panel {
+  padding-bottom: 12px;
 }
 
 .search-block {
@@ -724,10 +756,19 @@ md-list.suggestions {
 }
 
 .layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   background: var(--md-sys-color-surface-container-lowest);
   border-radius: var(--md-sys-shape-corner-extra-large);
   padding: 4px;
   box-shadow: var(--atlas-elevation-2);
+}
+
+.layer-btn.is-selected {
+  --md-icon-button-icon-color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+  border-radius: 50%;
 }
 
 .locate-fab.is-located {
@@ -844,7 +885,8 @@ md-text-button {
     right: 0;
     bottom: auto;
     width: auto;
-    max-height: 48vh;
+    max-width: none;
+    max-height: min(62dvh, 560px);
     border-radius: 0 0 var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large);
   }
 
@@ -852,17 +894,71 @@ md-text-button {
     transform: translateY(calc(-100% - 12px));
   }
 
+  .panel-header {
+    padding: 10px 6px 6px 14px;
+  }
+
+  .mode-panel {
+    padding: 6px 14px 14px;
+    gap: 10px;
+  }
+
   .map-controls {
     top: auto;
     bottom: 20px;
+    right: 12px;
+  }
+
+  .map-comparison {
+    top: auto;
+    bottom: 88px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    text-align: center;
   }
 
   .map-status {
     bottom: 96px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
   }
 
   .expand-panel {
     top: 12px;
     left: 12px;
+  }
+
+  .dir-route-stats {
+    padding-left: 0;
+  }
+
+  .edit-toolbar-head {
+    flex-direction: column;
+  }
+
+  .edit-toolbar-head md-filled-tonal-button {
+    align-self: stretch;
+  }
+
+  .btn-row md-filled-button,
+  .btn-row md-outlined-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-name {
+    font-size: 1.15rem;
+  }
+
+  .layer-toggle {
+    padding: 2px;
+  }
+
+  .dir-stops {
+    grid-template-columns: 12px 1fr 36px;
   }
 }

@@ -1,14 +1,8 @@
 import SuggestInput from "./SuggestInput";
 import { formatDistance, formatDuration, placeLabel } from "../utils/format";
 
-const TRAVEL = [
-  { id: "driving", icon: "directions_car", label: "Drive" },
-  { id: "walking", icon: "directions_walk", label: "Walk" },
-  { id: "cycling", icon: "directions_bike", label: "Bike" },
-];
-
 /**
- * Google Maps–style directions panel with interactive route editing controls.
+ * Directions panel — Material Web controls, edit pencil on the selected route.
  */
 export default function DirectionsPanel({
   stops,
@@ -18,8 +12,6 @@ export default function DirectionsPanel({
   onAddStop,
   onRemoveStop,
   onSwap,
-  travelMode,
-  onTravelMode,
   onClose,
   onSearch,
   routeOptions,
@@ -43,21 +35,8 @@ export default function DirectionsPanel({
 
   return (
     <section className="mode-panel directions-panel">
-      <div className="dir-modes" role="tablist" aria-label="Travel mode">
-        {TRAVEL.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            role="tab"
-            className={`dir-mode ${travelMode === m.id ? "is-active" : ""}`}
-            aria-selected={travelMode === m.id}
-            onClick={() => onTravelMode(m.id)}
-            title={m.label}
-          >
-            <md-icon>{m.icon}</md-icon>
-          </button>
-        ))}
-        <span className="dir-modes-spacer" />
+      <div className="dir-top-bar">
+        <span className="md-typescale-title-medium dir-title">Directions</span>
         <md-icon-button type="button" aria-label="Close directions" onClick={onClose}>
           <md-icon>close</md-icon>
         </md-icon-button>
@@ -127,7 +106,7 @@ export default function DirectionsPanel({
         <span className="md-typescale-body-medium">Add Stops</span>
       </button>
 
-      <div className="btn-row wrap">
+      <div className="btn-row">
         <md-filled-button
           type="button"
           onClick={onSearch}
@@ -135,24 +114,19 @@ export default function DirectionsPanel({
         >
           {loading ? "Finding routes…" : "Get directions"}
         </md-filled-button>
-        {hasRoutes && (
-          <md-filled-tonal-button
-            type="button"
-            onClick={onToggleEdit}
-            class={editMode ? "is-edit-active" : ""}
-          >
-            <md-icon slot="icon">{editMode ? "close" : "edit_location_alt"}</md-icon>
-            {editMode ? "Done editing" : "Edit route"}
-          </md-filled-tonal-button>
-        )}
       </div>
 
       {editMode && (
         <div className="edit-toolbar">
-          <p className="hint md-typescale-body-small edit-hint">
-            Drag any point on the blue route to bend it through a new street.
-            Atlas snaps to the nearest road and previews the path live.
-          </p>
+          <div className="edit-toolbar-head">
+            <p className="hint md-typescale-body-small edit-hint">
+              Drag the route to bend it. Release to drop a via point.
+            </p>
+            <md-filled-tonal-button type="button" onClick={onToggleEdit}>
+              <md-icon slot="icon">check</md-icon>
+              Done
+            </md-filled-tonal-button>
+          </div>
 
           {comparison && (
             <div
@@ -190,7 +164,7 @@ export default function DirectionsPanel({
               disabled={!canReset || undefined}
             >
               <md-icon slot="icon">restart_alt</md-icon>
-              Reset to suggested
+              Reset
             </md-outlined-button>
           </div>
         </div>
@@ -204,52 +178,62 @@ export default function DirectionsPanel({
 
       {routeOptions.length > 0 && (
         <div className="dir-route-list">
-          <p className="hint tight md-typescale-body-small">
-            {editMode
-              ? "Editing the selected route. Finish editing to compare other options."
-              : "Tap a route below or click its line on the map."}
-          </p>
           {routeOptions.map((opt, index) => {
             const active = opt.id === selectedRouteId;
             return (
-              <button
+              <div
                 key={opt.id}
-                type="button"
-                className={`dir-route-card ${active ? "is-active" : ""}`}
-                onClick={() => onSelectRoute(opt)}
-                disabled={editMode && !active ? true : undefined}
+                className={`dir-route-card ${active ? "is-active" : ""} ${editMode && active ? "is-editing" : ""}`}
               >
                 {active && <span className="dir-route-bar" aria-hidden />}
-                <div className="dir-route-body">
-                  <div className="dir-route-title-row">
-                    <md-icon class="dir-route-mode">
-                      {TRAVEL.find((t) => t.id === travelMode)?.icon ||
-                        "directions_car"}
-                    </md-icon>
-                    <div>
-                      <div className="md-typescale-title-small">{opt.label}</div>
-                      {opt.badge && (
-                        <div className="md-typescale-body-small dir-route-badge">
-                          {opt.badge}
-                        </div>
-                      )}
-                      {!opt.badge && index > 0 && (
-                        <div className="md-typescale-body-small dir-route-badge muted">
-                          Option {index + 1}
-                        </div>
-                      )}
+                <button
+                  type="button"
+                  className="dir-route-select"
+                  onClick={() => onSelectRoute(opt)}
+                  disabled={editMode && !active ? true : undefined}
+                >
+                  <div className="dir-route-body">
+                    <div className="dir-route-title-row">
+                      <md-icon class="dir-route-mode">directions_car</md-icon>
+                      <div>
+                        <div className="md-typescale-title-small">{opt.label}</div>
+                        {opt.badge && (
+                          <div className="md-typescale-body-small dir-route-badge">
+                            {opt.badge}
+                          </div>
+                        )}
+                        {!opt.badge && index > 0 && (
+                          <div className="md-typescale-body-small dir-route-badge muted">
+                            Option {index + 1}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="dir-route-stats">
+                      <span className="dir-route-time md-typescale-title-medium">
+                        {formatDuration(opt.duration)}
+                      </span>
+                      <span className="md-typescale-body-medium dir-route-dist">
+                        {formatDistance(opt.distance)}
+                      </span>
                     </div>
                   </div>
-                  <div className="dir-route-stats">
-                    <span className="dir-route-time md-typescale-title-medium">
-                      {formatDuration(opt.duration)}
-                    </span>
-                    <span className="md-typescale-body-medium dir-route-dist">
-                      {formatDistance(opt.distance)}
-                    </span>
-                  </div>
-                </div>
-              </button>
+                </button>
+                {active && (
+                  <md-icon-button
+                    type="button"
+                    class={`dir-route-edit-btn ${editMode ? "is-edit-active" : ""}`}
+                    aria-label={editMode ? "Done editing" : "Edit route"}
+                    title={editMode ? "Done editing" : "Edit route"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleEdit();
+                    }}
+                  >
+                    <md-icon>{editMode ? "check" : "edit"}</md-icon>
+                  </md-icon-button>
+                )}
+              </div>
             );
           })}
         </div>
@@ -257,16 +241,12 @@ export default function DirectionsPanel({
 
       {!routeOptions.length && !error && !loading && (
         <p className="hint md-typescale-body-medium">
-          Enter start and destination to see the shortest route options.
-          {stops[0]
-            ? ""
-            : " Tap Starting point to use Your location or pick a place."}
+          Enter start and destination, then get directions.
         </p>
       )}
 
-      {stops.some(Boolean) && (
-        <p className="hint tight md-typescale-body-small">
-          Stops:{" "}
+      {hasRoutes && stops.some(Boolean) && (
+        <p className="hint tight md-typescale-body-small dir-stops-summary">
           {stops.map((s) => (s ? placeLabel(s) : "…")).join(" → ")}
         </p>
       )}

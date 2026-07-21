@@ -72,6 +72,9 @@ function MapClickHandler({ onMapClick, onContextMenu }) {
 
 function FitBounds({ positions, version }) {
   const map = useMap();
+  // Only re-fit when `version` changes (new directions / explicit reset).
+  // Do NOT re-fit when geometry updates during route editing — that caused
+  // the map to zoom out after every drag commit.
   useEffect(() => {
     if (!positions?.length) return;
     if (positions.length === 1) {
@@ -80,7 +83,9 @@ function FitBounds({ positions, version }) {
     }
     const bounds = L.latLngBounds(positions);
     map.fitBounds(bounds, { padding: [80, 80], maxZoom: 15, animate: true });
-  }, [map, positions, version]);
+    // intentionally omit `positions` from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, version]);
   return null;
 }
 

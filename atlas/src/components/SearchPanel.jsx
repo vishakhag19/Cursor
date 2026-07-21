@@ -1,7 +1,7 @@
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 
-/** Search-only panel (no tabs). Landing dropdown = recent searches only. */
+/** Search-only panel. Landing dropdown = recent searches only. */
 export default function SearchPanel({
   query,
   onQueryChange,
@@ -39,7 +39,7 @@ export default function SearchPanel({
         )}
       </div>
 
-      {place ? (
+      {place && (
         <PlaceDetailsCard
           place={place}
           onClose={onClear}
@@ -47,12 +47,6 @@ export default function SearchPanel({
           onDirectionsFrom={onDirectionsFrom}
           onAddToRoute={onAddToRoute}
         />
-      ) : (
-        <p className="hint md-typescale-body-medium">
-          {recentPlaces.length
-            ? "Focus the search field to see recent places, or type to find somewhere new."
-            : "Search for a place or click the map. Results are ordered nearest first."}
-        </p>
       )}
     </section>
   );
