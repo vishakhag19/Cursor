@@ -33,7 +33,8 @@
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-large);
   box-shadow: var(--atlas-elevation-2);
-  overflow: hidden;
+  /* Keep visible so suggestion dropdowns aren't clipped when the panel hugs content */
+  overflow: visible;
   transition: transform 0.22s ease, opacity 0.22s ease;
 }
 
@@ -410,7 +411,7 @@ md-filled-tonal-button.is-edit-active {
 
 .mode-panel {
   flex: 0 1 auto;
-  overflow: auto;
+  overflow: visible;
   padding: 8px 16px 16px;
   display: flex;
   flex-direction: column;
@@ -420,6 +421,13 @@ md-filled-tonal-button.is-edit-active {
 
 .search-panel {
   padding-bottom: 12px;
+  overflow: visible;
+}
+
+.directions-panel {
+  overflow-x: visible;
+  overflow-y: auto;
+  max-height: calc(100dvh - 88px);
 }
 
 .search-block {
@@ -436,6 +444,13 @@ md-filled-tonal-button.is-edit-active {
 .suggest-wrap {
   position: relative;
   width: 100%;
+  overflow: visible;
+  z-index: 2;
+}
+
+.suggest-wrap:focus-within,
+.suggest-wrap:has(.suggestions) {
+  z-index: 40;
 }
 
 .suggest-wrap md-outlined-text-field {
@@ -451,16 +466,18 @@ md-filled-tonal-button.is-edit-active {
   --md-circular-progress-size: 24px;
 }
 
+/* In-flow dropdown so the hugging panel grows and keeps suggestions visible */
 .suggestions {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 4px);
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  margin-top: 6px;
   z-index: 30;
-  max-height: 280px;
+  max-height: min(280px, 40dvh);
   overflow: auto;
-  background: var(--md-sys-color-surface-container-lowest);
   border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-lowest);
   box-shadow: var(--atlas-elevation-2);
   border: 1px solid var(--md-sys-color-outline-variant);
 }
