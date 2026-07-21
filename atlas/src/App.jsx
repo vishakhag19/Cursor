@@ -29,6 +29,20 @@ function emptyStops() {
   return [null, null];
 }
 
+function useIsCompact(query = "(max-width: 800px)") {
+  const [compact, setCompact] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setCompact(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [query]);
+  return compact;
+}
+
 function cloneGeometry(geometry) {
   if (!geometry?.length) return geometry ?? null;
   return geometry.map((p) => (Array.isArray(p) ? [...p] : p));
@@ -62,6 +76,7 @@ function orderViasAlongGeometry(vias, geometry) {
 export default function App() {
   const [view, setView] = useState("search"); // search | directions
   const [panelOpen, setPanelOpen] = useState(true);
+  const isCompact = useIsCompact();
   const [layer, setLayer] = useState("map");
   const [status, setStatus] = useState(null);
   const statusTimer = useRef(null);
@@ -898,8 +913,7 @@ export default function App() {
               onClick={() => setPanelOpen(false)}
               aria-label="Collapse panel"
             >
-              <md-icon class="collapse-chevron-desktop">chevron_left</md-icon>
-              <md-icon class="collapse-chevron-mobile">expand_less</md-icon>
+              <md-icon>{isCompact ? "expand_less" : "chevron_left"}</md-icon>
             </md-icon-button>
           </ActionTip>
         </header>
@@ -1042,15 +1056,14 @@ export default function App() {
       )}
 
       {!panelOpen && (
-        <ActionTip tip="Open panel">
+        <ActionTip tip="Open panel" className="expand-panel-tip">
           <md-icon-button
             type="button"
             class="expand-panel"
             aria-label="Open panel"
             onClick={() => setPanelOpen(true)}
           >
-            <md-icon class="expand-chevron-desktop">chevron_right</md-icon>
-            <md-icon class="expand-chevron-mobile">expand_more</md-icon>
+            <md-icon>{isCompact ? "expand_more" : "chevron_right"}</md-icon>
           </md-icon-button>
         </ActionTip>
       )}

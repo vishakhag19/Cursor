@@ -9,7 +9,7 @@ const MOVE_CANCEL_PX = 8;
  * overflow:hidden ancestors (route cards, scroll panels, md-icon-button).
  * On touch, a short press-and-hold shows the same tip.
  */
-export default function ActionTip({ tip, children }) {
+export default function ActionTip({ tip, children, className = "" }) {
   const wrapRef = useRef(null);
   const [box, setBox] = useState(null);
   const pressTimerRef = useRef(null);
@@ -123,7 +123,7 @@ export default function ActionTip({ tip, children }) {
 
   return (
     <span
-      className="action-tip-wrap"
+      className={["action-tip-wrap", className].filter(Boolean).join(" ")}
       ref={wrapRef}
       onMouseEnter={show}
       onMouseLeave={hide}

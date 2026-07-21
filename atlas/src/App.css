@@ -73,10 +73,8 @@
   /* Larger glyph only — button hit target stays --panel-control-size */
   --md-icon-button-icon-size: 28px;
   --md-icon-size: 28px;
-}
-
-.collapse-chevron-mobile {
-  display: none;
+  --md-icon-button-state-layer-width: var(--panel-control-size);
+  --md-icon-button-state-layer-height: var(--panel-control-size);
 }
 
 .brand {
@@ -1207,11 +1205,20 @@ md-filled-tonal-button.is-edit-active {
   margin: 0;
 }
 
-.expand-panel {
+/* Floating expand: position the tip wrap so the icon centers in the chip */
+.expand-panel-tip {
   position: absolute;
   top: 16px;
   left: 16px;
   z-index: 1100;
+  width: var(--panel-control-size);
+  height: var(--panel-control-size);
+  display: grid;
+  place-items: center;
+}
+
+.expand-panel {
+  position: static;
   width: var(--panel-control-size);
   height: var(--panel-control-size);
   margin: 0;
@@ -1221,10 +1228,8 @@ md-filled-tonal-button.is-edit-active {
   /* Larger glyph only — button hit target stays --panel-control-size */
   --md-icon-button-icon-size: 28px;
   --md-icon-size: 28px;
-}
-
-.expand-chevron-mobile {
-  display: none;
+  --md-icon-button-state-layer-width: var(--panel-control-size);
+  --md-icon-button-state-layer-height: var(--panel-control-size);
 }
 
 /* Floating undo / reset / done when the panel is collapsed during edit */
@@ -1305,10 +1310,13 @@ md-filled-tonal-button.is-edit-active {
 
 /* Mobile: expand stays top-right (same corner as collapse); edit bar leaves room */
 @media (max-width: 800px) {
-  .expand-panel {
+  .expand-panel-tip {
     top: 12px;
     left: auto;
     right: 12px;
+  }
+
+  .expand-panel {
     width: var(--panel-control-size);
     height: var(--panel-control-size);
   }
@@ -1567,22 +1575,6 @@ md-text-button {
 
   .panel-header {
     padding: 8px var(--panel-pad-x) 4px;
-  }
-
-  .collapse-chevron-desktop {
-    display: none;
-  }
-
-  .collapse-chevron-mobile {
-    display: inline-block;
-  }
-
-  .expand-chevron-desktop {
-    display: none;
-  }
-
-  .expand-chevron-mobile {
-    display: block;
   }
 
   .mode-panel {
@@ -1865,7 +1857,7 @@ md-text-button {
 }
 
 /* Hide menu FAB during nav — Exit covers leaving; avoids floating chrome clash */
-.app.nav-mode .expand-panel {
+.app.nav-mode .expand-panel-tip {
   display: none;
 }
 
