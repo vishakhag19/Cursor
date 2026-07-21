@@ -359,21 +359,11 @@
 .edit-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.edit-toolbar-head {
-  display: flex;
-  align-items: flex-start;
   gap: 8px;
 }
 
-.edit-toolbar-head md-filled-tonal-button {
-  flex-shrink: 0;
-}
-
-.edit-actions {
-  margin-top: 0;
+.edit-hint {
+  margin: 0;
 }
 
 .comparison-chip {
