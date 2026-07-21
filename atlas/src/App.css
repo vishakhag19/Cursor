@@ -1535,122 +1535,12 @@ md-text-button {
     bottom: auto;
     width: auto;
     max-width: none;
-    max-height: min(52dvh, 420px);
+    max-height: min(62dvh, 560px);
     border-radius: 0 0 16px 16px;
-    overflow: hidden;
   }
 
   .app.panel-collapsed .panel {
     transform: translateY(calc(-100% - 12px));
-  }
-
-  /* Route results: bottom sheet so the map keeps most of the viewport */
-  .app.has-routes-sheet .panel {
-    top: auto;
-    bottom: 0;
-    max-height: min(40dvh, 340px);
-    border-radius: 16px 16px 0 0;
-  }
-
-  .app.has-routes-sheet .panel:has(.show-stops),
-  .app.has-routes-sheet .panel:has(.is-editing) {
-    max-height: min(58dvh, 480px);
-  }
-
-  .app.has-routes-sheet.panel-collapsed .panel {
-    transform: translateY(calc(100% + 12px));
-  }
-
-  .app.has-routes-sheet .panel-header {
-    padding: 6px 6px 2px 14px;
-  }
-
-  .app.has-routes-sheet .brand-name {
-    font-size: 1.05rem;
-  }
-
-  .app.has-routes-sheet .dir-top-bar {
-    min-height: 32px;
-  }
-
-  .app.has-routes-sheet .dir-title {
-    font-size: 1rem;
-  }
-
-  .app.has-routes-sheet .mode-panel {
-    padding: 4px 12px 12px;
-    gap: 8px;
-    overflow: auto;
-  }
-
-  .app.has-routes-sheet .directions-panel {
-    max-height: none;
-  }
-
-  .app.has-routes-sheet .dir-route-list {
-    gap: 6px;
-    margin-top: 0;
-  }
-
-  .app.has-routes-sheet .dir-route-card {
-    min-height: 52px;
-    border-radius: 12px;
-  }
-
-  .app.has-routes-sheet .dir-route-select {
-    padding: 8px 6px 8px 12px;
-  }
-
-  .app.has-routes-sheet .dir-route-title-row {
-    gap: 8px;
-    margin-bottom: 0;
-    align-items: center;
-  }
-
-  .app.has-routes-sheet .dir-route-stats {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 6px 10px;
-    padding-left: 32px;
-  }
-
-  .app.has-routes-sheet .dir-route-time {
-    font-size: 1rem;
-    line-height: 1.2;
-  }
-
-  .app.has-routes-sheet .dir-route-dist {
-    font-size: 0.875rem;
-    color: #5f6368;
-  }
-
-  .app.has-routes-sheet .dir-route-badge {
-    margin-top: 0;
-  }
-
-  .app.has-routes-sheet .expand-panel,
-  .expand-panel.is-bottom-sheet {
-    top: auto;
-    bottom: 16px;
-    left: auto;
-    right: 12px;
-  }
-
-  .app.has-routes-sheet .map-controls {
-    bottom: calc(16px + min(40dvh, 340px));
-  }
-
-  .app.has-routes-sheet.panel-collapsed .map-controls {
-    bottom: 16px;
-  }
-
-  .app.has-routes-sheet .map-status {
-    bottom: calc(8px + min(40dvh, 340px));
-  }
-
-  .app.has-routes-sheet.panel-collapsed .map-status {
-    bottom: 8px;
   }
 
   .panel-header {
@@ -1682,6 +1572,53 @@ md-text-button {
   .mode-panel {
     padding: 6px 14px 14px;
     gap: 10px;
+  }
+
+  /* Compact route option rows on phones */
+  .dir-route-list {
+    gap: 6px;
+  }
+
+  .dir-route-card {
+    min-height: 52px;
+    border-radius: 12px;
+  }
+
+  .dir-route-select {
+    padding: 8px 6px 8px 12px;
+  }
+
+  .dir-route-title-row {
+    gap: 8px;
+    margin-bottom: 0;
+    align-items: center;
+  }
+
+  .dir-route-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    padding-left: 32px;
+  }
+
+  .dir-route-time {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .dir-route-dist {
+    font-size: 0.875rem;
+    color: #5f6368;
+  }
+
+  .dir-route-badge {
+    margin-top: 0;
+  }
+
+  .dir-route-actions {
+    padding-right: 2px;
+    min-height: 40px;
   }
 
   .map-controls {

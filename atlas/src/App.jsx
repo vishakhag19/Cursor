@@ -1048,15 +1048,13 @@ export default function App() {
       {!panelOpen && (
         <button
           type="button"
-          className={`expand-panel ${routesSheet ? "is-bottom-sheet" : ""}`}
+          className="expand-panel"
           aria-label="Open panel"
           title="Open panel"
           onClick={() => setPanelOpen(true)}
         >
           <md-icon class="expand-chevron-desktop">chevron_right</md-icon>
-          <md-icon class="expand-chevron-mobile">
-            {routesSheet ? "expand_less" : "expand_more"}
-          </md-icon>
+          <md-icon class="expand-chevron-mobile">expand_more</md-icon>
         </button>
       )}
 
