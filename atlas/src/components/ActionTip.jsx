@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const HOVER_DELAY_MS = 2000;
+const HOVER_DELAY_MS = 1000;
 const LONG_PRESS_MS = 420;
 const TOUCH_TIP_MS = 2200;
 const MOVE_CANCEL_PX = 8;
