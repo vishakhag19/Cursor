@@ -30,6 +30,85 @@ function viaLabel(route) {
   return `via ${names[0]} and ${names[1]}`;
 }
 
+/** Human-readable instruction from an OSRM step. */
+function stepInstruction(step) {
+  const m = step.maneuver || {};
+  const type = m.type || "";
+  const modifier = (m.modifier || "").replace(/_/g, " ");
+  const name = (step.name || "").trim();
+  const road = name && name !== "-" ? name : "";
+
+  if (type === "depart") return road ? `Head toward ${road}` : "Depart";
+  if (type === "arrive") return "Arrive at your destination";
+  if (type === "roundabout" || type === "rotary") {
+    return road ? `Enter the roundabout onto ${road}` : "Enter the roundabout";
+  }
+  if (type === "fork") {
+    return road
+      ? `Keep ${modifier || "straight"} onto ${road}`
+      : `Keep ${modifier || "straight"} at the fork`;
+  }
+  if (type === "end of road") {
+    return road
+      ? `At the end of the road, turn ${modifier || "left"} onto ${road}`
+      : `At the end of the road, turn ${modifier || "left"}`;
+  }
+  if (type === "continue" || type === "new name") {
+    return road ? `Continue onto ${road}` : "Continue straight";
+  }
+  if (type === "turn" || type === "merge" || type === "off ramp" || type === "on ramp") {
+    const action =
+      type === "merge"
+        ? "Merge"
+        : type === "off ramp"
+          ? "Take the exit"
+          : type === "on ramp"
+            ? "Take the ramp"
+            : `Turn ${modifier || "left"}`;
+    return road ? `${action} onto ${road}` : action;
+  }
+  if (modifier) {
+    return road ? `${modifier} onto ${road}` : modifier;
+  }
+  return road || "Continue";
+}
+
+function maneuverIcon(step) {
+  const m = step.maneuver || {};
+  const type = m.type || "";
+  const modifier = m.modifier || "";
+  if (type === "arrive") return "flag";
+  if (type === "depart") return "navigation";
+  if (type === "roundabout" || type === "rotary") return "sync";
+  if (modifier.includes("left")) return "turn_left";
+  if (modifier.includes("right")) return "turn_right";
+  if (modifier.includes("uturn") || modifier.includes("u-turn")) return "u_turn_left";
+  if (modifier.includes("straight")) return "straight";
+  if (type === "merge") return "merge";
+  return "directions";
+}
+
+function extractSteps(route) {
+  const steps = [];
+  for (const leg of route.legs || []) {
+    for (const step of leg.steps || []) {
+      const [lng, lat] = step.maneuver?.location || [];
+      steps.push({
+        instruction: stepInstruction(step),
+        icon: maneuverIcon(step),
+        distance: step.distance || 0,
+        duration: step.duration || 0,
+        name: step.name || "",
+        type: step.maneuver?.type || "",
+        modifier: step.maneuver?.modifier || "",
+        lat: lat ?? null,
+        lng: lng ?? null,
+      });
+    }
+  }
+  return steps;
+}
+
 function normalizeRoute(route, index) {
   return {
     id: `route-${index}-${Math.round(route.distance)}-${Math.round(route.duration)}`,
@@ -38,6 +117,7 @@ function normalizeRoute(route, index) {
     duration: route.duration,
     geometry: toGeometry(route),
     weight: route.weight,
+    steps: extractSteps(route),
   };
 }
 
@@ -181,11 +261,13 @@ async function routeLegByLegShortest(coords, travelMode) {
   let distance = 0;
   let duration = 0;
   const geometry = [];
+  const steps = [];
   const viaParts = [];
   legs.forEach((leg, idx) => {
     distance += leg.distance;
     duration += leg.duration;
     if (leg.label?.startsWith("via ")) viaParts.push(leg.label.slice(4));
+    if (leg.steps?.length) steps.push(...leg.steps);
     const pts = leg.geometry;
     if (idx === 0) geometry.push(...pts);
     else geometry.push(...pts.slice(1));
@@ -195,6 +277,7 @@ async function routeLegByLegShortest(coords, travelMode) {
     distance,
     duration,
     geometry,
+    steps,
     label: viaParts.length
       ? `via ${viaParts.slice(0, 2).join(" and ")}`
       : "Via your stops",

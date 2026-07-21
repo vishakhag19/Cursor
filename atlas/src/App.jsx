@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import MapView from "./components/MapView";
 import SearchPanel from "./components/SearchPanel";
 import DirectionsPanel from "./components/DirectionsPanel";
+import NavigationUI from "./components/NavigationUI";
+import StepsSheet from "./components/StepsSheet";
 import ContextMenu from "./components/ContextMenu";
-import { reverseGeocode } from "./api/geocode";
+import { reverseGeocode, haversineMeters } from "./api/geocode";
 import {
   closestPointOnPolyline,
   fetchShortestRoutes,
@@ -61,6 +63,9 @@ export default function App() {
   const [editHistory, setEditHistory] = useState([]);
   const [editPreview, setEditPreview] = useState(null);
   const [editBusy, setEditBusy] = useState(false);
+  const [navigating, setNavigating] = useState(false);
+  const [navStepIndex, setNavStepIndex] = useState(0);
+  const [showSteps, setShowSteps] = useState(false);
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
 
@@ -131,6 +136,9 @@ export default function App() {
     setEditHistory([]);
     setEditPreview(null);
     setEditBusy(false);
+    setNavigating(false);
+    setNavStepIndex(0);
+    setShowSteps(false);
   }, []);
 
   const clearRoutes = useCallback(() => {
@@ -630,6 +638,75 @@ export default function App() {
     : [];
 
   const mapMode = view === "directions" ? "directions" : "explore";
+  const selectedRoute =
+    routeOptions.find((r) => r.id === selectedRouteId) || null;
+  const destinationName =
+    filledStops[filledStops.length - 1]?.name ||
+    placeLabel(filledStops[filledStops.length - 1]) ||
+    "Destination";
+
+  const startNavigation = useCallback(async () => {
+    if (!selectedRoute?.steps?.length && !selectedRoute?.geometry?.length) {
+      showStatus("No route to start");
+      return;
+    }
+    setShowSteps(false);
+    setNavStepIndex(0);
+    setNavigating(true);
+    setPanelOpen(false);
+    setEditMode(false);
+    try {
+      const loc = userLocation || (await refreshLocation().catch(() => null));
+      if (loc) {
+        setFlyTarget({ lat: loc.lat, lng: loc.lng, zoom: 17 });
+      } else if (selectedRoute.geometry?.[0]) {
+        const [lat, lng] = selectedRoute.geometry[0];
+        setFlyTarget({ lat, lng, zoom: 16 });
+      }
+      showStatus("Navigation started");
+    } catch {
+      showStatus("Navigation started");
+    }
+  }, [selectedRoute, userLocation, refreshLocation, showStatus]);
+
+  const exitNavigation = useCallback(() => {
+    setNavigating(false);
+    setNavStepIndex(0);
+    setShowSteps(false);
+    setPanelOpen(true);
+    showStatus("Navigation ended");
+  }, [showStatus]);
+
+  // Advance turn-by-turn step when the user approaches the next maneuver.
+  useEffect(() => {
+    if (!navigating || !userLocation || !selectedRoute?.steps?.length) return;
+    const steps = selectedRoute.steps;
+    let idx = navStepIndex;
+    while (idx < steps.length - 1) {
+      const s = steps[idx];
+      if (s.lat == null || s.lng == null) break;
+      const d = haversineMeters(userLocation, { lat: s.lat, lng: s.lng });
+      // Move to next instruction once within ~35m of this maneuver
+      // (or past it toward the following one).
+      if (d < 35) {
+        idx += 1;
+        continue;
+      }
+      break;
+    }
+    if (idx !== navStepIndex) setNavStepIndex(idx);
+  }, [navigating, userLocation, selectedRoute, navStepIndex]);
+
+  // Follow user location while navigating.
+  useEffect(() => {
+    if (!navigating || !userLocation) return;
+    setFlyTarget({
+      lat: userLocation.lat,
+      lng: userLocation.lng,
+      zoom: 17,
+    });
+  }, [navigating, userLocation]);
+
 
   const activeDuration =
     editPreview?.previewDuration ??
@@ -860,7 +937,7 @@ export default function App() {
           </md-fab>
         </div>
 
-        {editMode && comparison && (
+        {editMode && comparison && !navigating && (
           <div
             className={`map-comparison tone-${comparison.tone}`}
             role="status"
@@ -869,7 +946,30 @@ export default function App() {
           </div>
         )}
 
-        {status && (
+        {view === "directions" && selectedRoute && !editMode && (
+          <>
+            {!showSteps && (
+              <NavigationUI
+                active={navigating}
+                route={selectedRoute}
+                destinationName={destinationName}
+                currentStepIndex={navStepIndex}
+                onStart={startNavigation}
+                onExit={exitNavigation}
+                onShowSteps={() => setShowSteps(true)}
+              />
+            )}
+            {showSteps && (
+              <StepsSheet
+                route={selectedRoute}
+                onClose={() => setShowSteps(false)}
+                onStart={startNavigation}
+              />
+            )}
+          </>
+        )}
+
+        {status && !navigating && (
           <div className="map-status md-typescale-label-large" role="status">
             {status}
           </div>
