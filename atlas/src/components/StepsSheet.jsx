@@ -48,8 +48,16 @@ export default function StepsSheet({
         ))}
       </ol>
       <div className="steps-sheet-footer">
-        <md-filled-button type="button" onClick={onStart}>
-          <md-icon slot="icon">navigation</md-icon>
+        <md-filled-button type="button" class="steps-start-btn" onClick={onStart}>
+          <span slot="icon" className="steps-start-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" focusable="false">
+              {/* Inset navigation triangle so edges aren’t clipped by the button */}
+              <path
+                fill="currentColor"
+                d="M12 3.2 5.2 20.1l.65.34L12 17.4l6.15 3.04.65-.34z"
+              />
+            </svg>
+          </span>
           Start
         </md-filled-button>
       </div>
