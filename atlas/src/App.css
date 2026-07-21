@@ -55,6 +55,33 @@
   padding: 12px 8px 8px 16px;
 }
 
+.collapse-panel-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+}
+
+.collapse-panel-btn:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+
+.collapse-panel-btn .material-symbols-outlined {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.collapse-chevron-mobile {
+  display: none;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -1349,6 +1376,14 @@ md-text-button {
 
   .panel-header {
     padding: 10px 6px 6px 14px;
+  }
+
+  .collapse-chevron-desktop {
+    display: none;
+  }
+
+  .collapse-chevron-mobile {
+    display: inline-block;
   }
 
   .mode-panel {

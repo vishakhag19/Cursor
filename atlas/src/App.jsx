@@ -73,11 +73,6 @@ export default function App() {
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
-  const [isMobileLayout, setIsMobileLayout] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(max-width: 800px)").matches
-      : false,
-  );
   const locateFn = useRef(null);
   const zoomFn = useRef(null);
   const editViasRef = useRef([]);
@@ -93,14 +88,6 @@ export default function App() {
     refresh: refreshLocation,
     takeCenteredOnce,
   } = useGeolocation({ autoStart: true });
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 800px)");
-    const onChange = () => setIsMobileLayout(mq.matches);
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
 
   const showStatus = useCallback((message, ms = 2800) => {
     setStatus(message);
@@ -803,15 +790,20 @@ export default function App() {
             />
             <span className="brand-name md-typescale-title-large">Atlas</span>
           </div>
-          <md-icon-button
+          <button
             type="button"
-            class="collapse-panel-btn"
+            className="collapse-panel-btn"
             onClick={() => setPanelOpen(false)}
             aria-label="Collapse panel"
             title="Collapse panel"
           >
-            <md-icon>{isMobileLayout ? "expand_less" : "chevron_left"}</md-icon>
-          </md-icon-button>
+            <span className="material-symbols-outlined collapse-chevron-desktop" aria-hidden="true">
+              chevron_left
+            </span>
+            <span className="material-symbols-outlined collapse-chevron-mobile" aria-hidden="true">
+              expand_less
+            </span>
+          </button>
         </header>
 
         {view === "search" && (
