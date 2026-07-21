@@ -804,10 +804,21 @@ md-filled-tonal-button.is-edit-active {
 .suggest-spinner {
   position: absolute;
   right: 12px;
-  top: 18px;
+  top: 50%;
+  translate: 0 -50%;
+  display: grid;
+  place-items: center;
   width: 24px;
   height: 24px;
-  --md-circular-progress-size: 24px;
+  line-height: 0;
+  --md-circular-progress-size: 20px;
+}
+
+.search-bar .suggest-spinner {
+  right: 8px;
+  /* Match the 40px field / search glyph column */
+  top: 50%;
+  translate: 0 -50%;
 }
 
 /* Google Maps–style place list under inputs */
