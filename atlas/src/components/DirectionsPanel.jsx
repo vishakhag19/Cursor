@@ -1,8 +1,10 @@
+import { useState } from "react";
 import SuggestInput from "./SuggestInput";
+import PlaceSuggestionList from "./PlaceSuggestionList";
 import { formatDistance, formatDuration, placeLabel } from "../utils/format";
 
 /**
- * Directions panel — Material Web controls, edit pencil on the selected route.
+ * Directions panel — Google Maps–style inputs with a shared place list below.
  */
 export default function DirectionsPanel({
   stops,
@@ -21,6 +23,7 @@ export default function DirectionsPanel({
   error,
   currentLocation,
   near = null,
+  recentPlaces = [],
   onRequestLocation = null,
   editMode = false,
   onToggleEdit,
@@ -33,6 +36,32 @@ export default function DirectionsPanel({
 }) {
   const canRoute = stops.filter(Boolean).length >= 2;
   const hasRoutes = routeOptions.length > 0;
+  const [activeStop, setActiveStop] = useState(null);
+  const [placeList, setPlaceList] = useState({
+    open: false,
+    items: [],
+    query: "",
+    loading: false,
+    select: null,
+  });
+
+  function handleListChange(index, payload) {
+    if (activeStop !== index && !payload.open) return;
+    if (payload.open || activeStop === index) {
+      setPlaceList(payload);
+    }
+  }
+
+  function clearPlaceList() {
+    setPlaceList({
+      open: false,
+      items: [],
+      query: "",
+      loading: false,
+      select: null,
+    });
+    setActiveStop(null);
+  }
 
   return (
     <section className="mode-panel directions-panel">
@@ -67,7 +96,10 @@ export default function DirectionsPanel({
                 }
                 value={stopTexts[i] || ""}
                 onChange={(v) => onStopText(i, v)}
-                onSelect={(place) => onStopSelect(i, place)}
+                onSelect={(place) => {
+                  onStopSelect(i, place);
+                  clearPlaceList();
+                }}
                 placeholder={
                   i === 0
                     ? "Choose starting point"
@@ -76,12 +108,13 @@ export default function DirectionsPanel({
                       : "Add stop"
                 }
                 currentLocation={currentLocation}
-                allowCurrentLocation={
-                  i === 0 || i === stops.length - 1
-                }
+                allowCurrentLocation={i === 0 || i === stops.length - 1}
+                recentPlaces={recentPlaces}
                 near={near}
                 onRequestLocation={onRequestLocation}
-                inlineList
+                externalList
+                onFocusField={() => setActiveStop(i)}
+                onListChange={(payload) => handleListChange(i, payload)}
               />
               {stops.length > 2 && (
                 <md-icon-button
@@ -105,6 +138,23 @@ export default function DirectionsPanel({
           <md-icon>swap_vert</md-icon>
         </md-icon-button>
       </div>
+
+      {/* Shared list under both inputs — before search: Your location + recent;
+          after typing: matching places (Google Maps pattern). */}
+      {placeList.open && (placeList.items.length > 0 || placeList.loading) && (
+        <PlaceSuggestionList
+          items={placeList.items}
+          query={placeList.query}
+          loading={placeList.loading}
+          onSelect={(place) => {
+            if (placeList.select) placeList.select(place);
+            else if (activeStop != null) {
+              onStopSelect(activeStop, place);
+              clearPlaceList();
+            }
+          }}
+        />
+      )}
 
       <button type="button" className="dir-add-stop" onClick={onAddStop}>
         <md-icon>add</md-icon>
@@ -244,7 +294,7 @@ export default function DirectionsPanel({
         </div>
       )}
 
-      {!routeOptions.length && !error && !loading && (
+      {!routeOptions.length && !error && !loading && !placeList.open && (
         <p className="hint md-typescale-body-medium">
           Enter start and destination, then get directions.
         </p>

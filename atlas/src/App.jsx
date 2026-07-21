@@ -724,6 +724,7 @@ export default function App() {
             error={dirError}
             currentLocation={userLocation}
             near={userLocation}
+            recentPlaces={recentPlaces}
             onRequestLocation={async () => {
               showStatus("Locating…", 0);
               try {
