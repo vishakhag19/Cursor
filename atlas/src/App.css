@@ -695,7 +695,7 @@ md-filled-tonal-button.is-edit-active {
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 4px 8px;
+  padding: 4px 8px 4px 12px;
   background: #fff;
   border: 1px solid #dadce0;
   border-radius: 24px;
@@ -745,9 +745,9 @@ md-filled-tonal-button.is-edit-active {
   --md-outlined-text-field-outline-width: 0px;
   --md-outlined-text-field-hover-outline-width: 0px;
   --md-outlined-text-field-focus-outline-width: 0px;
-  /* Match left text inset to the search icon’s right inset (8px) */
-  --md-outlined-text-field-input-text-padding: 12px 4px 12px 8px;
-  --md-outlined-text-field-leading-space: 8px;
+  /* Left inset comes from .search-bar padding (12px); keep field padding at 0 */
+  --md-outlined-text-field-input-text-padding: 12px 4px 12px 0;
+  --md-outlined-text-field-leading-space: 0px;
   --md-outlined-text-field-trailing-space: 0px;
   --md-outlined-text-field-top-space: 8px;
   --md-outlined-text-field-bottom-space: 8px;
@@ -831,9 +831,9 @@ md-filled-tonal-button.is-edit-active {
   --md-outlined-text-field-container-height: 40px;
   --md-outlined-text-field-top-space: 8px;
   --md-outlined-text-field-bottom-space: 8px;
-  --md-outlined-text-field-leading-space: 8px;
+  --md-outlined-text-field-leading-space: 0px;
   --md-outlined-text-field-trailing-space: 0px;
-  --md-outlined-text-field-input-text-padding: 12px 4px 12px 8px;
+  --md-outlined-text-field-input-text-padding: 12px 4px 12px 0;
 }
 
 .suggest-spinner {
