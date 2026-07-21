@@ -192,6 +192,16 @@ function EnsureRoutePanes() {
       const pane = map.createPane("routeHit");
       pane.style.zIndex = 430;
     }
+    // Above faded selected route, below markers — owns edit-mode drag hits.
+    if (!map.getPane("routeEdit")) {
+      const pane = map.createPane("routeEdit");
+      pane.style.zIndex = 450;
+    }
+    if (!map.getPane("routeEditHit")) {
+      const pane = map.createPane("routeEditHit");
+      pane.style.zIndex = 460;
+      pane.style.pointerEvents = "auto";
+    }
   }, [map]);
   return null;
 }
@@ -405,30 +415,30 @@ export default function MapView({
             />
           ))}
 
-      {routeOptions
-        .filter((opt) => opt?.geometry?.length && opt.id === selectedRouteId)
-        .map((opt) => (
-          <Polyline
-            key={opt.id}
-            positions={opt.geometry}
-            pane="routeSelected"
-            pathOptions={{
-              color: "#1A73E8",
-              weight: 6,
-              opacity: editMode ? 0.35 : 0.95,
-              lineJoin: "round",
-              lineCap: "round",
-            }}
-            interactive={!editMode}
-            eventHandlers={{
-              click: (e) => {
-                if (editMode) return;
-                L.DomEvent.stopPropagation(e);
-                onSelectRoute?.(opt);
-              },
-            }}
-          />
-        ))}
+      {/* Hide during edit — RouteEditorLayer draws the active path + hit target */}
+      {!editMode &&
+        routeOptions
+          .filter((opt) => opt?.geometry?.length && opt.id === selectedRouteId)
+          .map((opt) => (
+            <Polyline
+              key={opt.id}
+              positions={opt.geometry}
+              pane="routeSelected"
+              pathOptions={{
+                color: "#1A73E8",
+                weight: 6,
+                opacity: 0.95,
+                lineJoin: "round",
+                lineCap: "round",
+              }}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  onSelectRoute?.(opt);
+                },
+              }}
+            />
+          ))}
 
       {!editMode &&
         routeOptions.map((opt) => {

@@ -606,9 +606,20 @@
   touch-action: none !important;
 }
 
-.leaflet-container.is-route-edit .leaflet-overlay-pane svg {
+.leaflet-container.is-route-edit .leaflet-overlay-pane svg,
+.leaflet-container.is-route-edit .leaflet-pane.leaflet-routeEditHit-pane,
+.leaflet-container.is-route-edit .leaflet-pane.leaflet-routeEdit-pane {
   /* Prefer route hit-targets over map pan when starting on the line */
   touch-action: none;
+}
+
+.leaflet-container.is-route-edit {
+  cursor: crosshair;
+}
+
+.leaflet-container.is-route-edit .leaflet-routeEditHit-pane path {
+  cursor: grab;
+  pointer-events: stroke !important;
 }
 
 md-filled-tonal-button.is-edit-active {

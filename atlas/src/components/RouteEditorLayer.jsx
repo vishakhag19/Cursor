@@ -412,7 +412,11 @@ export default function RouteEditorLayer({
     if (!enabled || !originRef.current || !destinationRef.current) return;
     const session = ++dragSession.current;
     previewSeq.current += 1;
-    map.dragging.disable();
+    // Stop map pan immediately — Leaflet may already be mid-drag on mousedown.
+    if (map.dragging.enabled()) {
+      map.dragging.disable();
+      map.dragging._draggable?.finishDrag?.();
+    }
     if (map.touchZoom?.disable) map.touchZoom.disable();
     map.getContainer().classList.add("is-route-dragging");
     const start = {
@@ -442,7 +446,10 @@ export default function RouteEditorLayer({
     if (!enabled) return;
     const session = ++dragSession.current;
     previewSeq.current += 1;
-    map.dragging.disable();
+    if (map.dragging.enabled()) {
+      map.dragging.disable();
+      map.dragging._draggable?.finishDrag?.();
+    }
     if (map.touchZoom?.disable) map.touchZoom.disable();
     map.getContainer().classList.add("is-route-dragging");
     const start = {
@@ -469,8 +476,7 @@ export default function RouteEditorLayer({
   }
 
   function handleHitStart(e) {
-    L.DomEvent.stopPropagation(e);
-    L.DomEvent.preventDefault(e);
+    L.DomEvent.stop(e);
     const oe = e.originalEvent;
     if (oe?.touches?.length > 1) return; // ignore multi-touch pinch
     const closest = closestPointOnPolyline(
@@ -489,9 +495,11 @@ export default function RouteEditorLayer({
 
   return (
     <>
+      {/* Wide invisible hit target above other route panes so drag beats map pan */}
       <Polyline
         positions={geometry}
-        pathOptions={{ color: "#000", weight: 36, opacity: 0 }}
+        pane="routeEditHit"
+        pathOptions={{ color: "#000", weight: 44, opacity: 0 }}
         eventHandlers={{
           mousedown: handleHitStart,
           touchstart: handleHitStart,
@@ -501,6 +509,7 @@ export default function RouteEditorLayer({
       {dragState?.previewGeometry?.length > 0 && (
         <Polyline
           positions={geometry}
+          pane="routeEdit"
           pathOptions={{
             color: "#1A73E8",
             weight: 4,
@@ -514,6 +523,7 @@ export default function RouteEditorLayer({
 
       <Polyline
         positions={displayGeometry}
+        pane="routeEdit"
         pathOptions={{
           color: dragState?.active ? "#F9AB00" : "#1A73E8",
           weight: 6,
@@ -545,14 +555,12 @@ export default function RouteEditorLayer({
               onDeleteVia?.(via.id);
             },
             mousedown: (e) => {
-              L.DomEvent.stopPropagation(e);
-              L.DomEvent.preventDefault(e);
+              L.DomEvent.stop(e);
               onSelectVia?.(via.id);
               beginViaDrag(via, e.latlng, e.originalEvent);
             },
             touchstart: (e) => {
-              L.DomEvent.stopPropagation(e);
-              L.DomEvent.preventDefault(e);
+              L.DomEvent.stop(e);
               onSelectVia?.(via.id);
               beginViaDrag(via, e.latlng, e.originalEvent);
             },
@@ -576,8 +584,7 @@ export default function RouteEditorLayer({
                   onDeleteVia?.(via.id);
                 },
                 mousedown: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  L.DomEvent.preventDefault(e);
+                  L.DomEvent.stop(e);
                 },
               }}
               zIndexOffset={3000}
@@ -593,6 +600,7 @@ export default function RouteEditorLayer({
                   [dragState.lat, dragState.lng],
                   [dragState.snapLat, dragState.snapLng],
                 ]}
+                pane="routeEdit"
                 pathOptions={{
                   color: dragState.snapped ? "#1A73E8" : "#9AA0A6",
                   weight: 2,
@@ -604,35 +612,41 @@ export default function RouteEditorLayer({
               <CircleMarker
                 center={[dragState.snapLat, dragState.snapLng]}
                 radius={7}
+                pane="routeEdit"
                 pathOptions={{
                   color: "#1A73E8",
                   fillColor: "#1A73E8",
                   fillOpacity: dragState.snapped ? 0.95 : 0.35,
                   weight: 2,
                 }}
+                interactive={false}
               />
             </>
           )}
           <CircleMarker
             center={[dragState.lat, dragState.lng]}
             radius={dragState.snapped ? 10 : 12}
+            pane="routeEdit"
             pathOptions={{
               color: dragState.snapped ? "#1A73E8" : "#EA4335",
               fillColor: "#fff",
               fillOpacity: 1,
               weight: 3,
             }}
+            interactive={false}
           />
           {!dragState.snapped && (
             <CircleMarker
               center={[dragState.lat, dragState.lng]}
               radius={20}
+              pane="routeEdit"
               pathOptions={{
                 color: "#EA4335",
                 fillOpacity: 0.08,
                 weight: 1,
                 dashArray: "4 4",
               }}
+              interactive={false}
             />
           )}
         </>
