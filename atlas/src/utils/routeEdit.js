@@ -3,17 +3,17 @@ export function comparisonVsSuggested(currentDuration, baselineDuration) {
   if (currentDuration == null || baselineDuration == null) return null;
   const diffMin = Math.round((currentDuration - baselineDuration) / 60);
   if (diffMin === 0) {
-    return { label: "Same time as suggested", tone: "neutral", diffMin: 0 };
+    return { label: "Same as suggested", tone: "neutral", diffMin: 0 };
   }
   if (diffMin > 0) {
     return {
-      label: `+${diffMin} min vs suggested`,
+      label: `+${diffMin} min`,
       tone: "worse",
       diffMin,
     };
   }
   return {
-    label: `${diffMin} min vs suggested`,
+    label: `${diffMin} min`,
     tone: "better",
     diffMin,
   };

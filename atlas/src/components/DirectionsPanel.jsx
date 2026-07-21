@@ -191,35 +191,6 @@ export default function DirectionsPanel({
         </p>
       )}
 
-      {editMode && (
-        <div className="edit-toolbar">
-          <p className="hint md-typescale-body-small edit-hint">
-            Drag the blue line to reshape the route. Drag a point to move it.
-            Tap a point, then use the × on the map to remove it.
-          </p>
-          {comparison && (
-            <div
-              className={`comparison-chip tone-${comparison.tone}`}
-              role="status"
-            >
-              <md-icon>
-                {comparison.tone === "better"
-                  ? "trending_down"
-                  : comparison.tone === "worse"
-                    ? "trending_up"
-                    : "schedule"}
-              </md-icon>
-              <span className="md-typescale-label-large">{comparison.label}</span>
-              {editBusy && (
-                <span className="comparison-busy md-typescale-label-small">
-                  Updating…
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       {error && (
         <p className="error-msg md-typescale-body-medium" role="alert">
           {error}
@@ -266,6 +237,14 @@ export default function DirectionsPanel({
                       <span className="md-typescale-body-medium dir-route-dist">
                         {formatDistance(opt.distance)}
                       </span>
+                      {editMode && active && comparison?.label ? (
+                        <span
+                          className={`dir-route-delta tone-${comparison.tone} md-typescale-body-small`}
+                          role="status"
+                        >
+                          {editBusy ? "Updating…" : comparison.label}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </button>

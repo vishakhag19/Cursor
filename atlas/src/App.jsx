@@ -1012,7 +1012,9 @@ export default function App() {
             <md-icon>restart_alt</md-icon>
           </md-icon-button>
           {comparison?.label ? (
-            <span className="mobile-edit-comparison md-typescale-label-medium">
+            <span
+              className={`mobile-edit-comparison tone-${comparison.tone} md-typescale-label-medium`}
+            >
               {comparison.label}
             </span>
           ) : (
