@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
@@ -62,6 +62,13 @@ export default function DirectionsPanel({
     });
     setActiveStop(null);
   }
+
+  // After Change → re-route, collapse stops again once new results arrive.
+  useEffect(() => {
+    if (loading || routeOptions.length === 0) return;
+    setForceShowStops(false);
+    clearPlaceList();
+  }, [loading, routeOptions]);
 
   const orderedRoutes = routeOptions.filter(
     (opt) => !editMode || opt.id === selectedRouteId,
