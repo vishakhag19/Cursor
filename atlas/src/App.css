@@ -29,13 +29,18 @@
   flex-direction: column;
   min-width: 0;
   height: auto;
-  background: var(--md-sys-color-surface-container-low);
+  background: #ffffff;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-large);
   box-shadow: var(--atlas-elevation-2);
   /* Keep visible so suggestion dropdowns aren't clipped when the panel hugs content */
   overflow: visible;
   transition: transform 0.22s ease, opacity 0.22s ease;
+  --md-sys-color-surface: #ffffff;
+  --md-sys-color-surface-container-low: #ffffff;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container: #ffffff;
+  --md-sys-color-surface-container-high: #f8f9fa;
 }
 
 .app.panel-collapsed .panel {
@@ -475,7 +480,7 @@ md-filled-tonal-button.is-edit-active {
 .place-suggest-panel {
   margin: 0 -16px;
   border-top: 1px solid var(--md-sys-color-outline-variant);
-  background: var(--md-sys-color-surface-container-lowest);
+  background: #ffffff;
   max-height: min(360px, 48dvh);
   overflow: auto;
 }
