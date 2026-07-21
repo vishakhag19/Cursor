@@ -4,7 +4,8 @@
 .app {
   position: relative;
   height: 100%;
-  min-height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
   background: var(--md-sys-color-surface);
   overflow: hidden;
 }
@@ -697,7 +698,7 @@ md-filled-tonal-button.is-edit-active {
   padding: 4px 6px 4px 4px;
   background: #fff;
   border: 1px solid #dadce0;
-  border-radius: 9999px;
+  border-radius: 24px;
   box-shadow: none;
   overflow: visible;
   min-height: 48px;
@@ -705,8 +706,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-bar-field {
-  /* Don’t create a positioning context — dropdown should span .search-bar */
-  position: static;
+  position: relative;
   flex: 1;
   min-width: 0;
 }
@@ -734,14 +734,14 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-bar .suggest-wrap {
-  /* Let the dropdown position against .search-bar (full pill width) */
-  position: static;
+  position: relative;
   width: 100%;
 }
 
 .search-bar .suggest-wrap md-outlined-text-field {
   width: 100%;
-  --md-outlined-text-field-container-shape: 9999px;
+  /* 24px ≈ half of 48px field → fully pill without enormous shape tokens */
+  --md-outlined-text-field-container-shape: 24px;
   --md-outlined-text-field-outline-width: 0px;
   --md-outlined-text-field-hover-outline-width: 0px;
   --md-outlined-text-field-focus-outline-width: 0px;
@@ -753,8 +753,9 @@ md-filled-tonal-button.is-edit-active {
 
 .search-bar .suggest-wrap.is-inline-list .place-suggest-panel {
   position: absolute;
+  /* Span the full search pill (field + trailing icon) */
   left: 0;
-  right: 0;
+  right: calc(-1 * (40px + 6px + 2px));
   top: calc(100% + 6px);
   width: auto;
   z-index: 50;
@@ -765,7 +766,7 @@ md-filled-tonal-button.is-edit-active {
   background: #fff;
   max-height: min(360px, 48dvh);
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .search-bar .suggest-wrap.is-inline-list.is-open {
@@ -805,7 +806,7 @@ md-filled-tonal-button.is-edit-active {
 /* Shared pill inputs — match landing search across directions / create */
 .suggest-wrap md-outlined-text-field,
 .create-panel md-outlined-text-field {
-  --md-outlined-text-field-container-shape: 9999px;
+  --md-outlined-text-field-container-shape: 24px;
   --md-outlined-text-field-outline-width: 1px;
   --md-outlined-text-field-hover-outline-width: 1px;
   --md-outlined-text-field-focus-outline-width: 2px;
@@ -843,8 +844,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-bar .suggest-spinner {
-  /* Anchored to .search-bar; clear of the trailing search/clear control */
-  right: 52px;
+  right: 8px;
   top: 50%;
   translate: 0 -50%;
 }
