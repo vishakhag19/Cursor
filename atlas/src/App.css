@@ -644,7 +644,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel {
-  padding-bottom: 12px;
+  padding-bottom: 0;
   overflow: visible;
 }
 
@@ -740,9 +740,8 @@ md-filled-tonal-button.is-edit-active {
   right: auto;
 }
 
-/* Landing search: tall enough for ~6 suggestion rows, then scroll */
-.search-panel .place-suggest-panel {
-  max-height: 300px;
+.search-panel .place-suggest-list {
+  padding-bottom: 0;
 }
 
 .search-panel .place-suggest-item {
