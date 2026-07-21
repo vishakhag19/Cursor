@@ -1032,6 +1032,7 @@ export default function App() {
             aria-label="Done editing"
             onClick={toggleEditMode}
           >
+            <md-icon>check</md-icon>
             Done
           </button>
         </div>

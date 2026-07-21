@@ -1217,20 +1217,20 @@ md-filled-tonal-button.is-edit-active {
 /* Floating undo / reset / done when the panel is collapsed during edit */
 .mobile-edit-bar {
   position: absolute;
-  /* Align vertically with .expand-panel (same top + height) */
-  top: 16px;
+  /* Align with .expand-panel; taller so Done is an obvious primary action */
+  top: 12px;
   left: calc(16px + var(--panel-control-size) + 8px);
   right: auto;
   translate: none;
   z-index: 1100;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   width: max-content;
   max-width: calc(100% - 32px - var(--panel-control-size) - 8px);
-  height: var(--panel-control-size);
-  min-height: var(--panel-control-size);
-  padding: 0 3px 0 1px;
+  height: 48px;
+  min-height: 48px;
+  padding: 4px 4px 4px 2px;
   box-sizing: border-box;
   background: #fff;
   border: 1px solid #e8eaed;
@@ -1264,24 +1264,39 @@ md-filled-tonal-button.is-edit-active {
 
 .mobile-edit-done {
   flex-shrink: 0;
-  align-self: center;
+  align-self: stretch;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  height: 34px;
+  gap: 6px;
+  min-width: 88px;
+  min-height: 40px;
+  height: auto;
   margin: 0;
-  padding: 0 14px;
+  padding: 0 18px;
   border: none;
   border-radius: 999px;
   background: #1a73e8;
   color: #fff;
-  font: 500 13px/1 Roboto, sans-serif;
+  font: 500 15px/1 Roboto, sans-serif;
+  letter-spacing: 0.01em;
   cursor: pointer;
+}
+
+.mobile-edit-done md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
+  color: #fff;
 }
 
 .mobile-edit-done:hover {
   background: #1765cc;
+}
+
+.mobile-edit-done:active {
+  background: #1557b0;
 }
 
 /* Mobile: expand stays top-right (same corner as collapse); edit bar leaves room */
@@ -1295,14 +1310,14 @@ md-filled-tonal-button.is-edit-active {
   }
 
   .mobile-edit-bar {
-    top: 12px;
+    top: 10px;
     left: 12px;
     right: calc(12px + var(--panel-control-size) + 8px);
     translate: none;
     width: auto;
     max-width: none;
-    height: var(--panel-control-size);
-    min-height: var(--panel-control-size);
+    height: 48px;
+    min-height: 48px;
   }
 
   .mobile-edit-spacer {
