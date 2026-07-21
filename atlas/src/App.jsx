@@ -106,7 +106,6 @@ export default function App() {
 
   const {
     location: userLocation,
-    status: geoStatus,
     error: geoError,
     refresh: refreshLocation,
     takeCenteredOnce,

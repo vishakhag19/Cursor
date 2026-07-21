@@ -206,7 +206,7 @@
 .dir-route-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 8px;
   margin-top: 4px;
   border-top: none;
 }
@@ -214,29 +214,37 @@
 .dir-route-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 108px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   width: 100%;
   min-height: 76px;
-  border-bottom: 1px solid #dadce0;
-  background: transparent;
+  margin: 0;
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  background: #fff;
   color: inherit;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: background 120ms ease, border-color 120ms ease;
 }
 
 .dir-route-card:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid #e8eaed;
 }
 
 .dir-route-card:hover {
-  background: var(--md-sys-color-surface-container);
+  background: #f8f9fa;
+  border-color: #dadce0;
 }
 
 .dir-route-card.is-active {
-  background: color-mix(in srgb, var(--md-sys-color-primary) 8%, transparent);
+  background: #e8f0fe;
+  border-color: #1a73e8;
 }
 
 .dir-route-card.is-editing {
-  background: color-mix(in srgb, var(--md-sys-color-tertiary) 10%, transparent);
+  background: color-mix(in srgb, var(--md-sys-color-tertiary) 10%, #fff);
+  border-color: color-mix(in srgb, var(--md-sys-color-tertiary) 45%, #e8eaed);
 }
 
 .dir-route-select {
@@ -261,7 +269,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0;
-  padding-right: 4px;
+  padding-right: 6px;
   min-height: 48px;
 }
 
@@ -402,11 +410,11 @@
 .dir-route-bar {
   position: absolute;
   left: 0;
-  top: 8px;
-  bottom: 8px;
+  top: 10px;
+  bottom: 10px;
   width: 4px;
   border-radius: 0 4px 4px 0;
-  background: var(--md-sys-color-primary);
+  background: #1a73e8;
 }
 
 .dir-route-title-row {
@@ -966,7 +974,7 @@ md-filled-tonal-button.is-edit-active {
 .suggest-wrap.is-inline-list .place-suggest-panel {
   margin: 8px 0 0;
   border: 1px solid #e8eaed;
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
 }
 
@@ -1002,7 +1010,7 @@ md-filled-tonal-button.is-edit-active {
 .place-details.m3-card {
   box-shadow: none;
   border: 1px solid #e8eaed;
-  border-radius: 20px;
+  border-radius: 16px;
 }
 
 .place-details-header {
@@ -1068,23 +1076,25 @@ md-filled-tonal-button.is-edit-active {
 
 .route-option-card {
   text-align: left;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  background: var(--md-sys-color-surface-container-lowest);
-  border-radius: var(--md-sys-shape-corner-medium);
+  border: 1px solid #e8eaed;
+  background: #fff;
+  border-radius: 16px;
   padding: 12px 14px;
   cursor: pointer;
   color: inherit;
   font: inherit;
+  transition: background 120ms ease, border-color 120ms ease;
 }
 
 .route-option-card:hover {
-  border-color: var(--md-sys-color-primary);
+  background: #f8f9fa;
+  border-color: #dadce0;
 }
 
 .route-option-card.is-active {
-  border-color: var(--md-sys-color-primary);
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
+  border-color: #1a73e8;
+  background: #e8f0fe;
+  color: inherit;
 }
 
 .route-option-top {
