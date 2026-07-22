@@ -130,11 +130,17 @@ export default function App() {
   } = useGeolocation({ autoStart: true });
 
   const showStatus = useCallback((message, ms = 2800) => {
+    // Material snackbars: brief process / error feedback only — not every tap.
     setStatus(message);
     clearTimeout(statusTimer.current);
     if (ms > 0) {
       statusTimer.current = setTimeout(() => setStatus(null), ms);
     }
+  }, []);
+
+  const clearStatus = useCallback(() => {
+    clearTimeout(statusTimer.current);
+    setStatus(null);
   }, []);
 
   const clearFollowHighlight = useCallback(() => {
@@ -176,8 +182,7 @@ export default function App() {
       lng: userLocation.lng,
       zoom: 15,
     });
-    showStatus("Centered on your location");
-  }, [userLocation, takeCenteredOnce, showStatus, pulseFollowHighlight]);
+  }, [userLocation, takeCenteredOnce, pulseFollowHighlight]);
 
   // Leaving the user via search / route fly clears the blue “following” state.
   useEffect(() => {
@@ -330,7 +335,7 @@ export default function App() {
       setDirLoading(true);
       setDirError(null);
       clearEditState();
-      showStatus("Finding shortest routes…", 0);
+      clearStatus();
       try {
         let options;
         try {
@@ -343,8 +348,7 @@ export default function App() {
         setBaselineRoute(options[0]);
         selectRoute(options[0]);
         setFitKey((k) => k + 1);
-        clearTimeout(statusTimer.current);
-        setStatus(null);
+        clearStatus();
       } catch (err) {
         clearRoutes();
         setDirError(err.message || "Could not find a route");
@@ -359,6 +363,7 @@ export default function App() {
       travelMode,
       userLocation,
       showStatus,
+      clearStatus,
       selectRoute,
       clearRoutes,
       clearEditState,
@@ -425,7 +430,7 @@ export default function App() {
       if (view === "directions") {
         const emptyIdx = stops.findIndex((s) => !s);
         if (emptyIdx === -1) {
-          showStatus("Use Add Stops or Edit route to change the path");
+          // Stops are full — UI already shows the route; no snackbar needed.
           return;
         }
         try {
@@ -549,8 +554,7 @@ export default function App() {
       if (!editOrigin || !editDestination) return;
       const epoch = editEpochRef.current;
       setEditBusy(true);
-      clearTimeout(statusTimer.current);
-      setStatus(null);
+      clearStatus();
       try {
         const ordered = preserveOrder
           ? nextVias
@@ -583,6 +587,7 @@ export default function App() {
       travelMode,
       applyEditedRoute,
       showStatus,
+      clearStatus,
     ],
   );
 
@@ -786,6 +791,7 @@ export default function App() {
     // If we already have a fix (browser / magic base location), recenter now.
     if (userLocation?.lat != null && userLocation?.lng != null) {
       locateFn.current?.([userLocation.lat, userLocation.lng], 16);
+      clearStatus();
     } else {
       showStatus("Locating…", 0);
     }
@@ -796,7 +802,7 @@ export default function App() {
         locateFlightRef.current = true;
         pulseFollowHighlight();
         locateFn.current?.([loc.lat, loc.lng], 16);
-        showStatus("Centered on your location");
+        clearStatus();
         return;
       }
       throw new Error("no location");
@@ -805,7 +811,7 @@ export default function App() {
         locateFlightRef.current = true;
         pulseFollowHighlight();
         locateFn.current?.([userLocation.lat, userLocation.lng], 16);
-        showStatus("Centered on your location");
+        clearStatus();
         return;
       }
       clearFollowHighlight();
@@ -815,6 +821,7 @@ export default function App() {
     refreshLocation,
     geoError,
     showStatus,
+    clearStatus,
     userLocation,
     pulseFollowHighlight,
     clearFollowHighlight,
@@ -879,9 +886,8 @@ export default function App() {
         const [lat, lng] = selectedRoute.geometry[0];
         setFlyTarget({ lat, lng, zoom: 16 });
       }
-      showStatus("Navigation started");
     } catch {
-      showStatus("Navigation started");
+      /* Navigation UI is already active. */
     }
   }, [selectedRoute, userLocation, refreshLocation, showStatus]);
 
@@ -890,8 +896,7 @@ export default function App() {
     setNavStepIndex(0);
     setShowSteps(false);
     setPanelOpen(true);
-    showStatus("Navigation ended");
-  }, [showStatus]);
+  }, []);
 
   // Advance turn-by-turn step when the user approaches the next maneuver.
   useEffect(() => {
@@ -1033,7 +1038,6 @@ export default function App() {
             onSelectRoute={(opt) => {
               if (editMode) return;
               selectRoute(opt);
-              showStatus(opt.badge || opt.label);
             }}
             loading={dirLoading}
             error={dirError}
@@ -1044,11 +1048,11 @@ export default function App() {
               showStatus("Locating…", 0);
               try {
                 const loc = await refreshLocation();
-                showStatus("Location found");
+                clearStatus();
                 return loc;
               } catch {
                 if (userLocation?.lat != null) {
-                  showStatus("Using your last known location");
+                  clearStatus();
                   return userLocation;
                 }
                 showStatus(geoError || "Could not get your location");
@@ -1184,7 +1188,6 @@ export default function App() {
           onSelectRoute={(opt) => {
             if (editMode) return;
             selectRoute(opt);
-            showStatus(`Selected: ${opt.badge || opt.label}`);
           }}
           editMode={view === "directions" && editMode}
           editOrigin={editOrigin}
