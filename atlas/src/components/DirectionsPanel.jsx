@@ -34,9 +34,18 @@ export default function DirectionsPanel({
   comparison = null,
   editBusy = false,
   onShowSteps = null,
+  onSaveRoute = null,
+  savedRoutes = [],
+  onLoadSaved = null,
+  onDeleteSaved = null,
+  blockedStreets = [],
+  onClearBlocked = null,
+  onOpenAssistant = null,
 }) {
   const [activeStop, setActiveStop] = useState(null);
   const [forceShowStops, setForceShowStops] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveName, setSaveName] = useState("");
   const [placeList, setPlaceList] = useState({
     open: false,
     items: [],
@@ -283,6 +292,40 @@ export default function DirectionsPanel({
                   </div>
                 </button>
                 <div className="dir-route-actions">
+                  {active && !editMode && onSaveRoute ? (
+                    <ActionTip tip="Save route">
+                      <md-icon-button
+                        type="button"
+                        class="dir-route-save-btn"
+                        aria-label="Save route"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const from = stops[0]?.name || "Start";
+                          const to =
+                            stops[stops.length - 1]?.name || "Destination";
+                          setSaveName(`${from} to ${to}`);
+                          setSaving(true);
+                        }}
+                      >
+                        <md-icon>bookmark_add</md-icon>
+                      </md-icon-button>
+                    </ActionTip>
+                  ) : null}
+                  {active && !editMode && onOpenAssistant ? (
+                    <ActionTip tip="Ask route assistant">
+                      <md-icon-button
+                        type="button"
+                        class="dir-route-assist-btn"
+                        aria-label="Ask route assistant"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenAssistant();
+                        }}
+                      >
+                        <md-icon>auto_awesome</md-icon>
+                      </md-icon-button>
+                    </ActionTip>
+                  ) : null}
                   {active && !editMode && onShowSteps ? (
                     <ActionTip tip="Steps">
                       <md-icon-button
@@ -300,7 +343,7 @@ export default function DirectionsPanel({
                   ) : null}
                   {active && editMode ? (
                     <>
-                      <ActionTip tip="Undo last edit">
+                      <ActionTip tip="Undo last edit (Ctrl+Z)">
                         <md-icon-button
                           type="button"
                           class="dir-route-undo-btn"
@@ -349,6 +392,103 @@ export default function DirectionsPanel({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {saving && (
+        <form
+          className="dir-save-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const name = saveName.trim() || "Saved route";
+            onSaveRoute?.(name);
+            setSaving(false);
+            setSaveName("");
+          }}
+        >
+          <label className="md-typescale-label-large" htmlFor="dir-save-name">
+            Save this custom route
+          </label>
+          <input
+            id="dir-save-name"
+            className="dir-save-input md-typescale-body-medium"
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            maxLength={80}
+            placeholder="Route name"
+            autoFocus
+          />
+          <div className="dir-save-actions">
+            <md-text-button
+              type="button"
+              onClick={() => {
+                setSaving(false);
+                setSaveName("");
+              }}
+            >
+              Cancel
+            </md-text-button>
+            <md-filled-tonal-button type="submit">Save</md-filled-tonal-button>
+          </div>
+        </form>
+      )}
+
+      {blockedStreets.length > 0 && (
+        <div className="dir-blocked" role="status">
+          <div className="dir-blocked-head">
+            <span className="md-typescale-label-large">Blocked streets</span>
+            {onClearBlocked ? (
+              <button
+                type="button"
+                className="dir-blocked-clear"
+                onClick={onClearBlocked}
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
+          <div className="dir-blocked-chips">
+            {blockedStreets.map((b) => (
+              <span key={b.id} className="dir-blocked-chip">
+                {b.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!editMode && savedRoutes.length > 0 && (
+        <div className="dir-saved">
+          <md-divider />
+          <h3 className="md-typescale-title-small dir-saved-title">
+            Saved routes
+          </h3>
+          <md-list class="dir-saved-list">
+            {savedRoutes.map((r) => (
+              <md-list-item key={r.id}>
+                <div slot="headline">{r.name}</div>
+                <div slot="supporting-text">
+                  {formatDistance(r.route?.distance || 0)} ·{" "}
+                  {formatDuration(r.route?.duration || 0)}
+                </div>
+                <div slot="end" className="dir-saved-actions">
+                  <md-text-button
+                    type="button"
+                    onClick={() => onLoadSaved?.(r)}
+                  >
+                    Open
+                  </md-text-button>
+                  <md-icon-button
+                    type="button"
+                    aria-label={`Delete ${r.name}`}
+                    onClick={() => onDeleteSaved?.(r.id)}
+                  >
+                    <md-icon>delete</md-icon>
+                  </md-icon-button>
+                </div>
+              </md-list-item>
+            ))}
+          </md-list>
         </div>
       )}
     </section>

@@ -5,10 +5,12 @@ import DirectionsPanel from "./components/DirectionsPanel";
 import NavigationUI from "./components/NavigationUI";
 import StepsSheet from "./components/StepsSheet";
 import ContextMenu from "./components/ContextMenu";
-import { reverseGeocode, haversineMeters } from "./api/geocode";
+import RouteAssistant from "./components/RouteAssistant";
+import { reverseGeocode, haversineMeters, searchPlaces } from "./api/geocode";
 import {
   closestPointOnPolyline,
   fetchShortestRoutes,
+  nearestRoadPoint,
   rebuildEditedRoute,
 } from "./api/routing";
 import { placeLabel } from "./utils/format";
@@ -16,7 +18,20 @@ import {
   comparisonVsSuggested,
   seedViasFromStops,
 } from "./utils/routeEdit";
-import { loadRecentSearches, pushRecentSearch } from "./utils/storage";
+import {
+  assistantReply,
+  buildAvoidVia,
+  findStepsForRoad,
+  geometryMidpoint,
+  parseRouteAssistantIntent,
+  roadNamesMatch,
+} from "./utils/routeAssist";
+import {
+  loadRecentSearches,
+  loadSavedRoutes,
+  persistSavedRoutes,
+  pushRecentSearch,
+} from "./utils/storage";
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
 import ActionTip from "./components/ActionTip";
 import "./App.css";
@@ -104,6 +119,19 @@ export default function App() {
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
   const [selectedViaId, setSelectedViaId] = useState(null);
+  const [blockedStreets, setBlockedStreets] = useState([]);
+  const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantBusy, setAssistantBusy] = useState(false);
+  const [assistantMessages, setAssistantMessages] = useState(() => [
+    {
+      id: "welcome",
+      role: "agent",
+      text: "I can reshape your route. Try “avoid Oak St”, “take Main instead of 5th”, or “reroute around traffic”. Voice confirmation can plug in later — for now, reply here.",
+      spoken:
+        "I can reshape your route. Say avoid a street, take one road instead of another, or ask to reroute.",
+    },
+  ]);
 
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
@@ -171,6 +199,10 @@ export default function App() {
   routeGeometryRef.current = routeGeometry;
   selectedRouteIdRef.current = selectedRouteId;
   routeOptionsRef.current = routeOptions;
+
+  useEffect(() => {
+    persistSavedRoutes(savedRoutes);
+  }, [savedRoutes]);
 
   useEffect(() => {
     if (!userLocation) return;
@@ -244,6 +276,7 @@ export default function App() {
     setNavStepIndex(0);
     setShowSteps(false);
     setSelectedViaId(null);
+    setBlockedStreets([]);
     editEpochRef.current += 1;
     editCommitChain.current = Promise.resolve();
   }, [clearEditHistory]);
@@ -657,6 +690,159 @@ export default function App() {
     [enqueueEdit, rebuildFromVias],
   );
 
+  const ensureEditSession = useCallback(() => {
+    setEditMode(true);
+    setShowSteps(false);
+    setNavigating(false);
+    const selected =
+      routeOptionsRef.current.find(
+        (r) => r.id === selectedRouteIdRef.current,
+      ) || baselineRoute;
+    if (selected && !baselineRoute) setBaselineRoute(selected);
+    if (!selected?.edited && editViasRef.current.length === 0) {
+      const seeded = seedViasFromStops(stops);
+      editViasRef.current = seeded;
+      setEditVias(seeded);
+    }
+  }, [baselineRoute, stops]);
+
+  const rememberBlockedStreet = useCallback((name, lat, lng) => {
+    if (!name) return;
+    setBlockedStreets((prev) => {
+      if (prev.some((b) => roadNamesMatch(b.name, name))) return prev;
+      return [...prev, { id: uid(), name, lat, lng }];
+    });
+  }, []);
+
+  /** Force the route off a road near `latlng` (context menu or assistant). */
+  const avoidStreetAt = useCallback(
+    async (latlng, { roadName = null } = {}) => {
+      const geometry = routeGeometryRef.current;
+      if (!geometry?.length) {
+        showStatus("Get directions first, then block a street");
+        return null;
+      }
+      ensureEditSession();
+      let name = roadName;
+      let focus = { lat: latlng.lat, lng: latlng.lng };
+      try {
+        const snapped = await nearestRoadPoint(
+          latlng.lat,
+          latlng.lng,
+          travelMode,
+        );
+        focus = { lat: snapped.lat, lng: snapped.lng };
+        name = name || snapped.name || null;
+      } catch {
+        /* use raw point */
+      }
+      if (!name) {
+        try {
+          const place = await reverseGeocode(focus.lat, focus.lng);
+          name = place.address?.road || place.name || "this street";
+        } catch {
+          name = "this street";
+        }
+      }
+
+      const avoidVia = buildAvoidVia(focus, geometry, name);
+      const via = {
+        id: uid(),
+        lat: avoidVia.lat,
+        lng: avoidVia.lng,
+        name: avoidVia.name,
+      };
+      rememberBlockedStreet(name, focus.lat, focus.lng);
+      await enqueueEdit(async () => {
+        const next = [...editViasRef.current, via];
+        await rebuildFromVias(next, {
+          pushHistory: true,
+          preserveOrder: true,
+        });
+      });
+      return name;
+    },
+    [
+      travelMode,
+      ensureEditSession,
+      rememberBlockedStreet,
+      enqueueEdit,
+      rebuildFromVias,
+      showStatus,
+    ],
+  );
+
+  /** Pull the route onto a named street (assistant / prefer action). */
+  const preferStreetNamed = useCallback(
+    async (streetName) => {
+      const geometry = routeGeometryRef.current;
+      if (!geometry?.length) {
+        throw new Error("Get directions first");
+      }
+      const near =
+        geometryMidpoint(geometry) ||
+        stops.find(Boolean) ||
+        userLocation;
+      const results = await searchPlaces(streetName, { limit: 6, near });
+      const hit =
+        results.find((p) =>
+          roadNamesMatch(p.address?.road || p.name, streetName),
+        ) || results[0];
+      if (!hit) {
+        throw new Error(`Couldn’t find ${streetName} near this route`);
+      }
+      let point = { lat: hit.lat, lng: hit.lng, name: hit.address?.road || hit.name };
+      try {
+        const snapped = await nearestRoadPoint(hit.lat, hit.lng, travelMode);
+        point = {
+          lat: snapped.lat,
+          lng: snapped.lng,
+          name: snapped.name || point.name,
+        };
+      } catch {
+        /* keep place coords */
+      }
+      ensureEditSession();
+      const via = { id: uid(), ...point };
+      await enqueueEdit(async () => {
+        const next = [...editViasRef.current, via];
+        await rebuildFromVias(next, {
+          pushHistory: true,
+          preserveOrder: false,
+        });
+      });
+      return point.name || streetName;
+    },
+    [
+      stops,
+      userLocation,
+      travelMode,
+      ensureEditSession,
+      enqueueEdit,
+      rebuildFromVias,
+    ],
+  );
+
+  /** Bend around the current corridor when the user asks about traffic. */
+  const rerouteAroundCorridor = useCallback(async () => {
+    const geometry = routeGeometryRef.current;
+    if (!geometry?.length) throw new Error("Get directions first");
+    const mid = geometryMidpoint(geometry);
+    if (!mid) throw new Error("No route to adjust");
+    ensureEditSession();
+    const detour = buildAvoidVia(mid, geometry, "busy corridor");
+    const via = {
+      id: uid(),
+      lat: detour.lat,
+      lng: detour.lng,
+      name: "Traffic detour",
+    };
+    await enqueueEdit(async () => {
+      const next = [...editViasRef.current, via];
+      await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
+    });
+  }, [ensureEditSession, enqueueEdit, rebuildFromVias]);
+
   const undoEdit = useCallback(() => {
     const prev = editHistoryRef.current;
     if (!prev.length) return;
@@ -763,15 +949,23 @@ export default function App() {
     if (editHistory.length > 0) setEditCoachOpen(false);
   }, [editHistory.length]);
 
-  // Delete / Backspace removes the selected via (or the last via) in edit mode.
+  // Edit-mode shortcuts: Delete via, Ctrl/Cmd+Z undo.
   useEffect(() => {
     if (!editMode) return undefined;
     function onKeyDown(e) {
-      if (e.key !== "Delete" && e.key !== "Backspace") return;
       const tag = e.target?.tagName?.toLowerCase?.();
       if (tag === "input" || tag === "textarea" || e.target?.isContentEditable) {
         return;
       }
+
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undoEdit();
+        return;
+      }
+
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
       e.preventDefault();
       const id =
         selectedViaId ||
@@ -780,7 +974,300 @@ export default function App() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [editMode, selectedViaId, deleteVia]);
+  }, [editMode, selectedViaId, deleteVia, undoEdit]);
+
+  const saveCurrentRoute = useCallback(
+    (name) => {
+      const route =
+        routeOptionsRef.current.find(
+          (r) => r.id === selectedRouteIdRef.current,
+        ) || null;
+      if (!route?.geometry?.length) {
+        showStatus("No route to save");
+        return;
+      }
+      const entry = {
+        id: uid(),
+        name: (name || "Saved route").trim() || "Saved route",
+        savedAt: Date.now(),
+        travelMode,
+        stops: stops.map((s) =>
+          s
+            ? {
+                id: s.id,
+                name: s.name,
+                display_name: s.display_name,
+                lat: s.lat,
+                lng: s.lng,
+                type: s.type || "place",
+                isCurrentLocation: Boolean(s.isCurrentLocation),
+              }
+            : null,
+        ),
+        stopTexts: [...stopTexts],
+        vias: cloneVias(editViasRef.current),
+        blockedStreets: blockedStreets.map((b) => ({ ...b })),
+        route: {
+          id: route.id,
+          label: route.label,
+          badge: route.badge || null,
+          distance: route.distance,
+          duration: route.duration,
+          geometry: cloneGeometry(route.geometry),
+          steps: route.steps ? route.steps.map((s) => ({ ...s })) : [],
+          edited: Boolean(route.edited),
+        },
+        baseline: baselineRoute
+          ? {
+              id: baselineRoute.id,
+              label: baselineRoute.label,
+              distance: baselineRoute.distance,
+              duration: baselineRoute.duration,
+              geometry: cloneGeometry(baselineRoute.geometry),
+              steps: baselineRoute.steps
+                ? baselineRoute.steps.map((s) => ({ ...s }))
+                : [],
+            }
+          : null,
+      };
+      setSavedRoutes((prev) => [entry, ...prev.filter((r) => r.name !== entry.name)].slice(0, 24));
+      showStatus("Route saved on this device");
+    },
+    [
+      travelMode,
+      stops,
+      stopTexts,
+      blockedStreets,
+      baselineRoute,
+      showStatus,
+    ],
+  );
+
+  const loadSavedRoute = useCallback(
+    (entry) => {
+      if (!entry?.route?.geometry?.length) return;
+      clearEditState();
+      setView("directions");
+      setPanelOpen(true);
+      setDirError(null);
+      setStops(entry.stops?.length ? entry.stops : emptyStops());
+      setStopTexts(
+        entry.stopTexts?.length
+          ? entry.stopTexts
+          : (entry.stops || []).map((s) =>
+              s?.isCurrentLocation ? "Your location" : s?.name || "",
+            ),
+      );
+      setTravelMode(entry.travelMode || "driving");
+      const restored = {
+        ...entry.route,
+        id: `saved-${entry.id}`,
+        edited: true,
+        badge: entry.route.edited ? "Saved custom route" : "Saved route",
+      };
+      const baseline = entry.baseline
+        ? { ...entry.baseline, id: entry.baseline.id || `baseline-${entry.id}` }
+        : null;
+      const options = baseline
+        ? [restored, { ...baseline, badge: baseline.badge || null }]
+        : [restored];
+      routeOptionsRef.current = options;
+      setRouteOptions(options);
+      selectedRouteIdRef.current = restored.id;
+      setSelectedRouteId(restored.id);
+      routeGeometryRef.current = restored.geometry;
+      setRouteGeometry(restored.geometry);
+      setBaselineRoute(baseline || restored);
+      const vias = cloneVias(entry.vias || []);
+      editViasRef.current = vias;
+      setEditVias(vias);
+      setBlockedStreets(
+        (entry.blockedStreets || []).map((b) => ({ ...b, id: b.id || uid() })),
+      );
+      setRouteLocked(true);
+      setFitKey((k) => k + 1);
+      clearStatus();
+    },
+    [clearEditState, clearStatus],
+  );
+
+  const deleteSavedRoute = useCallback((id) => {
+    setSavedRoutes((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
+  const pushAssistant = useCallback((role, reply) => {
+    const payload =
+      typeof reply === "string" ? assistantReply(reply) : reply;
+    setAssistantMessages((prev) => [
+      ...prev,
+      {
+        id: uid(),
+        role,
+        text: payload.text,
+        spoken: payload.spoken || payload.text,
+      },
+    ]);
+  }, []);
+
+  const handleAssistantMessage = useCallback(
+    async (raw) => {
+      const text = String(raw || "").trim();
+      if (!text) return;
+      pushAssistant("user", text);
+      setAssistantBusy(true);
+      try {
+        const intent = parseRouteAssistantIntent(text);
+
+        if (intent.type === "help") {
+          pushAssistant(
+            "agent",
+            assistantReply(
+              "I can avoid or block a street, prefer one road over another, try a detour when you mention traffic, undo the last edit, or save this route. Voice replies can be added later — I’ll confirm here for now.",
+            ),
+          );
+          return;
+        }
+
+        if (intent.type === "undo") {
+          if (!editHistoryRef.current.length) {
+            pushAssistant("agent", assistantReply("Nothing to undo yet."));
+            return;
+          }
+          undoEdit();
+          pushAssistant("agent", assistantReply("Undid the last route edit."));
+          return;
+        }
+
+        if (intent.type === "save") {
+          const from = stops[0]?.name || "Start";
+          const to = stops[stops.length - 1]?.name || "Destination";
+          saveCurrentRoute(`${from} to ${to}`);
+          pushAssistant(
+            "agent",
+            assistantReply(`Saved “${from} to ${to}” on this device.`),
+          );
+          return;
+        }
+
+        if (intent.type === "reroute") {
+          if (!routeGeometryRef.current?.length) {
+            pushAssistant(
+              "agent",
+              assistantReply("Set a start and destination first, then ask me to reroute."),
+            );
+            return;
+          }
+          pushAssistant(
+            "agent",
+            assistantReply(
+              "I don’t have live traffic feeds yet. I’ll bend the route onto a quieter corridor — confirm by watching the map update.",
+              { confirm: true },
+            ),
+          );
+          await rerouteAroundCorridor();
+          pushAssistant(
+            "agent",
+            assistantReply("Detour applied. Say “undo” if you want the previous path back."),
+          );
+          return;
+        }
+
+        if (intent.type === "avoid") {
+          const selected =
+            routeOptionsRef.current.find(
+              (r) => r.id === selectedRouteIdRef.current,
+            ) || null;
+          const matches = findStepsForRoad(selected?.steps, intent.street);
+          let focus = null;
+          if (matches.length) {
+            const mid = matches[Math.floor(matches.length / 2)].step;
+            if (mid.lat != null) focus = { lat: mid.lat, lng: mid.lng };
+          }
+          if (!focus) {
+            const near =
+              geometryMidpoint(routeGeometryRef.current) ||
+              stops.find(Boolean) ||
+              userLocation;
+            const found = await searchPlaces(intent.street, { limit: 5, near });
+            const hit = found[0];
+            if (!hit) {
+              pushAssistant(
+                "agent",
+                assistantReply(
+                  `I couldn’t find “${intent.street}” near this trip. Long-press the map on that road and choose Avoid this road.`,
+                ),
+              );
+              return;
+            }
+            focus = { lat: hit.lat, lng: hit.lng };
+          }
+          const name = await avoidStreetAt(focus, { roadName: intent.street });
+          pushAssistant(
+            "agent",
+            assistantReply(
+              `Avoiding ${name}. The route now detours around it. You can also right‑click / long‑press a road to block it.`,
+            ),
+          );
+          return;
+        }
+
+        if (intent.type === "prefer" || intent.type === "prefer_instead") {
+          if (intent.type === "prefer_instead" && intent.avoid) {
+            const selected =
+              routeOptionsRef.current.find(
+                (r) => r.id === selectedRouteIdRef.current,
+              ) || null;
+            const matches = findStepsForRoad(selected?.steps, intent.avoid);
+            if (matches.length) {
+              const mid = matches[Math.floor(matches.length / 2)].step;
+              if (mid.lat != null) {
+                await avoidStreetAt(
+                  { lat: mid.lat, lng: mid.lng },
+                  { roadName: intent.avoid },
+                );
+              }
+            }
+          }
+          const street =
+            intent.type === "prefer_instead" ? intent.prefer : intent.street;
+          const used = await preferStreetNamed(street);
+          const extra =
+            intent.type === "prefer_instead" && intent.avoid
+              ? ` and steering clear of ${intent.avoid}`
+              : "";
+          pushAssistant(
+            "agent",
+            assistantReply(`Routing via ${used}${extra}.`),
+          );
+          return;
+        }
+
+        pushAssistant(
+          "agent",
+          assistantReply(
+            "I didn’t catch that. Try “avoid Oak St”, “take Main instead of 5th”, “reroute”, “undo”, or “save route”.",
+          ),
+        );
+      } catch (err) {
+        pushAssistant(
+          "agent",
+          assistantReply(err.message || "Couldn’t update the route."),
+        );
+      } finally {
+        setAssistantBusy(false);
+      }
+    },
+    [
+      pushAssistant,
+      undoEdit,
+      saveCurrentRoute,
+      rerouteAroundCorridor,
+      avoidStreetAt,
+      preferStreetNamed,
+      stops,
+      userLocation,
+    ],
+  );
 
   const goToMyLocation = useCallback(async () => {
     locateFlightRef.current = true;
@@ -827,6 +1314,22 @@ export default function App() {
 
   const ctxActions = ctx
     ? [
+        ...(routeGeometry
+          ? [
+              {
+                id: "avoid-street",
+                label: "Avoid this road",
+                onClick: async () => {
+                  try {
+                    const name = await avoidStreetAt(ctx.latlng);
+                    if (name) showStatus(`Avoiding ${name}`);
+                  } catch (err) {
+                    showStatus(err.message || "Could not avoid that road");
+                  }
+                },
+              },
+            ]
+          : []),
         {
           id: "directions-to",
           label: "Directions to here",
@@ -859,6 +1362,15 @@ export default function App() {
             openDirections({ from: place });
           },
         },
+        ...(routeGeometry
+          ? [
+              {
+                id: "ask-assistant",
+                label: "Ask route assistant…",
+                onClick: () => setAssistantOpen(true),
+              },
+            ]
+          : []),
       ]
     : [];
 
@@ -1066,6 +1578,13 @@ export default function App() {
             comparison={editMode ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
             onShowSteps={() => setShowSteps(true)}
+            onSaveRoute={saveCurrentRoute}
+            savedRoutes={savedRoutes}
+            onLoadSaved={loadSavedRoute}
+            onDeleteSaved={deleteSavedRoute}
+            blockedStreets={blockedStreets}
+            onClearBlocked={() => setBlockedStreets([])}
+            onOpenAssistant={() => setAssistantOpen(true)}
           />
         )}
       </aside>
@@ -1076,7 +1595,7 @@ export default function App() {
           role="toolbar"
           aria-label="Route edit actions"
         >
-          <ActionTip tip="Undo last edit">
+          <ActionTip tip="Undo last edit (Ctrl+Z)">
             <md-icon-button
               type="button"
               class="mobile-edit-undo"
@@ -1208,7 +1727,7 @@ export default function App() {
           fitPadding={fitPadding}
           onMapClick={handleMapClick}
           onContextMenu={(latlng, pos) => {
-            if (editMode) return;
+            // Allow Avoid-this-road while editing; drag handles still own the route.
             setCtx({ latlng, ...pos });
           }}
           onWaypointDrag={async (index, lat, lng) => {
@@ -1354,6 +1873,31 @@ export default function App() {
         onClose={() => setCtx(null)}
         actions={ctxActions}
       />
+
+      <RouteAssistant
+        open={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        messages={assistantMessages}
+        busy={assistantBusy}
+        onSend={handleAssistantMessage}
+      />
+
+      {view === "directions" &&
+        selectedRoute &&
+        !assistantOpen &&
+        !editMode &&
+        !navigating && (
+        <ActionTip tip="Ask route assistant" className="assistant-fab-tip">
+          <button
+            type="button"
+            className="assistant-fab"
+            aria-label="Ask route assistant"
+            onClick={() => setAssistantOpen(true)}
+          >
+            <md-icon>auto_awesome</md-icon>
+          </button>
+        </ActionTip>
+      )}
     </div>
   );
 }
