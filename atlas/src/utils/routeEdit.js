@@ -1,30 +1,51 @@
-/** Compare an edited (or preview) duration against the original suggested route. */
+import { formatDuration } from "./format";
+
+/**
+ * Compare an edited (or preview) duration against the original suggested route.
+ * Always surfaces the current travel time, plus how it relates to the original.
+ */
 export function comparisonVsSuggested(currentDuration, baselineDuration) {
   if (currentDuration == null || baselineDuration == null) return null;
+
   const diffMin = Math.round((currentDuration - baselineDuration) / 60);
+  const currentLabel = formatDuration(currentDuration);
+  const originalLabel = formatDuration(baselineDuration);
+
   if (diffMin === 0) {
     return {
-      label: "Same travel time as original",
-      shortLabel: "Same time",
-      mapLabel: "Travel time: same as original",
+      currentLabel,
+      originalLabel,
+      // Primary: the actual duration — "Same time" alone is meaningless.
+      shortLabel: currentLabel,
+      detailLabel: "same as original",
+      label: `${currentLabel} · same as original`,
+      mapLabel: `${currentLabel} · same as original`,
       tone: "neutral",
       diffMin: 0,
     };
   }
+
   if (diffMin > 0) {
     return {
-      label: `${diffMin} min longer than original`,
-      shortLabel: `+${diffMin} min`,
-      mapLabel: `Travel time: ${diffMin} min longer`,
+      currentLabel,
+      originalLabel,
+      shortLabel: currentLabel,
+      detailLabel: `${originalLabel} + ${diffMin} min`,
+      label: `${currentLabel} (${originalLabel} + ${diffMin} min)`,
+      mapLabel: `${currentLabel} · was ${originalLabel} (+${diffMin} min)`,
       tone: "worse",
       diffMin,
     };
   }
+
   const faster = Math.abs(diffMin);
   return {
-    label: `${faster} min shorter than original`,
-    shortLabel: `−${faster} min`,
-    mapLabel: `Travel time: ${faster} min shorter`,
+    currentLabel,
+    originalLabel,
+    shortLabel: currentLabel,
+    detailLabel: `${originalLabel} − ${faster} min`,
+    label: `${currentLabel} (${originalLabel} − ${faster} min)`,
+    mapLabel: `${currentLabel} · was ${originalLabel} (−${faster} min)`,
     tone: "better",
     diffMin,
   };

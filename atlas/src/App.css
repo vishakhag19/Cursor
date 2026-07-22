@@ -1278,27 +1278,34 @@ md-filled-tonal-button.is-edit-active {
   overflow: hidden;
 }
 
-.mobile-edit-comparison-caption {
-  font: 500 10px/1.1 Roboto, sans-serif;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: #80868b;
-}
-
 .mobile-edit-comparison-value {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 600;
+  font-weight: 700;
+  color: #3c4043;
 }
 
-.mobile-edit-comparison.tone-better,
+.mobile-edit-comparison-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 500 11px/1.15 Roboto, sans-serif;
+  color: #80868b;
+}
+
 .mobile-edit-comparison.tone-better .mobile-edit-comparison-value {
   color: #188038;
 }
 
-.mobile-edit-comparison.tone-worse,
+.mobile-edit-comparison.tone-better .mobile-edit-comparison-detail {
+  color: #137333;
+}
+
 .mobile-edit-comparison.tone-worse .mobile-edit-comparison-value {
   color: #c5221f;
+}
+
+.mobile-edit-comparison.tone-worse .mobile-edit-comparison-detail {
+  color: #a50e0e;
 }
 
 .mobile-edit-done {

@@ -1105,12 +1105,16 @@ export default function App() {
               className={`mobile-edit-comparison tone-${comparison.tone}`}
               title={comparison.label}
             >
-              <span className="mobile-edit-comparison-caption">Travel time</span>
               <span className="mobile-edit-comparison-value md-typescale-label-medium">
                 {editBusy || editPreview?.active
                   ? "Updating…"
                   : comparison.shortLabel}
               </span>
+              {!editBusy && !editPreview?.active ? (
+                <span className="mobile-edit-comparison-detail">
+                  {comparison.detailLabel}
+                </span>
+              ) : null}
             </span>
           ) : (
             <span className="mobile-edit-spacer" aria-hidden />
