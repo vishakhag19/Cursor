@@ -2,10 +2,10 @@ import { useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
+import { formatDistance, formatDuration } from "../utils/format";
 
 /**
- * Landing search — same suggestion pattern as Directions:
- * shared PlaceSuggestionList rendered in the panel below the input.
+ * Landing search — suggestions below the input, plus Saved routes / avoided roads.
  */
 export default function SearchPanel({
   query,
@@ -17,6 +17,14 @@ export default function SearchPanel({
   onDirectionsFrom,
   recentPlaces = [],
   near = null,
+  savedRoutes = [],
+  onLoadSaved = null,
+  onDeleteSaved = null,
+  blockedStreets = [],
+  onRemoveBlocked = null,
+  onClearBlocked = null,
+  savedTab = "routes",
+  onSavedTab = null,
 }) {
   const [placeList, setPlaceList] = useState({
     open: false,
@@ -38,6 +46,8 @@ export default function SearchPanel({
 
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
+  const showSaved =
+    !listVisible && !place && (savedRoutes.length > 0 || blockedStreets.length > 0);
 
   return (
     <section className="mode-panel search-panel">
@@ -104,6 +114,108 @@ export default function SearchPanel({
           onDirectionsTo={onDirectionsTo}
           onDirectionsFrom={onDirectionsFrom}
         />
+      )}
+
+      {showSaved && (
+        <div className="landing-saved">
+          <div className="landing-saved-head">
+            <md-icon class="landing-saved-icon">bookmark</md-icon>
+            <h2 className="md-typescale-title-small">Saved</h2>
+          </div>
+          <div className="landing-saved-tabs" role="tablist" aria-label="Saved">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={savedTab === "routes" ? "true" : "false"}
+              className={`landing-saved-tab ${savedTab === "routes" ? "is-active" : ""}`}
+              onClick={() => onSavedTab?.("routes")}
+            >
+              Routes
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={savedTab === "avoided" ? "true" : "false"}
+              className={`landing-saved-tab ${savedTab === "avoided" ? "is-active" : ""}`}
+              onClick={() => onSavedTab?.("avoided")}
+            >
+              Avoided
+            </button>
+          </div>
+
+          {savedTab === "routes" ? (
+            savedRoutes.length === 0 ? (
+              <p className="hint tight md-typescale-body-medium">
+                Save a custom route from Directions to see it here.
+              </p>
+            ) : (
+              <md-list class="landing-saved-list">
+                {savedRoutes.map((r) => (
+                  <md-list-item key={r.id}>
+                    <div slot="headline">{r.name}</div>
+                    <div slot="supporting-text">
+                      {formatDistance(r.route?.distance || 0)} ·{" "}
+                      {formatDuration(r.route?.duration || 0)}
+                    </div>
+                    <div slot="end" className="landing-saved-actions">
+                      <md-text-button
+                        type="button"
+                        onClick={() => onLoadSaved?.(r)}
+                      >
+                        Open
+                      </md-text-button>
+                      <md-icon-button
+                        type="button"
+                        aria-label={`Delete ${r.name}`}
+                        onClick={() => onDeleteSaved?.(r.id)}
+                      >
+                        <md-icon>delete</md-icon>
+                      </md-icon-button>
+                    </div>
+                  </md-list-item>
+                ))}
+              </md-list>
+            )
+          ) : blockedStreets.length === 0 ? (
+            <p className="hint tight md-typescale-body-medium">
+              Long-press the map on any road and choose Avoid this road.
+            </p>
+          ) : (
+            <>
+              <div className="landing-avoid-head">
+                <span className="md-typescale-body-small">
+                  Applied on future directions
+                </span>
+                {onClearBlocked ? (
+                  <button
+                    type="button"
+                    className="dir-blocked-clear"
+                    onClick={onClearBlocked}
+                  >
+                    Clear all
+                  </button>
+                ) : null}
+              </div>
+              <md-list class="landing-saved-list">
+                {blockedStreets.map((b) => (
+                  <md-list-item key={b.id}>
+                    <div slot="headline">{b.name}</div>
+                    <div slot="supporting-text">Blocked street</div>
+                    <div slot="end">
+                      <md-icon-button
+                        type="button"
+                        aria-label={`Remove ${b.name}`}
+                        onClick={() => onRemoveBlocked?.(b.id)}
+                      >
+                        <md-icon>close</md-icon>
+                      </md-icon-button>
+                    </div>
+                  </md-list-item>
+                ))}
+              </md-list>
+            </>
+          )}
+        </div>
       )}
     </section>
   );

@@ -110,9 +110,30 @@ function DraggableStopMarker({
   );
 }
 
-function MapClickHandler({ onMapClick, onContextMenu, suppressContextMenu = false }) {
+function MapClickHandler({
+  onMapClick,
+  onContextMenu,
+  suppressContextMenu = false,
+}) {
+  const map = useMap();
+  const longPressTimer = useRef(null);
+  const longPressOrigin = useRef(null);
+  const longPressFired = useRef(false);
+
+  function clearLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    longPressOrigin.current = null;
+  }
+
   useMapEvents({
     click(e) {
+      if (longPressFired.current) {
+        longPressFired.current = false;
+        return;
+      }
       onMapClick?.(e.latlng);
     },
     contextmenu(e) {
@@ -123,7 +144,70 @@ function MapClickHandler({ onMapClick, onContextMenu, suppressContextMenu = fals
         y: e.originalEvent.clientY,
       });
     },
+    mousedown(e) {
+      // Desktop right-click uses contextmenu; ignore other mouse buttons here.
+      if (e.originalEvent.button != null && e.originalEvent.button !== 0) return;
+    },
   });
+
+  useEffect(() => {
+    const el = map.getContainer();
+
+    function onTouchStart(ev) {
+      if (suppressContextMenu) return;
+      if (ev.touches?.length !== 1) return;
+      const t = ev.touches[0];
+      longPressFired.current = false;
+      longPressOrigin.current = { x: t.clientX, y: t.clientY };
+      clearLongPress();
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null;
+        const origin = longPressOrigin.current;
+        if (!origin) return;
+        longPressFired.current = true;
+        const rect = el.getBoundingClientRect();
+        const containerPoint = L.point(
+          origin.x - rect.left,
+          origin.y - rect.top,
+        );
+        const latlng = map.containerPointToLatLng(containerPoint);
+        onContextMenu?.(latlng, { x: origin.x, y: origin.y });
+        try {
+          navigator.vibrate?.(12);
+        } catch {
+          /* ignore */
+        }
+      }, 480);
+    }
+
+    function onTouchMove(ev) {
+      const origin = longPressOrigin.current;
+      if (!origin || !ev.touches?.[0]) return;
+      const t = ev.touches[0];
+      if (
+        Math.hypot(t.clientX - origin.x, t.clientY - origin.y) > 12
+      ) {
+        clearLongPress();
+      }
+    }
+
+    function onTouchEnd() {
+      clearLongPress();
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      clearLongPress();
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [map, onContextMenu, suppressContextMenu]);
+
   return null;
 }
 
@@ -277,7 +361,8 @@ export default function MapView({
   routeOptions = [],
   selectedRouteId = null,
   onSelectRoute,
-  editMode = false,
+  routeEditable = false,
+  freezeFit = false,
   editOrigin = null,
   editDestination = null,
   editVias = [],
@@ -296,6 +381,12 @@ export default function MapView({
       : mode === "create"
         ? createRoute?.geometry
         : null;
+
+  const showRouteEditor =
+    Boolean(routeEditable) &&
+    Boolean(selectedGeometry?.length > 1) &&
+    Boolean(editOrigin) &&
+    Boolean(editDestination);
 
   const fitPositions = (() => {
     if (selectedGeometry?.length) return selectedGeometry;
@@ -338,13 +429,13 @@ export default function MapView({
       <MapClickHandler
         onMapClick={onMapClick}
         onContextMenu={onContextMenu}
-        suppressContextMenu={editMode}
+        suppressContextMenu={false}
       />
       <FitBounds
         positions={fitPositions}
         version={fitKey}
         padding={fitPadding}
-        enabled={!editMode}
+        enabled={!freezeFit}
       />
       <FlyTo target={flyTarget} />
       <LocateControl onLocate={onLocateReady} />
@@ -400,7 +491,7 @@ export default function MapView({
             key={wp.id || `dir-wp-${i}`}
             position={[wp.lat, wp.lng]}
             icon={pinIcon(kind)}
-            draggable={!editMode}
+            draggable
             onClick={() => onMarkerClick?.(wp)}
             onDragEnd={(lat, lng) => onWaypointDrag?.(i, lat, lng)}
           />
@@ -429,39 +520,38 @@ export default function MapView({
           );
         })}
 
-      {/* Alternate routes on a lower pane so the selected route stays on top */}
-      {!editMode &&
-        routeOptions
-          .filter((opt) => opt?.geometry?.length && opt.id !== selectedRouteId)
-          .map((opt) => (
-            <Polyline
-              key={opt.id}
-              positions={opt.geometry}
-              pane="routeAlt"
-              pathOptions={{
-                color: "#64B5F6",
-                weight: 5,
-                opacity: 0.82,
-                lineJoin: "round",
-                lineCap: "round",
-              }}
-              eventHandlers={{
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  onSelectRoute?.(opt);
-                },
-                mouseover: (e) => {
-                  e.target.setStyle({ opacity: 0.95, weight: 6 });
-                },
-                mouseout: (e) => {
-                  e.target.setStyle({ opacity: 0.82, weight: 5 });
-                },
-              }}
-            />
-          ))}
+      {/* Alternate routes stay tappable while the selected route is editable */}
+      {routeOptions
+        .filter((opt) => opt?.geometry?.length && opt.id !== selectedRouteId)
+        .map((opt) => (
+          <Polyline
+            key={opt.id}
+            positions={opt.geometry}
+            pane="routeAlt"
+            pathOptions={{
+              color: "#64B5F6",
+              weight: 5,
+              opacity: 0.82,
+              lineJoin: "round",
+              lineCap: "round",
+            }}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onSelectRoute?.(opt);
+              },
+              mouseover: (e) => {
+                e.target.setStyle({ opacity: 0.95, weight: 6 });
+              },
+              mouseout: (e) => {
+                e.target.setStyle({ opacity: 0.82, weight: 5 });
+              },
+            }}
+          />
+        ))}
 
-      {/* Hide during edit — RouteEditorLayer draws the active path + hit target */}
-      {!editMode &&
+      {/* Static selected polyline only when the editor isn't drawing it */}
+      {!showRouteEditor &&
         routeOptions
           .filter((opt) => opt?.geometry?.length && opt.id === selectedRouteId)
           .map((opt) => (
@@ -485,7 +575,7 @@ export default function MapView({
             />
           ))}
 
-      {!editMode &&
+      {!showRouteEditor &&
         routeOptions.map((opt) => {
           if (!opt?.geometry?.length) return null;
           return (
@@ -508,9 +598,9 @@ export default function MapView({
           );
         })}
 
-      {editMode && selectedGeometry?.length > 1 && editOrigin && editDestination && (
+      {showRouteEditor && (
         <RouteEditorLayer
-          enabled={editMode}
+          enabled={showRouteEditor}
           origin={editOrigin}
           destination={editDestination}
           vias={editVias}

@@ -27,8 +27,10 @@ import {
   roadNamesMatch,
 } from "./utils/routeAssist";
 import {
+  loadBlockedStreets,
   loadRecentSearches,
   loadSavedRoutes,
+  persistBlockedStreets,
   persistSavedRoutes,
   pushRecentSearch,
 } from "./utils/storage";
@@ -107,7 +109,6 @@ export default function App() {
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [routeLocked, setRouteLocked] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [baselineRoute, setBaselineRoute] = useState(null);
   const [editVias, setEditVias] = useState([]);
   const [editHistory, setEditHistory] = useState([]);
@@ -119,8 +120,9 @@ export default function App() {
   const [dirLoading, setDirLoading] = useState(false);
   const [dirError, setDirError] = useState(null);
   const [selectedViaId, setSelectedViaId] = useState(null);
-  const [blockedStreets, setBlockedStreets] = useState([]);
+  const [blockedStreets, setBlockedStreets] = useState(() => loadBlockedStreets());
   const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
+  const [savedTab, setSavedTab] = useState("routes");
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantMessages, setAssistantMessages] = useState(() => [
@@ -205,6 +207,10 @@ export default function App() {
   }, [savedRoutes]);
 
   useEffect(() => {
+    persistBlockedStreets(blockedStreets);
+  }, [blockedStreets]);
+
+  useEffect(() => {
     if (!userLocation) return;
     if (!takeCenteredOnce()) return;
     locateFlightRef.current = true;
@@ -265,7 +271,6 @@ export default function App() {
   }, []);
 
   const clearEditState = useCallback(() => {
-    setEditMode(false);
     setBaselineRoute(null);
     editViasRef.current = [];
     setEditVias([]);
@@ -276,7 +281,6 @@ export default function App() {
     setNavStepIndex(0);
     setShowSteps(false);
     setSelectedViaId(null);
-    setBlockedStreets([]);
     editEpochRef.current += 1;
     editCommitChain.current = Promise.resolve();
   }, [clearEditHistory]);
@@ -380,6 +384,45 @@ export default function App() {
         selectRoute(options[0]);
         setFitKey((k) => k + 1);
         clearStatus();
+
+        // Bend the first option around any globally Avoided streets near the path.
+        if (blockedStreets.length && options[0]?.geometry?.length) {
+          const geom = options[0].geometry;
+          const avoidVias = [];
+          for (const b of blockedStreets) {
+            const near = closestPointOnPolyline(
+              { lat: b.lat, lng: b.lng },
+              geom,
+            );
+            if (!near || near.distance > 3000) continue;
+            const detour = buildAvoidVia(
+              { lat: b.lat, lng: b.lng },
+              geom,
+              b.name,
+            );
+            avoidVias.push({
+              id: uid(),
+              lat: detour.lat,
+              lng: detour.lng,
+              name: detour.name,
+            });
+          }
+          if (avoidVias.length) {
+            const origin = filled[0];
+            const destination = filled[filled.length - 1];
+            try {
+              const custom = await rebuildEditedRoute(
+                origin,
+                avoidVias.map((v) => ({ lat: v.lat, lng: v.lng })),
+                destination,
+                mode,
+              );
+              applyEditedRoute(custom, avoidVias, { pushHistory: false });
+            } catch {
+              /* keep the suggested option */
+            }
+          }
+        }
       } catch (err) {
         clearRoutes();
         setDirError(err.message || "Could not find a route");
@@ -393,11 +436,13 @@ export default function App() {
       stopTexts,
       travelMode,
       userLocation,
+      blockedStreets,
       showStatus,
       clearStatus,
       selectRoute,
       clearRoutes,
       clearEditState,
+      applyEditedRoute,
     ],
   );
 
@@ -453,15 +498,10 @@ export default function App() {
     async (latlng) => {
       setCtx(null);
 
-      // Edit mode uses drag-to-reshape — ignore plain clicks on the map.
-      if (view === "directions" && editMode) {
-        return;
-      }
-
+      // Directions with both ends set: route drag owns the map gesture.
       if (view === "directions") {
         const emptyIdx = stops.findIndex((s) => !s);
         if (emptyIdx === -1) {
-          // Stops are full — UI already shows the route; no snackbar needed.
           return;
         }
         try {
@@ -506,7 +546,6 @@ export default function App() {
     },
     [
       view,
-      editMode,
       stops,
       travelMode,
       showStatus,
@@ -691,7 +730,6 @@ export default function App() {
   );
 
   const ensureEditSession = useCallback(() => {
-    setEditMode(true);
     setShowSteps(false);
     setNavigating(false);
     const selected =
@@ -710,19 +748,17 @@ export default function App() {
     if (!name) return;
     setBlockedStreets((prev) => {
       if (prev.some((b) => roadNamesMatch(b.name, name))) return prev;
-      return [...prev, { id: uid(), name, lat, lng }];
+      return [...prev, { id: uid(), name, lat, lng, savedAt: Date.now() }];
     });
   }, []);
 
-  /** Force the route off a road near `latlng` (context menu or assistant). */
+  const removeBlockedStreet = useCallback((id) => {
+    setBlockedStreets((prev) => prev.filter((b) => b.id !== id));
+  }, []);
+
+  /** Force the route off a road near `latlng`, or just add to Avoided list. */
   const avoidStreetAt = useCallback(
-    async (latlng, { roadName = null } = {}) => {
-      const geometry = routeGeometryRef.current;
-      if (!geometry?.length) {
-        showStatus("Get directions first, then block a street");
-        return null;
-      }
-      ensureEditSession();
+    async (latlng, { roadName = null, reshapeRoute = true } = {}) => {
       let name = roadName;
       let focus = { lat: latlng.lat, lng: latlng.lng };
       try {
@@ -745,6 +781,13 @@ export default function App() {
         }
       }
 
+      rememberBlockedStreet(name, focus.lat, focus.lng);
+
+      const geometry = routeGeometryRef.current;
+      if (!reshapeRoute || !geometry?.length || !editOrigin || !editDestination) {
+        return name;
+      }
+
       const avoidVia = buildAvoidVia(focus, geometry, name);
       const via = {
         id: uid(),
@@ -752,7 +795,6 @@ export default function App() {
         lng: avoidVia.lng,
         name: avoidVia.name,
       };
-      rememberBlockedStreet(name, focus.lat, focus.lng);
       await enqueueEdit(async () => {
         const next = [...editViasRef.current, via];
         await rebuildFromVias(next, {
@@ -764,11 +806,11 @@ export default function App() {
     },
     [
       travelMode,
-      ensureEditSession,
+      editOrigin,
+      editDestination,
       rememberBlockedStreet,
       enqueueEdit,
       rebuildFromVias,
-      showStatus,
     ],
   );
 
@@ -904,54 +946,35 @@ export default function App() {
     // Keep the user's zoom during edit — don't re-fit the full route.
   }, [baselineRoute, stops, clearEditHistory]);
 
-  const toggleEditMode = useCallback(() => {
-    setEditMode((v) => {
-      const next = !v;
-      if (next) {
-        const selected =
-          routeOptionsRef.current.find(
-            (r) => r.id === selectedRouteIdRef.current,
-          ) || baselineRoute;
-        if (selected && !baselineRoute) setBaselineRoute(selected);
-        if (!selected?.edited) {
-          const seeded = seedViasFromStops(stops);
-          editViasRef.current = seeded;
-          setEditVias(seeded);
-        }
-        setEditPreview(null);
-        // Phones: collapse for map space; desktop keeps the panel open.
-        // Floating edit bar includes a control to reopen the panel.
-        let mobile = false;
-        try {
-          mobile = window.matchMedia("(max-width: 800px)").matches;
-        } catch {
-          mobile = false;
-        }
-        if (mobile) {
-          setPanelOpen(false);
-          setEditCoachOpen(true);
-        } else {
-          setPanelOpen(true);
-          setEditCoachOpen(false);
-        }
-        setCtx(null);
-      } else {
-        setEditPreview(null);
-        setSelectedViaId(null);
-        setEditCoachOpen(false);
-      }
-      return next;
-    });
-  }, [baselineRoute, stops, showStatus]);
+  const finishRouteEdits = useCallback(() => {
+    setEditPreview(null);
+    setSelectedViaId(null);
+    setEditCoachOpen(false);
+    setPanelOpen(true);
+    setShowSteps(true);
+    setNavigating(false);
+  }, []);
 
   // Once the user makes an edit, the coach tip is no longer needed.
   useEffect(() => {
     if (editHistory.length > 0) setEditCoachOpen(false);
   }, [editHistory.length]);
 
-  // Edit-mode shortcuts: Delete via, Ctrl/Cmd+Z undo.
+  // First custom reshape on a phone: brief coach, then tools live in the bar.
   useEffect(() => {
-    if (!editMode) return undefined;
+    if (editHistory.length !== 1) return;
+    let mobile = false;
+    try {
+      mobile = window.matchMedia("(max-width: 800px)").matches;
+    } catch {
+      mobile = false;
+    }
+    if (mobile) setEditCoachOpen(true);
+  }, [editHistory.length]);
+
+  // Ctrl/Cmd+Z + Delete via whenever a custom reshape stack exists.
+  useEffect(() => {
+    if (!editHistory.length && !editVias.length) return undefined;
     function onKeyDown(e) {
       const tag = e.target?.tagName?.toLowerCase?.();
       if (tag === "input" || tag === "textarea" || e.target?.isContentEditable) {
@@ -960,6 +983,7 @@ export default function App() {
 
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        if (!editHistoryRef.current.length) return;
         e.preventDefault();
         undoEdit();
         return;
@@ -974,7 +998,7 @@ export default function App() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [editMode, selectedViaId, deleteVia, undoEdit]);
+  }, [editHistory.length, editVias.length, selectedViaId, deleteVia, undoEdit]);
 
   const saveCurrentRoute = useCallback(
     (name) => {
@@ -1314,22 +1338,28 @@ export default function App() {
 
   const ctxActions = ctx
     ? [
-        ...(routeGeometry
-          ? [
-              {
-                id: "avoid-street",
-                label: "Avoid this road",
-                onClick: async () => {
-                  try {
-                    const name = await avoidStreetAt(ctx.latlng);
-                    if (name) showStatus(`Avoiding ${name}`);
-                  } catch (err) {
-                    showStatus(err.message || "Could not avoid that road");
-                  }
-                },
-              },
-            ]
-          : []),
+        {
+          id: "avoid-street",
+          label: routeGeometry
+            ? "Avoid this road"
+            : "Add to Avoided roads",
+          onClick: async () => {
+            try {
+              const name = await avoidStreetAt(ctx.latlng, {
+                reshapeRoute: Boolean(routeGeometry),
+              });
+              if (name) {
+                showStatus(
+                  routeGeometry
+                    ? `Avoiding ${name}`
+                    : `Added ${name} to Avoided`,
+                );
+              }
+            } catch (err) {
+              showStatus(err.message || "Could not avoid that road");
+            }
+          },
+        },
         {
           id: "directions-to",
           label: "Directions to here",
@@ -1370,7 +1400,19 @@ export default function App() {
                 onClick: () => setAssistantOpen(true),
               },
             ]
-          : []),
+          : [
+              {
+                id: "open-avoided",
+                label: "View Avoided list",
+                onClick: () => {
+                  setView("search");
+                  setPanelOpen(true);
+                  setSelectedPlace(null);
+                  setSearchQuery("");
+                  setSavedTab("avoided");
+                },
+              },
+            ]),
       ]
     : [];
 
@@ -1384,10 +1426,8 @@ export default function App() {
       return;
     }
     setShowSteps(false);
-    setNavStepIndex(0);
     setNavigating(true);
     setPanelOpen(false);
-    setEditMode(false);
     try {
       const loc = userLocation || (await refreshLocation().catch(() => null));
       if (loc) {
@@ -1452,6 +1492,20 @@ export default function App() {
     (editVias.length > 0 ||
       routeOptions.some((r) => r.edited) ||
       selectedRouteId !== baselineRoute.id);
+  const hasCustomEdits =
+    editHistory.length > 0 || routeOptions.some((r) => r.edited);
+  const routeEditable =
+    view === "directions" &&
+    !navigating &&
+    Boolean(editOrigin) &&
+    Boolean(editDestination) &&
+    Boolean(routeGeometry?.length > 1);
+  const freezeFit =
+    editHistory.length > 0 ||
+    Boolean(editPreview?.active) ||
+    editBusy;
+  const showEditBar =
+    !panelOpen && !navigating && hasCustomEdits && Boolean(selectedRoute);
 
   const fitPadding = useMemo(() => {
     const mobile =
@@ -1502,6 +1556,14 @@ export default function App() {
             place={selectedPlace}
             recentPlaces={recentPlaces}
             near={userLocation}
+            savedRoutes={savedRoutes}
+            onLoadSaved={loadSavedRoute}
+            onDeleteSaved={deleteSavedRoute}
+            blockedStreets={blockedStreets}
+            onRemoveBlocked={removeBlockedStreet}
+            onClearBlocked={() => setBlockedStreets([])}
+            savedTab={savedTab}
+            onSavedTab={setSavedTab}
             onClear={() => {
               setSearchQuery("");
               setSelectedPlace(null);
@@ -1546,7 +1608,6 @@ export default function App() {
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
             onSelectRoute={(opt) => {
-              if (editMode) return;
               selectRoute(opt);
             }}
             loading={dirLoading}
@@ -1569,27 +1630,21 @@ export default function App() {
                 throw new Error("location");
               }
             }}
-            editMode={editMode}
-            onToggleEdit={toggleEditMode}
             canUndo={editHistory.length > 0}
             onUndo={undoEdit}
             canReset={canReset}
             onResetSuggested={resetToSuggested}
-            comparison={editMode ? comparison : null}
+            comparison={hasCustomEdits ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
             onShowSteps={() => setShowSteps(true)}
             onSaveRoute={saveCurrentRoute}
-            savedRoutes={savedRoutes}
-            onLoadSaved={loadSavedRoute}
-            onDeleteSaved={deleteSavedRoute}
-            blockedStreets={blockedStreets}
-            onClearBlocked={() => setBlockedStreets([])}
             onOpenAssistant={() => setAssistantOpen(true)}
+            hasCustomEdits={hasCustomEdits}
           />
         )}
       </aside>
 
-      {!panelOpen && editMode && (
+      {showEditBar && (
         <div
           className="mobile-edit-bar"
           role="toolbar"
@@ -1640,19 +1695,19 @@ export default function App() {
             type="button"
             className="mobile-edit-done"
             aria-label="Done editing"
-            onClick={toggleEditMode}
+            onClick={finishRouteEdits}
           >
             Done
           </button>
         </div>
       )}
 
-      {editMode && editCoachOpen && isCompact && !panelOpen && (
+      {editCoachOpen && isCompact && showEditBar && (
         <div className="edit-coach" role="status">
           <md-icon class="edit-coach-icon">touch_app</md-icon>
           <p className="edit-coach-text md-typescale-body-medium">
-            Press and drag the blue route to bend it. Travel time vs the
-            original route updates in the bar above. Tap Done when finished.
+            Drag the blue route to bend it. Travel time updates in the bar
+            above. Tap Done to review the new steps.
           </p>
           <button
             type="button"
@@ -1661,17 +1716,6 @@ export default function App() {
           >
             Got it
           </button>
-        </div>
-      )}
-
-      {editMode && comparison && !isCompact && (
-        <div
-          className={`map-comparison tone-${comparison.tone}`}
-          role="status"
-        >
-          {editBusy || editPreview?.active
-            ? "Updating travel time…"
-            : comparison.mapLabel}
         </div>
       )}
 
@@ -1707,10 +1751,10 @@ export default function App() {
           routeOptions={view === "directions" ? routeOptions : []}
           selectedRouteId={selectedRouteId}
           onSelectRoute={(opt) => {
-            if (editMode) return;
             selectRoute(opt);
           }}
-          editMode={view === "directions" && editMode}
+          routeEditable={routeEditable}
+          freezeFit={freezeFit}
           editOrigin={editOrigin}
           editDestination={editDestination}
           editVias={editVias}
@@ -1727,7 +1771,6 @@ export default function App() {
           fitPadding={fitPadding}
           onMapClick={handleMapClick}
           onContextMenu={(latlng, pos) => {
-            // Allow Avoid-this-road while editing; drag handles still own the route.
             setCtx({ latlng, ...pos });
           }}
           onWaypointDrag={async (index, lat, lng) => {
@@ -1827,7 +1870,7 @@ export default function App() {
           </div>
         </div>
 
-        {view === "directions" && selectedRoute && !editMode && (
+        {view === "directions" && selectedRoute && !showEditBar && (
           <>
             {navigating && !showSteps && (
               <NavigationUI
@@ -1885,7 +1928,7 @@ export default function App() {
       {view === "directions" &&
         selectedRoute &&
         !assistantOpen &&
-        !editMode &&
+        !showEditBar &&
         !navigating && (
         <ActionTip tip="Ask route assistant" className="assistant-fab-tip">
           <button

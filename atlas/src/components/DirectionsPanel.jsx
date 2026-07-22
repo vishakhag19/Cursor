@@ -6,6 +6,7 @@ import { formatDistance, formatDuration } from "../utils/format";
 
 /**
  * Directions panel — Google Maps–style inputs with a shared place list below.
+ * Active route actions stay lean: Save + overflow menu.
  */
 export default function DirectionsPanel({
   stops,
@@ -25,8 +26,6 @@ export default function DirectionsPanel({
   near = null,
   recentPlaces = [],
   onRequestLocation = null,
-  editMode = false,
-  onToggleEdit,
   canUndo = false,
   onUndo,
   canReset = false,
@@ -35,17 +34,15 @@ export default function DirectionsPanel({
   editBusy = false,
   onShowSteps = null,
   onSaveRoute = null,
-  savedRoutes = [],
-  onLoadSaved = null,
-  onDeleteSaved = null,
-  blockedStreets = [],
-  onClearBlocked = null,
   onOpenAssistant = null,
+  hasCustomEdits = false,
 }) {
   const [activeStop, setActiveStop] = useState(null);
   const [forceShowStops, setForceShowStops] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveName, setSaveName] = useState("");
+  const [menuFor, setMenuFor] = useState(null);
+  const menuRef = useRef(null);
   const [placeList, setPlaceList] = useState({
     open: false,
     items: [],
@@ -73,7 +70,6 @@ export default function DirectionsPanel({
     setActiveStop(null);
   }
 
-  // After Change → re-route, collapse stops again once fetching finishes.
   useEffect(() => {
     if (loading) {
       wasLoadingRef.current = true;
@@ -86,23 +82,28 @@ export default function DirectionsPanel({
     }
   }, [loading, routeOptions.length]);
 
-  const orderedRoutes = routeOptions.filter(
-    (opt) => !editMode || opt.id === selectedRouteId,
-  );
+  useEffect(() => {
+    if (menuFor == null) return undefined;
+    function onDoc(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuFor(null);
+      }
+    }
+    document.addEventListener("pointerdown", onDoc);
+    return () => document.removeEventListener("pointerdown", onDoc);
+  }, [menuFor]);
 
   const bothEndsSet = stops.filter(Boolean).length >= 2;
   const hasRouteResults = bothEndsSet && routeOptions.length > 0;
 
   return (
     <section
-      className={`mode-panel directions-panel ${editMode ? "is-editing" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""}`}
+      className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""}`}
     >
       <div className="dir-top-bar">
-        <span className="md-typescale-title-medium dir-title">
-          {editMode ? "Edit route" : "Directions"}
-        </span>
+        <span className="md-typescale-title-medium dir-title">Directions</span>
         <div className="dir-top-actions">
-          {!editMode && hasRouteResults && (
+          {hasRouteResults && (
             <button
               type="button"
               className="dir-change-stops"
@@ -133,100 +134,96 @@ export default function DirectionsPanel({
         </div>
       </div>
 
-      {!editMode && (
-        <>
-          <div className="dir-stops-block">
-          <div className="dir-stops">
-            <div className="dir-stops-rail" aria-hidden>
-              {stops.map((_, i) => (
-                <span
-                  key={`dot-${i}`}
-                  className={`dir-rail-dot ${i === 0 ? "start" : i === stops.length - 1 ? "end" : "mid"}`}
+      <div className="dir-stops-block">
+        <div className="dir-stops">
+          <div className="dir-stops-rail" aria-hidden>
+            {stops.map((_, i) => (
+              <span
+                key={`dot-${i}`}
+                className={`dir-rail-dot ${i === 0 ? "start" : i === stops.length - 1 ? "end" : "mid"}`}
+              />
+            ))}
+          </div>
+
+          <div className="dir-stops-fields">
+            {stops.map((stop, i) => (
+              <div className="dir-stop-row" key={`stop-${i}`}>
+                <SuggestInput
+                  id={`dir-stop-${i}`}
+                  label={
+                    i === 0
+                      ? "Starting point"
+                      : i === stops.length - 1
+                        ? "Destination"
+                        : `Stop ${i}`
+                  }
+                  value={stopTexts[i] || ""}
+                  onChange={(v) => onStopText(i, v)}
+                  onSelect={(place) => {
+                    onStopSelect(i, place);
+                    clearPlaceList();
+                  }}
+                  placeholder={
+                    i === 0
+                      ? "Choose starting point"
+                      : i === stops.length - 1
+                        ? "Choose destination"
+                        : "Add stop"
+                  }
+                  currentLocation={currentLocation}
+                  allowCurrentLocation={i === 0 || i === stops.length - 1}
+                  recentPlaces={recentPlaces}
+                  near={near}
+                  onRequestLocation={onRequestLocation}
+                  externalList
+                  onFocusField={() => setActiveStop(i)}
+                  onListChange={(payload) => handleListChange(i, payload)}
                 />
-              ))}
-            </div>
-
-            <div className="dir-stops-fields">
-              {stops.map((stop, i) => (
-                <div className="dir-stop-row" key={`stop-${i}`}>
-                  <SuggestInput
-                    id={`dir-stop-${i}`}
-                    label={
-                      i === 0
-                        ? "Starting point"
-                        : i === stops.length - 1
-                          ? "Destination"
-                          : `Stop ${i}`
-                    }
-                    value={stopTexts[i] || ""}
-                    onChange={(v) => onStopText(i, v)}
-                    onSelect={(place) => {
-                      onStopSelect(i, place);
-                      clearPlaceList();
-                    }}
-                    placeholder={
-                      i === 0
-                        ? "Choose starting point"
-                        : i === stops.length - 1
-                          ? "Choose destination"
-                          : "Add stop"
-                    }
-                    currentLocation={currentLocation}
-                    allowCurrentLocation={i === 0 || i === stops.length - 1}
-                    recentPlaces={recentPlaces}
-                    near={near}
-                    onRequestLocation={onRequestLocation}
-                    externalList
-                    onFocusField={() => setActiveStop(i)}
-                    onListChange={(payload) => handleListChange(i, payload)}
-                  />
-                  {stops.length > 2 && (
-                    <md-icon-button
-                      type="button"
-                      aria-label="Remove stop"
-                      onClick={() => onRemoveStop(i)}
-                    >
-                      <md-icon>close</md-icon>
-                    </md-icon-button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <ActionTip tip="Swap start and destination">
-              <md-icon-button
-                class="dir-swap"
-                type="button"
-                aria-label="Swap start and destination"
-                onClick={onSwap}
-              >
-                <md-icon>swap_vert</md-icon>
-              </md-icon-button>
-            </ActionTip>
+                {stops.length > 2 && (
+                  <md-icon-button
+                    type="button"
+                    aria-label="Remove stop"
+                    onClick={() => onRemoveStop(i)}
+                  >
+                    <md-icon>close</md-icon>
+                  </md-icon-button>
+                )}
+              </div>
+            ))}
           </div>
 
-          {placeList.open && (placeList.items.length > 0 || placeList.loading) && (
-            <PlaceSuggestionList
-              items={placeList.items}
-              query={placeList.query}
-              loading={placeList.loading}
-              onSelect={(place) => {
-                if (placeList.select) placeList.select(place);
-                else if (activeStop != null) {
-                  onStopSelect(activeStop, place);
-                  clearPlaceList();
-                }
-              }}
-            />
-          )}
+          <ActionTip tip="Swap start and destination">
+            <md-icon-button
+              class="dir-swap"
+              type="button"
+              aria-label="Swap start and destination"
+              onClick={onSwap}
+            >
+              <md-icon>swap_vert</md-icon>
+            </md-icon-button>
+          </ActionTip>
+        </div>
 
-          <button type="button" className="dir-add-stop" onClick={onAddStop}>
-            <md-icon>add</md-icon>
-            <span className="md-typescale-body-medium">Add Stops</span>
-          </button>
-          </div>
-        </>
-      )}
+        {placeList.open && (placeList.items.length > 0 || placeList.loading) && (
+          <PlaceSuggestionList
+            items={placeList.items}
+            query={placeList.query}
+            loading={placeList.loading}
+            onSelect={(place) => {
+              if (placeList.select) placeList.select(place);
+              else if (activeStop != null) {
+                onStopSelect(activeStop, place);
+                clearPlaceList();
+              }
+            }}
+          />
+        )}
+
+        <button type="button" className="dir-add-stop" onClick={onAddStop}>
+          <md-icon>add</md-icon>
+          <span className="md-typescale-body-medium">Add Stops</span>
+        </button>
+      </div>
 
       {loading && (
         <p className="hint tight md-typescale-body-medium" role="status">
@@ -240,26 +237,33 @@ export default function DirectionsPanel({
         </p>
       )}
 
-      {orderedRoutes.length > 0 && (
+      {hasRouteResults && (
+        <p className="dir-drag-hint md-typescale-body-small">
+          Drag the blue route on the map to create a custom path.
+        </p>
+      )}
+
+      {routeOptions.length > 0 && (
         <div className="dir-route-list">
-          {orderedRoutes.map((opt, index) => {
+          {routeOptions.map((opt, index) => {
             const active = opt.id === selectedRouteId;
             return (
               <div
                 key={opt.id}
-                className={`dir-route-card ${active ? "is-active" : ""} ${editMode && active ? "is-editing" : ""}`}
+                className={`dir-route-card ${active ? "is-active" : ""} ${active && opt.edited ? "is-editing" : ""}`}
               >
                 <button
                   type="button"
                   className="dir-route-select"
                   onClick={() => onSelectRoute(opt)}
-                  disabled={editMode && !active ? true : undefined}
                 >
                   <div className="dir-route-body">
                     <div className="dir-route-title-row">
                       <md-icon class="dir-route-mode">directions_car</md-icon>
                       <div>
-                        <div className="md-typescale-title-small">{opt.label}</div>
+                        <div className="md-typescale-title-small">
+                          {opt.label}
+                        </div>
                         {opt.badge && (
                           <div className="md-typescale-body-small dir-route-badge">
                             {opt.badge}
@@ -279,116 +283,117 @@ export default function DirectionsPanel({
                       <span className="md-typescale-body-medium dir-route-dist">
                         {formatDistance(opt.distance)}
                       </span>
-                      {editMode && active && comparison?.label ? (
+                      {active && opt.edited && comparison?.label ? (
                         <span
                           className={`dir-route-delta tone-${comparison.tone} md-typescale-body-small`}
                           role="status"
                           title={comparison.label}
                         >
-                          {editBusy ? "Updating travel time…" : comparison.label}
+                          {editBusy
+                            ? "Updating travel time…"
+                            : comparison.label}
                         </span>
                       ) : null}
                     </div>
                   </div>
                 </button>
-                <div className="dir-route-actions">
-                  {active && !editMode && onSaveRoute ? (
-                    <ActionTip tip="Save route">
-                      <md-icon-button
-                        type="button"
-                        class="dir-route-save-btn"
-                        aria-label="Save route"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const from = stops[0]?.name || "Start";
-                          const to =
-                            stops[stops.length - 1]?.name || "Destination";
-                          setSaveName(`${from} to ${to}`);
-                          setSaving(true);
-                        }}
-                      >
-                        <md-icon>bookmark_add</md-icon>
-                      </md-icon-button>
-                    </ActionTip>
-                  ) : null}
-                  {active && !editMode && onOpenAssistant ? (
-                    <ActionTip tip="Ask route assistant">
-                      <md-icon-button
-                        type="button"
-                        class="dir-route-assist-btn"
-                        aria-label="Ask route assistant"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenAssistant();
-                        }}
-                      >
-                        <md-icon>auto_awesome</md-icon>
-                      </md-icon-button>
-                    </ActionTip>
-                  ) : null}
-                  {active && !editMode && onShowSteps ? (
-                    <ActionTip tip="Steps">
-                      <md-icon-button
-                        type="button"
-                        class="dir-route-steps-btn"
-                        aria-label="View turn-by-turn steps"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onShowSteps();
-                        }}
-                      >
-                        <md-icon>list</md-icon>
-                      </md-icon-button>
-                    </ActionTip>
-                  ) : null}
-                  {active && editMode ? (
-                    <>
-                      <ActionTip tip="Undo last edit (Ctrl+Z)">
+                {active ? (
+                  <div className="dir-route-actions">
+                    {onSaveRoute ? (
+                      <ActionTip tip="Save route">
                         <md-icon-button
                           type="button"
-                          class="dir-route-undo-btn"
-                          aria-label="Undo last edit"
+                          class="dir-route-save-btn"
+                          aria-label="Save route"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onUndo?.();
+                            const from = stops[0]?.name || "Start";
+                            const to =
+                              stops[stops.length - 1]?.name || "Destination";
+                            setSaveName(`${from} to ${to}`);
+                            setSaving(true);
+                            setMenuFor(null);
                           }}
-                          disabled={!canUndo || undefined}
                         >
-                          <md-icon>undo</md-icon>
+                          <md-icon>bookmark</md-icon>
                         </md-icon-button>
                       </ActionTip>
-                      <ActionTip tip="Reset to original route">
+                    ) : null}
+                    <div className="dir-route-more" ref={menuFor === opt.id ? menuRef : null}>
+                      <ActionTip tip="More">
                         <md-icon-button
                           type="button"
-                          class="dir-route-reset-btn"
-                          aria-label="Reset to original route"
+                          class="dir-route-more-btn"
+                          aria-label="More route actions"
+                          aria-haspopup="menu"
+                          aria-expanded={menuFor === opt.id ? "true" : "false"}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onResetSuggested?.();
+                            setMenuFor((id) => (id === opt.id ? null : opt.id));
                           }}
-                          disabled={!canReset || undefined}
                         >
-                          <md-icon>restart_alt</md-icon>
+                          <md-icon>more_vert</md-icon>
                         </md-icon-button>
                       </ActionTip>
-                    </>
-                  ) : null}
-                  {active ? (
-                    <ActionTip tip={editMode ? "Finish editing" : "Edit route"}>
-                      <md-icon-button
-                        type="button"
-                        class={`dir-route-edit-btn ${editMode ? "is-edit-active" : ""}`}
-                        aria-label={editMode ? "Finish editing" : "Edit route"}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleEdit();
-                        }}
-                      >
-                        <md-icon>{editMode ? "check" : "edit"}</md-icon>
-                      </md-icon-button>
-                    </ActionTip>
-                  ) : null}
-                </div>
+                      {menuFor === opt.id ? (
+                        <div className="dir-route-menu" role="menu">
+                          {onShowSteps ? (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setMenuFor(null);
+                                onShowSteps();
+                              }}
+                            >
+                              <md-icon>list</md-icon>
+                              Steps
+                            </button>
+                          ) : null}
+                          {onOpenAssistant ? (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setMenuFor(null);
+                                onOpenAssistant();
+                              }}
+                            >
+                              <md-icon>auto_awesome</md-icon>
+                              Ask assistant
+                            </button>
+                          ) : null}
+                          {canUndo ? (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setMenuFor(null);
+                                onUndo?.();
+                              }}
+                            >
+                              <md-icon>undo</md-icon>
+                              Undo
+                            </button>
+                          ) : null}
+                          {canReset ? (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setMenuFor(null);
+                                onResetSuggested?.();
+                              }}
+                            >
+                              <md-icon>restart_alt</md-icon>
+                              Reset to original
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -431,65 +436,6 @@ export default function DirectionsPanel({
             <md-filled-tonal-button type="submit">Save</md-filled-tonal-button>
           </div>
         </form>
-      )}
-
-      {blockedStreets.length > 0 && (
-        <div className="dir-blocked" role="status">
-          <div className="dir-blocked-head">
-            <span className="md-typescale-label-large">Blocked streets</span>
-            {onClearBlocked ? (
-              <button
-                type="button"
-                className="dir-blocked-clear"
-                onClick={onClearBlocked}
-              >
-                Clear
-              </button>
-            ) : null}
-          </div>
-          <div className="dir-blocked-chips">
-            {blockedStreets.map((b) => (
-              <span key={b.id} className="dir-blocked-chip">
-                {b.name}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!editMode && savedRoutes.length > 0 && (
-        <div className="dir-saved">
-          <md-divider />
-          <h3 className="md-typescale-title-small dir-saved-title">
-            Saved routes
-          </h3>
-          <md-list class="dir-saved-list">
-            {savedRoutes.map((r) => (
-              <md-list-item key={r.id}>
-                <div slot="headline">{r.name}</div>
-                <div slot="supporting-text">
-                  {formatDistance(r.route?.distance || 0)} ·{" "}
-                  {formatDuration(r.route?.duration || 0)}
-                </div>
-                <div slot="end" className="dir-saved-actions">
-                  <md-text-button
-                    type="button"
-                    onClick={() => onLoadSaved?.(r)}
-                  >
-                    Open
-                  </md-text-button>
-                  <md-icon-button
-                    type="button"
-                    aria-label={`Delete ${r.name}`}
-                    onClick={() => onDeleteSaved?.(r.id)}
-                  >
-                    <md-icon>delete</md-icon>
-                  </md-icon-button>
-                </div>
-              </md-list-item>
-            ))}
-          </md-list>
-        </div>
       )}
     </section>
   );

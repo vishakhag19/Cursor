@@ -1,6 +1,8 @@
 const ROUTES_KEY = "atlas.savedRoutes.v1";
 const RECENT_KEY = "atlas.recentSearches.v1";
+const BLOCKED_KEY = "atlas.blockedStreets.v1";
 const MAX_RECENT = 8;
+const MAX_BLOCKED = 40;
 
 export function loadSavedRoutes() {
   try {
@@ -15,6 +17,24 @@ export function loadSavedRoutes() {
 
 export function persistSavedRoutes(routes) {
   localStorage.setItem(ROUTES_KEY, JSON.stringify(routes));
+}
+
+export function loadBlockedStreets() {
+  try {
+    const raw = localStorage.getItem(BLOCKED_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function persistBlockedStreets(streets) {
+  localStorage.setItem(
+    BLOCKED_KEY,
+    JSON.stringify((streets || []).slice(0, MAX_BLOCKED)),
+  );
 }
 
 export function loadRecentSearches() {
