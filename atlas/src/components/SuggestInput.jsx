@@ -211,7 +211,7 @@ export default function SuggestInput({
       return;
     }
 
-    if (q.length < 2) {
+    if (q.length < 1) {
       showDefaultList();
       return;
     }
@@ -225,7 +225,7 @@ export default function SuggestInput({
         const loc = currentLocationRef.current;
         const results = await searchPlaces(q, {
           near: nearRef.current || loc,
-          limit: 6,
+          limit: 8,
         });
         if (seq !== requestSeq.current) return;
         if (committedRef.current) {
@@ -236,8 +236,18 @@ export default function SuggestInput({
         if (allowCurrentLocation && LOCATION_QUERY.test(q)) {
           merged.push(currentPlace(loc));
         }
-        merged.push(...results);
-        const unique = dedupe(merged);
+        // Keep nearby recents that still match the typed query near the top.
+        const qLower = q.toLowerCase();
+        const recent = (recentPlacesRef.current || [])
+          .filter((p) => !p?.isCurrentLocation)
+          .filter((p) => {
+            const hay = `${p.name || ""} ${p.display_name || ""}`.toLowerCase();
+            return hay.includes(qLower);
+          })
+          .slice(0, 3)
+          .map((p) => ({ ...p, id: String(p.id), isRecent: true }));
+        merged.push(...recent, ...results);
+        const unique = dedupe(merged).slice(0, 8);
         setSuggestions(unique);
         setOpen(unique.length > 0);
         publish({
@@ -255,7 +265,7 @@ export default function SuggestInput({
           publish({ loading: false });
         }
       }
-    }, 280);
+    }, 200);
   }
 
   useEffect(() => {
@@ -267,7 +277,7 @@ export default function SuggestInput({
     const q = (value || "").trim();
     if (q.toLowerCase() === "your location") {
       committedRef.current = "Your location";
-    } else if (q.length >= 2) {
+    } else if (q.length >= 1) {
       committedRef.current = q;
     } else {
       committedRef.current = null;

@@ -63,27 +63,52 @@ export function formatNearDistance(meters) {
   return km < 10 ? `${km.toFixed(1)} km away` : `${Math.round(km)} km away`;
 }
 
-/**
- * Search places, optionally biased/sorted by nearest to `near`.
- */
-export async function searchPlaces(query, { limit = 8, near = null } = {}) {
-  const q = query.trim();
-  if (!q) return [];
+function dedupePlaces(places) {
+  const seen = new Set();
+  return places.filter((p) => {
+    const key = String(p.id ?? `${p.lat},${p.lng}`);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function rankByDistance(places, near, limit) {
+  if (!near?.lat || !near?.lng) return places.slice(0, limit);
+  const NEARBY_M = 80000;
+  return places
+    .map((p) => ({
+      ...p,
+      distanceMeters: haversineMeters(near, p),
+    }))
+    .sort((a, b) => {
+      const aNear = a.distanceMeters <= NEARBY_M ? 0 : 1;
+      const bNear = b.distanceMeters <= NEARBY_M ? 0 : 1;
+      if (aNear !== bNear) return aNear - bNear;
+      return a.distanceMeters - b.distanceMeters;
+    })
+    .slice(0, limit);
+}
+
+async function nominatimSearch(
+  query,
+  { near = null, bounded = false, viewboxDelta = 0.35, limit = 12 } = {},
+) {
   const url = new URL(`${NOMINATIM}/search`);
-  url.searchParams.set("q", q);
+  url.searchParams.set("q", query);
   url.searchParams.set("format", "json");
   url.searchParams.set("addressdetails", "1");
   url.searchParams.set("extratags", "1");
   url.searchParams.set("namedetails", "1");
-  url.searchParams.set("limit", String(Math.max(limit, 12)));
+  url.searchParams.set("dedupe", "1");
+  url.searchParams.set("limit", String(limit));
   if (near?.lat != null && near?.lng != null) {
-    // Bias results around the user (~50km box), but still allow global matches.
-    const d = 0.45;
+    const d = viewboxDelta;
     url.searchParams.set(
       "viewbox",
       `${near.lng - d},${near.lat + d},${near.lng + d},${near.lat - d}`,
     );
-    url.searchParams.set("bounded", "0");
+    url.searchParams.set("bounded", bounded ? "1" : "0");
   }
   const res = await fetch(url.toString(), {
     headers: {
@@ -95,21 +120,45 @@ export async function searchPlaces(query, { limit = 8, near = null } = {}) {
   if (!res.ok) throw new Error("Search failed");
   const data = await res.json();
   if (!Array.isArray(data)) throw new Error("Search failed");
-  let places = data.map((item) => mapPlace(item));
+  return data.map((item) => mapPlace(item));
+}
+
+/**
+ * Search places, preferring nearby matches when `near` is available.
+ * Local (bounded) results first, then a wider fallback so rare names still work.
+ */
+export async function searchPlaces(query, { limit = 8, near = null } = {}) {
+  const q = query.trim();
+  if (!q) return [];
+
+  const fetchLimit = Math.max(limit * 2, 16);
 
   if (near?.lat != null && near?.lng != null) {
-    places = places
-      .map((p) => ({
-        ...p,
-        distanceMeters: haversineMeters(near, p),
-      }))
-      .sort((a, b) => a.distanceMeters - b.distanceMeters)
-      .slice(0, limit);
-  } else {
-    places = places.slice(0, limit);
+    // ~25km box — force nearby matches so partial queries surface local places.
+    const local = await nominatimSearch(q, {
+      near,
+      bounded: true,
+      viewboxDelta: 0.22,
+      limit: fetchLimit,
+    });
+
+    let merged = local;
+    if (local.length < limit) {
+      // Widen without requiring the box, then re-rank by distance.
+      const wider = await nominatimSearch(q, {
+        near,
+        bounded: false,
+        viewboxDelta: 0.55,
+        limit: fetchLimit,
+      });
+      merged = dedupePlaces([...local, ...wider]);
+    }
+
+    return rankByDistance(merged, near, limit);
   }
 
-  return places;
+  const places = await nominatimSearch(q, { limit: fetchLimit });
+  return places.slice(0, limit);
 }
 
 export async function reverseGeocode(lat, lng) {
