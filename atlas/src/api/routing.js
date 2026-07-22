@@ -238,10 +238,7 @@ export async function rebuildEditedRoute(
   );
   return {
     ...candidates[0],
-    label:
-      (vias || []).length > 0
-        ? `Custom · ${(vias || []).length} via point${(vias || []).length === 1 ? "" : "s"}`
-        : candidates[0].label,
+    label: (vias || []).length > 0 ? "Custom route" : candidates[0].label,
   };
 }
 
