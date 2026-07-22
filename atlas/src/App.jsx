@@ -268,9 +268,7 @@ export default function App() {
     const edited = {
       ...route,
       id: `edited-${Math.round(route.distance)}-${Math.round(route.duration)}-${vias.length}-${Date.now()}`,
-      label: vias.length
-        ? `Custom · ${vias.length} via point${vias.length === 1 ? "" : "s"}`
-        : route.label || "Custom route",
+      label: "Custom route",
       badge: "Edited route",
       rank: 0,
       edited: true,
