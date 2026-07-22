@@ -299,7 +299,7 @@ export default function DirectionsPanel({
                 </button>
                 {active ? (
                   <div className="dir-route-actions">
-                    {onSaveRoute ? (
+                    {onSaveRoute && !saving ? (
                       <ActionTip tip="Save route">
                         <md-icon-button
                           type="button"
@@ -319,6 +319,7 @@ export default function DirectionsPanel({
                         </md-icon-button>
                       </ActionTip>
                     ) : null}
+                    {!saving ? (
                     <div className="dir-route-more" ref={menuFor === opt.id ? menuRef : null}>
                       <ActionTip tip="More">
                         <md-icon-button
@@ -392,50 +393,50 @@ export default function DirectionsPanel({
                         </div>
                       ) : null}
                     </div>
+                    ) : null}
                   </div>
+                ) : null}
+                {active && saving ? (
+                  <form
+                    className="dir-save-inline"
+                    onClick={(e) => e.stopPropagation()}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const name = saveName.trim() || "Saved route";
+                      onSaveRoute?.(name);
+                      setSaving(false);
+                      setSaveName("");
+                    }}
+                  >
+                    <input
+                      className="dir-save-input md-typescale-body-medium"
+                      value={saveName}
+                      onChange={(e) => setSaveName(e.target.value)}
+                      maxLength={80}
+                      placeholder="Route name"
+                      aria-label="Route name"
+                      autoFocus
+                    />
+                    <div className="dir-save-actions">
+                      <md-text-button
+                        type="button"
+                        onClick={() => {
+                          setSaving(false);
+                          setSaveName("");
+                        }}
+                      >
+                        Cancel
+                      </md-text-button>
+                      <md-filled-tonal-button type="submit">
+                        Save
+                      </md-filled-tonal-button>
+                    </div>
+                  </form>
                 ) : null}
               </div>
             );
           })}
         </div>
-      )}
-
-      {saving && (
-        <form
-          className="dir-save-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const name = saveName.trim() || "Saved route";
-            onSaveRoute?.(name);
-            setSaving(false);
-            setSaveName("");
-          }}
-        >
-          <label className="md-typescale-label-large" htmlFor="dir-save-name">
-            Save this custom route
-          </label>
-          <input
-            id="dir-save-name"
-            className="dir-save-input md-typescale-body-medium"
-            value={saveName}
-            onChange={(e) => setSaveName(e.target.value)}
-            maxLength={80}
-            placeholder="Route name"
-            autoFocus
-          />
-          <div className="dir-save-actions">
-            <md-text-button
-              type="button"
-              onClick={() => {
-                setSaving(false);
-                setSaveName("");
-              }}
-            >
-              Cancel
-            </md-text-button>
-            <md-filled-tonal-button type="submit">Save</md-filled-tonal-button>
-          </div>
-        </form>
       )}
     </section>
   );

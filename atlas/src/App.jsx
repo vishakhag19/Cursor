@@ -384,45 +384,6 @@ export default function App() {
         selectRoute(options[0]);
         setFitKey((k) => k + 1);
         clearStatus();
-
-        // Bend the first option around any globally Avoided streets near the path.
-        if (blockedStreets.length && options[0]?.geometry?.length) {
-          const geom = options[0].geometry;
-          const avoidVias = [];
-          for (const b of blockedStreets) {
-            const near = closestPointOnPolyline(
-              { lat: b.lat, lng: b.lng },
-              geom,
-            );
-            if (!near || near.distance > 3000) continue;
-            const detour = buildAvoidVia(
-              { lat: b.lat, lng: b.lng },
-              geom,
-              b.name,
-            );
-            avoidVias.push({
-              id: uid(),
-              lat: detour.lat,
-              lng: detour.lng,
-              name: detour.name,
-            });
-          }
-          if (avoidVias.length) {
-            const origin = filled[0];
-            const destination = filled[filled.length - 1];
-            try {
-              const custom = await rebuildEditedRoute(
-                origin,
-                avoidVias.map((v) => ({ lat: v.lat, lng: v.lng })),
-                destination,
-                mode,
-              );
-              applyEditedRoute(custom, avoidVias, { pushHistory: false });
-            } catch {
-              /* keep the suggested option */
-            }
-          }
-        }
       } catch (err) {
         clearRoutes();
         setDirError(err.message || "Could not find a route");
@@ -436,13 +397,11 @@ export default function App() {
       stopTexts,
       travelMode,
       userLocation,
-      blockedStreets,
       showStatus,
       clearStatus,
       selectRoute,
       clearRoutes,
       clearEditState,
-      applyEditedRoute,
     ],
   );
 
@@ -951,7 +910,7 @@ export default function App() {
     setSelectedViaId(null);
     setEditCoachOpen(false);
     setPanelOpen(true);
-    setShowSteps(true);
+    setShowSteps(false);
     setNavigating(false);
   }, []);
 

@@ -343,8 +343,8 @@
 }
 
 .landing-saved {
-  margin-top: 16px;
-  padding-top: 4px;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .landing-saved-head {
@@ -779,18 +779,31 @@ md-filled-tonal-button.is-edit-active {
   overflow: visible;
 }
 
-/* Only the open location list sits flush — panel chrome keeps its padding */
-.search-panel:has(.place-suggest-panel) {
-  padding-bottom: 0;
+.search-panel.is-collapsed {
+  padding-bottom: 4px;
 }
 
-.directions-panel {
-  overflow-x: visible;
-  overflow-y: auto;
-  max-height: calc(100dvh - 88px);
+.landing-section-divider {
+  margin: 12px 0;
+  --md-divider-color: #e8eaed;
 }
 
-/* Minimal search bar — no shadows, flex-contained actions */
+.landing-suggest {
+  margin: 0 -4px;
+  border: 1px solid #dadce0;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+  max-height: min(360px, 48dvh);
+}
+
+.landing-suggest .place-suggest-panel {
+  margin: 0;
+  max-height: inherit;
+  border-radius: 0;
+  background: transparent;
+}
+
 .search-bar {
   --search-pad-l: 16px;
   --search-pad-r: 8px;
@@ -807,6 +820,22 @@ md-filled-tonal-button.is-edit-active {
   overflow: visible;
   min-height: 48px;
   box-sizing: border-box;
+}
+
+.search-bar:has(.search-back-btn) {
+  padding-left: 4px;
+  gap: 2px;
+}
+
+.search-back-btn {
+  flex-shrink: 0;
+  color: #5f6368;
+}
+
+.directions-panel {
+  overflow-x: visible;
+  overflow-y: auto;
+  max-height: calc(100dvh - 88px);
 }
 
 .search-bar-field {
@@ -1703,6 +1732,18 @@ md-filled-tonal-button.is-edit-active {
   border: 1px solid #e8eaed;
   border-radius: 12px;
   background: #f8f9fa;
+}
+
+.dir-save-inline {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 12px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #1a73e8 6%, #fff);
+  border: 1px solid #d2e3fc;
 }
 
 .dir-save-input {

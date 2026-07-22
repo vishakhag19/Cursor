@@ -1,11 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import { formatDistance, formatDuration } from "../utils/format";
 
+function useIsCompact(query = "(max-width: 800px)") {
+  const [compact, setCompact] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setCompact(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [query]);
+  return compact;
+}
+
 /**
- * Landing search — suggestions below the input, plus Saved routes / avoided roads.
+ * Landing search — Saved under the input; suggestions below Saved.
+ * Mobile: search field only until the field is focused.
  */
 export default function SearchPanel({
   query,
@@ -26,6 +41,8 @@ export default function SearchPanel({
   savedTab = "routes",
   onSavedTab = null,
 }) {
+  const isCompact = useIsCompact();
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const [placeList, setPlaceList] = useState({
     open: false,
     items: [],
@@ -46,13 +63,31 @@ export default function SearchPanel({
 
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
-  const showSaved =
-    !listVisible && !place && (savedRoutes.length > 0 || blockedStreets.length > 0);
+  const showBody = !isCompact || mobileExpanded || Boolean(place) || listVisible;
+  const hasSavedContent =
+    savedRoutes.length > 0 || blockedStreets.length > 0;
+  const showSaved = showBody && !place && hasSavedContent;
 
   return (
-    <section className="mode-panel search-panel">
-      <div className="search-block">
+    <section
+      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"}`}
+    >
+      <div className={`search-block ${listVisible ? "has-list" : ""}`}>
         <div className={`search-bar ${query ? "has-query" : ""}`}>
+          {listVisible ? (
+            <md-icon-button
+              type="button"
+              class="search-back-btn"
+              aria-label="Back"
+              onClick={() => {
+                clearPlaceList();
+                onClear();
+                if (isCompact) setMobileExpanded(true);
+              }}
+            >
+              <md-icon>arrow_back</md-icon>
+            </md-icon-button>
+          ) : null}
           <div className="search-bar-field">
             <SuggestInput
               id="main-search"
@@ -70,6 +105,9 @@ export default function SearchPanel({
               bare
               externalList
               onListChange={setPlaceList}
+              onFocusField={() => {
+                if (isCompact) setMobileExpanded(true);
+              }}
             />
           </div>
           <div className="search-bar-actions">
@@ -91,131 +129,142 @@ export default function SearchPanel({
             )}
           </div>
         </div>
-
-        {listVisible && (
-          <PlaceSuggestionList
-            items={placeList.items}
-            query={placeList.query}
-            loading={placeList.loading}
-            onSelect={(selected) => {
-              if (placeList.select) placeList.select(selected);
-              else {
-                onSelectPlace(selected);
-                clearPlaceList();
-              }
-            }}
-          />
-        )}
       </div>
 
-      {place && !listVisible && (
-        <PlaceDetailsCard
-          place={place}
-          onDirectionsTo={onDirectionsTo}
-          onDirectionsFrom={onDirectionsFrom}
-        />
-      )}
-
       {showSaved && (
-        <div className="landing-saved">
-          <div className="landing-saved-head">
-            <md-icon class="landing-saved-icon">bookmark</md-icon>
-            <h2 className="md-typescale-title-small">Saved</h2>
-          </div>
-          <div className="landing-saved-tabs" role="tablist" aria-label="Saved">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={savedTab === "routes" ? "true" : "false"}
-              className={`landing-saved-tab ${savedTab === "routes" ? "is-active" : ""}`}
-              onClick={() => onSavedTab?.("routes")}
-            >
-              Routes
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={savedTab === "avoided" ? "true" : "false"}
-              className={`landing-saved-tab ${savedTab === "avoided" ? "is-active" : ""}`}
-              onClick={() => onSavedTab?.("avoided")}
-            >
-              Avoided
-            </button>
-          </div>
+        <>
+          <md-divider class="landing-section-divider" />
+          <div className="landing-saved">
+            <div className="landing-saved-head">
+              <md-icon class="landing-saved-icon">bookmark</md-icon>
+              <h2 className="md-typescale-title-small">Saved</h2>
+            </div>
+            <div className="landing-saved-tabs" role="tablist" aria-label="Saved">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={savedTab === "routes" ? "true" : "false"}
+                className={`landing-saved-tab ${savedTab === "routes" ? "is-active" : ""}`}
+                onClick={() => onSavedTab?.("routes")}
+              >
+                Routes
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={savedTab === "avoided" ? "true" : "false"}
+                className={`landing-saved-tab ${savedTab === "avoided" ? "is-active" : ""}`}
+                onClick={() => onSavedTab?.("avoided")}
+              >
+                Avoided
+              </button>
+            </div>
 
-          {savedTab === "routes" ? (
-            savedRoutes.length === 0 ? (
+            {savedTab === "routes" ? (
+              savedRoutes.length === 0 ? (
+                <p className="hint tight md-typescale-body-medium">
+                  Save a custom route from Directions to see it here.
+                </p>
+              ) : (
+                <md-list class="landing-saved-list">
+                  {savedRoutes.map((r) => (
+                    <md-list-item key={r.id}>
+                      <div slot="headline">{r.name}</div>
+                      <div slot="supporting-text">
+                        {formatDistance(r.route?.distance || 0)} ·{" "}
+                        {formatDuration(r.route?.duration || 0)}
+                      </div>
+                      <div slot="end" className="landing-saved-actions">
+                        <md-text-button
+                          type="button"
+                          onClick={() => onLoadSaved?.(r)}
+                        >
+                          Open
+                        </md-text-button>
+                        <md-icon-button
+                          type="button"
+                          aria-label={`Delete ${r.name}`}
+                          onClick={() => onDeleteSaved?.(r.id)}
+                        >
+                          <md-icon>delete</md-icon>
+                        </md-icon-button>
+                      </div>
+                    </md-list-item>
+                  ))}
+                </md-list>
+              )
+            ) : blockedStreets.length === 0 ? (
               <p className="hint tight md-typescale-body-medium">
-                Save a custom route from Directions to see it here.
+                Long-press the map on any road and choose Avoid this road.
               </p>
             ) : (
-              <md-list class="landing-saved-list">
-                {savedRoutes.map((r) => (
-                  <md-list-item key={r.id}>
-                    <div slot="headline">{r.name}</div>
-                    <div slot="supporting-text">
-                      {formatDistance(r.route?.distance || 0)} ·{" "}
-                      {formatDuration(r.route?.duration || 0)}
-                    </div>
-                    <div slot="end" className="landing-saved-actions">
-                      <md-text-button
-                        type="button"
-                        onClick={() => onLoadSaved?.(r)}
-                      >
-                        Open
-                      </md-text-button>
-                      <md-icon-button
-                        type="button"
-                        aria-label={`Delete ${r.name}`}
-                        onClick={() => onDeleteSaved?.(r.id)}
-                      >
-                        <md-icon>delete</md-icon>
-                      </md-icon-button>
-                    </div>
-                  </md-list-item>
-                ))}
-              </md-list>
-            )
-          ) : blockedStreets.length === 0 ? (
-            <p className="hint tight md-typescale-body-medium">
-              Long-press the map on any road and choose Avoid this road.
-            </p>
-          ) : (
-            <>
-              <div className="landing-avoid-head">
-                <span className="md-typescale-body-small">
-                  Applied on future directions
-                </span>
-                {onClearBlocked ? (
-                  <button
-                    type="button"
-                    className="dir-blocked-clear"
-                    onClick={onClearBlocked}
-                  >
-                    Clear all
-                  </button>
-                ) : null}
-              </div>
-              <md-list class="landing-saved-list">
-                {blockedStreets.map((b) => (
-                  <md-list-item key={b.id}>
-                    <div slot="headline">{b.name}</div>
-                    <div slot="supporting-text">Blocked street</div>
-                    <div slot="end">
-                      <md-icon-button
-                        type="button"
-                        aria-label={`Remove ${b.name}`}
-                        onClick={() => onRemoveBlocked?.(b.id)}
-                      >
-                        <md-icon>close</md-icon>
-                      </md-icon-button>
-                    </div>
-                  </md-list-item>
-                ))}
-              </md-list>
-            </>
-          )}
-        </div>
+              <>
+                <div className="landing-avoid-head">
+                  <span className="md-typescale-body-small">
+                    Applied when you avoid a road on a trip
+                  </span>
+                  {onClearBlocked ? (
+                    <button
+                      type="button"
+                      className="dir-blocked-clear"
+                      onClick={onClearBlocked}
+                    >
+                      Clear all
+                    </button>
+                  ) : null}
+                </div>
+                <md-list class="landing-saved-list">
+                  {blockedStreets.map((b) => (
+                    <md-list-item key={b.id}>
+                      <div slot="headline">{b.name}</div>
+                      <div slot="supporting-text">Blocked street</div>
+                      <div slot="end">
+                        <md-icon-button
+                          type="button"
+                          aria-label={`Remove ${b.name}`}
+                          onClick={() => onRemoveBlocked?.(b.id)}
+                        >
+                          <md-icon>close</md-icon>
+                        </md-icon-button>
+                      </div>
+                    </md-list-item>
+                  ))}
+                </md-list>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {listVisible && (
+        <>
+          <md-divider class="landing-section-divider" />
+          <div className="landing-suggest">
+            <PlaceSuggestionList
+              items={placeList.items}
+              query={placeList.query}
+              loading={placeList.loading}
+              onSelect={(selected) => {
+                if (placeList.select) placeList.select(selected);
+                else {
+                  onSelectPlace(selected);
+                  clearPlaceList();
+                }
+              }}
+            />
+          </div>
+        </>
+      )}
+
+      {place && !listVisible && showBody && (
+        <>
+          <md-divider class="landing-section-divider" />
+          <PlaceDetailsCard
+            place={place}
+            onDirectionsTo={onDirectionsTo}
+            onDirectionsFrom={onDirectionsFrom}
+          />
+        </>
       )}
     </section>
   );
