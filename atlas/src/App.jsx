@@ -549,7 +549,8 @@ export default function App() {
       if (!editOrigin || !editDestination) return;
       const epoch = editEpochRef.current;
       setEditBusy(true);
-      showStatus("Recalculating shortest route…", 0);
+      clearTimeout(statusTimer.current);
+      setStatus(null);
       try {
         const ordered = preserveOrder
           ? nextVias
@@ -564,11 +565,10 @@ export default function App() {
           travelMode,
         );
         if (epoch !== editEpochRef.current) return;
-        const applied = applyEditedRoute(route, ordered, {
+        applyEditedRoute(route, ordered, {
           pushHistory,
           epoch,
         });
-        if (applied) showStatus("Shortest route via your points");
       } catch (err) {
         if (epoch !== editEpochRef.current) return;
         showStatus(err.message || "Could not update route");
