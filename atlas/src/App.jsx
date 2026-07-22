@@ -650,9 +650,8 @@ export default function App() {
         const next = editViasRef.current.filter((v) => v.id !== viaId);
         setSelectedViaId(null);
         await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
-        showStatus(next.length ? "Removed via point" : "Via point removed");
       }),
-    [enqueueEdit, rebuildFromVias, showStatus],
+    [enqueueEdit, rebuildFromVias],
   );
 
   const undoEdit = useCallback(() => {
@@ -689,9 +688,7 @@ export default function App() {
       routeGeometryRef.current = geometry;
       setRouteGeometry(geometry);
     }
-
-    showStatus("Undid last edit");
-  }, [showStatus]);
+  }, []);
 
   const resetToSuggested = useCallback(() => {
     if (!baselineRoute) return;
@@ -716,8 +713,7 @@ export default function App() {
     routeGeometryRef.current = baselineRoute.geometry;
     setRouteGeometry(baselineRoute.geometry);
     // Keep the user's zoom during edit — don't re-fit the full route.
-    showStatus("Reset to original route");
-  }, [baselineRoute, stops, showStatus, clearEditHistory]);
+  }, [baselineRoute, stops, clearEditHistory]);
 
   const toggleEditMode = useCallback(() => {
     setEditMode((v) => {
@@ -748,7 +744,6 @@ export default function App() {
         } else {
           setPanelOpen(true);
           setEditCoachOpen(false);
-          showStatus("Drag the blue line to reshape the route", 5000);
         }
         setCtx(null);
       } else {
