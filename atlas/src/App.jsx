@@ -343,9 +343,8 @@ export default function App() {
         setBaselineRoute(options[0]);
         selectRoute(options[0]);
         setFitKey((k) => k + 1);
-        showStatus(
-          `${options.length} shortest option${options.length === 1 ? "" : "s"}`,
-        );
+        clearTimeout(statusTimer.current);
+        setStatus(null);
       } catch (err) {
         clearRoutes();
         setDirError(err.message || "Could not find a route");
