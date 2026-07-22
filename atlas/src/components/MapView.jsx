@@ -338,6 +338,7 @@ export default function MapView({
       <MapClickHandler
         onMapClick={onMapClick}
         onContextMenu={onContextMenu}
+        suppressContextMenu={editMode}
       />
       <FitBounds
         positions={fitPositions}
