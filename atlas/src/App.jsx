@@ -751,6 +751,7 @@ export default function App() {
           setEditCoachOpen(false);
           showStatus("Drag the blue line to reshape the route", 5000);
         }
+        setCtx(null);
       } else {
         setEditPreview(null);
         setSelectedViaId(null);
@@ -1207,7 +1208,10 @@ export default function App() {
           fitKey={fitKey}
           fitPadding={fitPadding}
           onMapClick={handleMapClick}
-          onContextMenu={(latlng, pos) => setCtx({ latlng, ...pos })}
+          onContextMenu={(latlng, pos) => {
+            if (editMode) return;
+            setCtx({ latlng, ...pos });
+          }}
           onWaypointDrag={async (index, lat, lng) => {
             try {
               const place = await reverseGeocode(lat, lng);

@@ -110,13 +110,14 @@ function DraggableStopMarker({
   );
 }
 
-function MapClickHandler({ onMapClick, onContextMenu }) {
+function MapClickHandler({ onMapClick, onContextMenu, suppressContextMenu = false }) {
   useMapEvents({
     click(e) {
       onMapClick?.(e.latlng);
     },
     contextmenu(e) {
       e.originalEvent.preventDefault();
+      if (suppressContextMenu) return;
       onContextMenu?.(e.latlng, {
         x: e.originalEvent.clientX,
         y: e.originalEvent.clientY,
