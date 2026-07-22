@@ -109,6 +109,7 @@ export default function App() {
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
   const [followingLocation, setFollowingLocation] = useState(false);
+  const [editCoachOpen, setEditCoachOpen] = useState(false);
   const locateFn = useRef(null);
   const zoomFn = useRef(null);
   const locateFlightRef = useRef(false);
@@ -366,10 +367,27 @@ export default function App() {
   );
 
   const openDirections = useCallback(
-    ({ from = null, to = null } = {}) => {
-      const nextStops = [from, to];
+    async ({ from = null, to = null } = {}) => {
+      let start = from;
+      if (!start) {
+        let loc = userLocation;
+        if (!loc) {
+          try {
+            loc = await refreshLocation();
+          } catch {
+            loc = null;
+          }
+        }
+        if (loc) start = toCurrentLocationPlace(loc);
+      }
+
+      const nextStops = [start, to];
       const nextTexts = [
-        from ? (from.isCurrentLocation ? "Your location" : from.name) : "",
+        start
+          ? start.isCurrentLocation
+            ? "Your location"
+            : start.name
+          : "",
         to ? (to.isCurrentLocation ? "Your location" : to.name) : "",
       ];
       setStops(nextStops);
@@ -381,7 +399,7 @@ export default function App() {
         runDirections(nextStops, travelMode);
       }
     },
-    [clearRoutes, runDirections, travelMode],
+    [clearRoutes, runDirections, travelMode, userLocation, refreshLocation],
   );
 
   const selectSearchPlace = useCallback(
@@ -719,23 +737,37 @@ export default function App() {
         setEditPreview(null);
         // Phones: collapse for map space; desktop keeps the panel open.
         // Floating edit bar includes a control to reopen the panel.
+        let mobile = false;
         try {
-          if (window.matchMedia("(max-width: 800px)").matches) {
-            setPanelOpen(false);
-          } else {
-            setPanelOpen(true);
-          }
+          mobile = window.matchMedia("(max-width: 800px)").matches;
         } catch {
-          setPanelOpen(true);
+          mobile = false;
         }
-        showStatus("Drag the blue line to reshape the route");
+        if (mobile) {
+          setPanelOpen(false);
+          setEditCoachOpen(true);
+          showStatus(
+            "Drag the blue route to reshape it. Tap Done when finished.",
+            8000,
+          );
+        } else {
+          setPanelOpen(true);
+          setEditCoachOpen(false);
+          showStatus("Drag the blue line to reshape the route", 5000);
+        }
       } else {
         setEditPreview(null);
         setSelectedViaId(null);
+        setEditCoachOpen(false);
       }
       return next;
     });
   }, [baselineRoute, stops, showStatus]);
+
+  // Once the user makes an edit, the coach tip is no longer needed.
+  useEffect(() => {
+    if (editHistory.length > 0) setEditCoachOpen(false);
+  }, [editHistory.length]);
 
   // Delete / Backspace removes the selected via (or the last via) in edit mode.
   useEffect(() => {
@@ -1089,6 +1121,22 @@ export default function App() {
             onClick={toggleEditMode}
           >
             Done
+          </button>
+        </div>
+      )}
+
+      {editMode && editCoachOpen && isCompact && !panelOpen && (
+        <div className="edit-coach" role="status">
+          <md-icon class="edit-coach-icon">touch_app</md-icon>
+          <p className="edit-coach-text md-typescale-body-medium">
+            Drag the blue route to reshape it. Tap Done when you are finished.
+          </p>
+          <button
+            type="button"
+            className="edit-coach-dismiss"
+            onClick={() => setEditCoachOpen(false)}
+          >
+            Got it
           </button>
         </div>
       )}
