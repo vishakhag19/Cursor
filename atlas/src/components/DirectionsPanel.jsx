@@ -274,8 +274,9 @@ export default function DirectionsPanel({
                         <span
                           className={`dir-route-delta tone-${comparison.tone} md-typescale-body-small`}
                           role="status"
+                          title={comparison.label}
                         >
-                          {editBusy ? "Updating…" : comparison.label}
+                          {editBusy ? "Updating travel time…" : comparison.label}
                         </span>
                       ) : null}
                     </div>
@@ -313,11 +314,11 @@ export default function DirectionsPanel({
                           <md-icon>undo</md-icon>
                         </md-icon-button>
                       </ActionTip>
-                      <ActionTip tip="Reset to suggested route">
+                      <ActionTip tip="Reset to original route">
                         <md-icon-button
                           type="button"
                           class="dir-route-reset-btn"
-                          aria-label="Reset to suggested route"
+                          aria-label="Reset to original route"
                           onClick={(e) => {
                             e.stopPropagation();
                             onResetSuggested?.();

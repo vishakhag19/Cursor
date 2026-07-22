@@ -486,11 +486,12 @@
   top: 16px;
   left: 50%;
   translate: -50% 0;
-  z-index: 1000;
+  z-index: 1100;
   padding: 8px 14px;
   border-radius: 999px;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+  border: 1px solid #e8eaed;
+  box-shadow: none;
   font: 500 13px/1.3 Roboto, sans-serif;
   color: #3c4043;
   pointer-events: none;
@@ -1267,18 +1268,36 @@ md-filled-tonal-button.is-edit-active {
   flex: 0 1 auto;
   min-width: 0;
   max-width: 220px;
-  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 10px;
   color: #5f6368;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.mobile-edit-comparison.tone-better {
+.mobile-edit-comparison-caption {
+  font: 500 10px/1.1 Roboto, sans-serif;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #80868b;
+}
+
+.mobile-edit-comparison-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.mobile-edit-comparison.tone-better,
+.mobile-edit-comparison.tone-better .mobile-edit-comparison-value {
   color: #188038;
 }
 
-.mobile-edit-comparison.tone-worse {
+.mobile-edit-comparison.tone-worse,
+.mobile-edit-comparison.tone-worse .mobile-edit-comparison-value {
   color: #c5221f;
 }
 

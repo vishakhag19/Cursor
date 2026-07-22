@@ -126,11 +126,15 @@ function MapClickHandler({ onMapClick, onContextMenu }) {
   return null;
 }
 
-function FitBounds({ positions, version, padding }) {
+function FitBounds({ positions, version, padding, enabled = true }) {
   const map = useMap();
-  // Re-fit when version or chrome padding changes. Skip geometry-only updates
-  // during route editing (version is not bumped on drag commits).
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+
+  // Re-fit only when fit version / padding changes — never because edit
+  // mode toggled (that would yank zoom after the user framed an area).
   useEffect(() => {
+    if (!enabledRef.current) return;
     if (!positions?.length) return;
     const pad = {
       top: padding?.top ?? 80,
@@ -334,7 +338,12 @@ export default function MapView({
         onMapClick={onMapClick}
         onContextMenu={onContextMenu}
       />
-      <FitBounds positions={fitPositions} version={fitKey} padding={fitPadding} />
+      <FitBounds
+        positions={fitPositions}
+        version={fitKey}
+        padding={fitPadding}
+        enabled={!editMode}
+      />
       <FlyTo target={flyTarget} />
       <LocateControl onLocate={onLocateReady} />
       <ZoomBridge onReady={onZoomReady} />

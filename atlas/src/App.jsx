@@ -716,8 +716,8 @@ export default function App() {
     setSelectedRouteId(baselineRoute.id);
     routeGeometryRef.current = baselineRoute.geometry;
     setRouteGeometry(baselineRoute.geometry);
-    setFitKey((k) => k + 1);
-    showStatus("Reset to suggested route");
+    // Keep the user's zoom during edit — don't re-fit the full route.
+    showStatus("Reset to original route");
   }, [baselineRoute, stops, showStatus, clearEditHistory]);
 
   const toggleEditMode = useCallback(() => {
@@ -1090,22 +1090,28 @@ export default function App() {
               <md-icon>undo</md-icon>
             </md-icon-button>
           </ActionTip>
-          <ActionTip tip="Reset to suggested route">
+          <ActionTip tip="Reset to original route">
             <md-icon-button
               type="button"
               class="mobile-edit-reset"
-              aria-label="Reset to suggested route"
+              aria-label="Reset to original route"
               onClick={resetToSuggested}
               disabled={!canReset || undefined}
             >
               <md-icon>restart_alt</md-icon>
             </md-icon-button>
           </ActionTip>
-          {comparison?.label ? (
+          {comparison ? (
             <span
-              className={`mobile-edit-comparison tone-${comparison.tone} md-typescale-label-medium`}
+              className={`mobile-edit-comparison tone-${comparison.tone}`}
+              title={comparison.label}
             >
-              {comparison.label}
+              <span className="mobile-edit-comparison-caption">Travel time</span>
+              <span className="mobile-edit-comparison-value md-typescale-label-medium">
+                {editBusy || editPreview?.active
+                  ? "Updating…"
+                  : comparison.shortLabel}
+              </span>
             </span>
           ) : (
             <span className="mobile-edit-spacer" aria-hidden />
@@ -1125,8 +1131,8 @@ export default function App() {
         <div className="edit-coach" role="status">
           <md-icon class="edit-coach-icon">touch_app</md-icon>
           <p className="edit-coach-text md-typescale-body-medium">
-            Press and drag the blue route to bend it — the line follows your
-            finger, then snaps to roads. Tap Done when finished.
+            Press and drag the blue route to bend it. Travel time vs the
+            original route updates in the bar above. Tap Done when finished.
           </p>
           <button
             type="button"
@@ -1135,6 +1141,17 @@ export default function App() {
           >
             Got it
           </button>
+        </div>
+      )}
+
+      {editMode && comparison && !isCompact && (
+        <div
+          className={`map-comparison tone-${comparison.tone}`}
+          role="status"
+        >
+          {editBusy || editPreview?.active
+            ? "Updating travel time…"
+            : comparison.mapLabel}
         </div>
       )}
 

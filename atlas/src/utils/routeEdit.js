@@ -1,19 +1,30 @@
-/** Compare an edited (or preview) duration against the suggested baseline. */
+/** Compare an edited (or preview) duration against the original suggested route. */
 export function comparisonVsSuggested(currentDuration, baselineDuration) {
   if (currentDuration == null || baselineDuration == null) return null;
   const diffMin = Math.round((currentDuration - baselineDuration) / 60);
   if (diffMin === 0) {
-    return { label: "Same as suggested", tone: "neutral", diffMin: 0 };
+    return {
+      label: "Same travel time as original",
+      shortLabel: "Same time",
+      mapLabel: "Travel time: same as original",
+      tone: "neutral",
+      diffMin: 0,
+    };
   }
   if (diffMin > 0) {
     return {
-      label: `+${diffMin} min`,
+      label: `${diffMin} min longer than original`,
+      shortLabel: `+${diffMin} min`,
+      mapLabel: `Travel time: ${diffMin} min longer`,
       tone: "worse",
       diffMin,
     };
   }
+  const faster = Math.abs(diffMin);
   return {
-    label: `${diffMin} min`,
+    label: `${faster} min shorter than original`,
+    shortLabel: `−${faster} min`,
+    mapLabel: `Travel time: ${faster} min shorter`,
     tone: "better",
     diffMin,
   };
