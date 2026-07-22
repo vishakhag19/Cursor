@@ -61,7 +61,7 @@ function isTouchLikeEvent(e) {
 
 const VIA_DELETE_ICON = L.divIcon({
   className: "atlas-via-delete",
-  html: `<button type="button" class="via-map-delete" title="Remove this point" aria-label="Remove this point">
+      html: `<button type="button" class="via-map-delete" title="Remove this via point" aria-label="Remove this via point">
       <span aria-hidden="true">×</span>
     </button>`,
   iconSize: [28, 28],
