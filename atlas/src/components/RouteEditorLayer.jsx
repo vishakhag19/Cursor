@@ -93,8 +93,31 @@ function orderedViasWithInsert(vias, geometry, segmentIndex, newVia) {
 }
 
 /**
+ * Instant rubber-band path that follows the finger/cursor while OSRM
+ * preview catches up — keeps drag feeling glued to the pointer.
+ */
+function buildLocalPreview(geometry, lat, lng, segmentIndex, viaId, vias) {
+  if (!geometry?.length) return [[lat, lng]];
+
+  let seg = segmentIndex;
+  if (viaId) {
+    const via = vias?.find((v) => v.id === viaId);
+    const closest = closestPointOnPolyline(
+      via ? { lat: via.lat, lng: via.lng } : { lat, lng },
+      geometry,
+    );
+    seg = closest?.segmentIndex ?? seg ?? 0;
+  }
+
+  const maxSeg = Math.max(0, geometry.length - 2);
+  const i = Math.max(0, Math.min(seg ?? 0, maxSeg));
+  return [...geometry.slice(0, i + 1), [lat, lng], ...geometry.slice(i + 1)];
+}
+
+/**
  * Drag-to-reshape the active route (edit mode only).
- * Snaps to nearest road and shows a live dashed preview before commit.
+ * Local rubber-band follows the pointer immediately; dashed OSRM preview
+ * refines to roads, then commit snaps permanently.
  */
 export default function RouteEditorLayer({
   enabled,
@@ -115,6 +138,7 @@ export default function RouteEditorLayer({
   const [dragState, setDragState] = useState(null);
   const dragRef = useRef(null);
   const snapTimer = useRef(null);
+  const moveRaf = useRef(null);
   const previewSeq = useRef(0);
   const dragSession = useRef(0);
   const listenersRef = useRef(null);
@@ -156,6 +180,10 @@ export default function RouteEditorLayer({
 
   function endDragVisual() {
     clearTimeout(snapTimer.current);
+    if (moveRaf.current != null) {
+      cancelAnimationFrame(moveRaf.current);
+      moveRaf.current = null;
+    }
     previewSeq.current += 1;
     dragRef.current = null;
     setDragState(null);
@@ -181,6 +209,7 @@ export default function RouteEditorLayer({
   useEffect(
     () => () => {
       clearTimeout(snapTimer.current);
+      if (moveRaf.current != null) cancelAnimationFrame(moveRaf.current);
       previewSeq.current += 1;
       clearDocListeners();
       map.dragging.enable();
@@ -282,29 +311,71 @@ export default function RouteEditorLayer({
 
   function schedulePreview(lat, lng, segmentIndex, viaId, session) {
     clearTimeout(snapTimer.current);
+    // Local rubber-band already follows the pointer; OSRM can lag a bit.
     snapTimer.current = setTimeout(() => {
       runPreview(lat, lng, segmentIndex, viaId, session);
-    }, 100);
+    }, 160);
   }
 
   async function finishDrag(session, { cancel = false } = {}) {
     if (session !== dragSession.current) return;
     clearTimeout(snapTimer.current);
+    if (moveRaf.current != null) {
+      cancelAnimationFrame(moveRaf.current);
+      moveRaf.current = null;
+    }
     const state = dragRef.current;
-    // Invalidate any in-flight preview so it cannot re-stick to the cursor.
+    // Invalidate in-flight previews so they cannot resurrect the cursor.
     previewSeq.current += 1;
-    dragRef.current = null;
-    setDragState(null);
-    onPreview?.(null);
+
+    const holdGeom =
+      !cancel &&
+      state?.movedEnough &&
+      (state.previewGeometry?.length > 0
+        ? state.previewGeometry
+        : state.localPreviewGeometry?.length > 0
+          ? state.localPreviewGeometry
+          : null);
+
     map.dragging.enable();
     if (map.touchZoom?.enable) map.touchZoom.enable();
     map.getContainer().classList.remove("is-route-dragging");
     clearDocListeners();
 
-    if (cancel || !state?.active) return;
+    if (cancel || !state?.active || !state.movedEnough) {
+      dragRef.current = null;
+      setDragState(null);
+      onPreview?.(null);
+      return;
+    }
 
-    // Require a real drag — a plain click must not create/move a via.
-    if (!state.movedEnough) return;
+    // Keep the last preview visible until commit lands (avoids snap-back lag).
+    if (holdGeom) {
+      const holding = {
+        active: false,
+        committing: true,
+        session,
+        lat: state.snapLat ?? state.lat,
+        lng: state.snapLng ?? state.lng,
+        snapLat: state.snapLat,
+        snapLng: state.snapLng,
+        snapped: Boolean(state.snapped),
+        previewGeometry: holdGeom,
+        localPreviewGeometry: null,
+        previewDistance: state.previewDistance,
+        previewDuration: state.previewDuration,
+        segmentIndex: state.segmentIndex,
+        viaId: state.viaId || null,
+        movedEnough: true,
+      };
+      dragRef.current = holding;
+      setDragState(holding);
+      if (state.previewDuration != null) onPreview?.(holding);
+    } else {
+      dragRef.current = null;
+      setDragState(null);
+      onPreview?.(null);
+    }
 
     try {
       const snapped =
@@ -327,6 +398,12 @@ export default function RouteEditorLayer({
       else await onCommitVia?.(snapped, state.segmentIndex);
     } catch (err) {
       onError?.(err.message || "No road nearby");
+    } finally {
+      if (session === dragSession.current) {
+        dragRef.current = null;
+        setDragState(null);
+        onPreview?.(null);
+      }
     }
   }
 
@@ -409,25 +486,60 @@ export default function RouteEditorLayer({
         if (dx * dx + dy * dy >= DRAG_PX * DRAG_PX) movedEnough = true;
       }
 
+      const localPreviewGeometry = movedEnough
+        ? buildLocalPreview(
+            geometryRef.current,
+            lat,
+            lng,
+            dragRef.current.segmentIndex,
+            dragRef.current.viaId || null,
+            viasRef.current,
+          )
+        : null;
+
       dragRef.current = {
         ...dragRef.current,
         lat,
         lng,
         snapped: false,
         movedEnough,
+        localPreviewGeometry,
+        // Drop stale road preview until the next OSRM result arrives.
+        previewGeometry: null,
+        previewDistance: null,
+        previewDuration: null,
       };
-      setDragState((prev) =>
-        prev ? { ...prev, lat, lng, snapped: false, movedEnough } : prev,
-      );
 
-      if (movedEnough) {
-        schedulePreview(
-          lat,
-          lng,
-          dragRef.current.segmentIndex,
-          dragRef.current.viaId || null,
-          session,
-        );
+      if (moveRaf.current == null) {
+        moveRaf.current = requestAnimationFrame(() => {
+          moveRaf.current = null;
+          const s = dragRef.current;
+          if (!s?.active || session !== dragSession.current) return;
+          setDragState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  lat: s.lat,
+                  lng: s.lng,
+                  snapped: false,
+                  movedEnough: s.movedEnough,
+                  localPreviewGeometry: s.localPreviewGeometry,
+                  previewGeometry: s.previewGeometry,
+                  previewDistance: s.previewDistance,
+                  previewDuration: s.previewDuration,
+                }
+              : prev,
+          );
+          if (s.movedEnough) {
+            schedulePreview(
+              s.lat,
+              s.lng,
+              s.segmentIndex,
+              s.viaId || null,
+              session,
+            );
+          }
+        });
       }
     };
 
@@ -760,7 +872,12 @@ export default function RouteEditorLayer({
   const displayGeometry =
     dragState?.previewGeometry?.length > 0
       ? dragState.previewGeometry
-      : geometry;
+      : dragState?.localPreviewGeometry?.length > 0
+        ? dragState.localPreviewGeometry
+        : geometry;
+
+  const isDragging = Boolean(dragState?.active);
+  const isCommitting = Boolean(dragState?.committing);
 
   return (
     <>
@@ -772,7 +889,8 @@ export default function RouteEditorLayer({
         interactive={false}
       />
 
-      {dragState?.previewGeometry?.length > 0 && (
+      {(dragState?.previewGeometry?.length > 0 ||
+        dragState?.localPreviewGeometry?.length > 0) && (
         <Polyline
           positions={geometry}
           pane="routeEdit"
@@ -791,41 +909,47 @@ export default function RouteEditorLayer({
         positions={displayGeometry}
         pane="routeEdit"
         pathOptions={{
-          color: dragState?.active ? "#F9AB00" : "#1A73E8",
+          color: isDragging || isCommitting ? "#F9AB00" : "#1A73E8",
           weight: 6,
           opacity: 0.95,
-          dashArray: dragState?.active ? "10 8" : null,
+          dashArray: isDragging || isCommitting ? "10 8" : null,
           lineJoin: "round",
           lineCap: "round",
         }}
         interactive={false}
       />
 
-      {vias.map((via) => (
-        <Marker
-          key={via.id}
-          position={[via.lat, via.lng]}
-          icon={getHandleIcon(
-            dragState?.viaId === via.id,
-            selectedViaId === via.id,
-          )}
-          eventHandlers={{
-            click: (e) => {
-              L.DomEvent.stopPropagation(e);
-              onSelectVia?.(via.id);
-            },
-            contextmenu: (e) => {
-              L.DomEvent.stopPropagation(e);
-              L.DomEvent.preventDefault(e);
-              onSelectVia?.(via.id);
-              onDeleteVia?.(via.id);
-            },
-          }}
-          zIndexOffset={2000}
-        />
-      ))}
+      {vias.map((via) => {
+        const draggingThis = dragState?.viaId === via.id && dragState?.active;
+        const lat = draggingThis ? dragState.lat : via.lat;
+        const lng = draggingThis ? dragState.lng : via.lng;
+        return (
+          <Marker
+            key={via.id}
+            position={[lat, lng]}
+            icon={getHandleIcon(
+              draggingThis,
+              selectedViaId === via.id,
+            )}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onSelectVia?.(via.id);
+              },
+              contextmenu: (e) => {
+                L.DomEvent.stopPropagation(e);
+                L.DomEvent.preventDefault(e);
+                onSelectVia?.(via.id);
+                onDeleteVia?.(via.id);
+              },
+            }}
+            zIndexOffset={2000}
+          />
+        );
+      })}
 
       {selectedViaId &&
+        !dragState?.active &&
         vias
           .filter((v) => v.id === selectedViaId)
           .map((via) => (
@@ -881,7 +1005,7 @@ export default function RouteEditorLayer({
           )}
           <CircleMarker
             center={[dragState.lat, dragState.lng]}
-            radius={dragState.snapped ? 10 : 12}
+            radius={dragState.snapped ? 10 : 14}
             pane="routeEdit"
             pathOptions={{
               color: dragState.snapped ? "#1A73E8" : "#EA4335",
@@ -894,7 +1018,7 @@ export default function RouteEditorLayer({
           {!dragState.snapped && (
             <CircleMarker
               center={[dragState.lat, dragState.lng]}
-              radius={20}
+              radius={22}
               pane="routeEdit"
               pathOptions={{
                 color: "#EA4335",

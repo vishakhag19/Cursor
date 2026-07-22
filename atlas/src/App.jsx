@@ -746,10 +746,6 @@ export default function App() {
         if (mobile) {
           setPanelOpen(false);
           setEditCoachOpen(true);
-          showStatus(
-            "Drag the blue route to reshape it. Tap Done when finished.",
-            8000,
-          );
         } else {
           setPanelOpen(true);
           setEditCoachOpen(false);
@@ -1129,7 +1125,8 @@ export default function App() {
         <div className="edit-coach" role="status">
           <md-icon class="edit-coach-icon">touch_app</md-icon>
           <p className="edit-coach-text md-typescale-body-medium">
-            Drag the blue route to reshape it. Tap Done when you are finished.
+            Press and drag the blue route to bend it — the line follows your
+            finger, then snaps to roads. Tap Done when finished.
           </p>
           <button
             type="button"
