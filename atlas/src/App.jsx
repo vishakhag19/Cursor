@@ -1640,7 +1640,7 @@ export default function App() {
 
   /**
    * Feature 6: mid-nav reroute interruption.
-   * Auto-demo ~5s after Start; also triggerable via "Simulate reroute".
+   * Auto-shows ~3s after Start (no manual simulate control).
    * ASSUMPTION: no live incident feed — mock reason for prototype testing.
    */
   const offerRerouteDemo = useCallback(() => {
@@ -1671,7 +1671,7 @@ export default function App() {
     }
     const t = setTimeout(() => {
       offerRerouteDemo();
-    }, 5000);
+    }, 3000);
     return () => clearTimeout(t);
   }, [
     navigating,
@@ -2154,11 +2154,6 @@ export default function App() {
                 onRejectReroute={rejectReroute}
                 canReturnToOriginal={acceptedReroute && Boolean(navOriginalRoute)}
                 onReturnToOriginal={returnToOriginalRoute}
-                onDemoReroute={
-                  !rerouteSuggestion && !acceptedReroute
-                    ? offerRerouteDemo
-                    : null
-                }
               />
             )}
             {!navigating && !showSteps && selectedRoute.steps?.length > 0 && (

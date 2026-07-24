@@ -16,6 +16,9 @@ const DEFAULT_ZOOM = 13;
 
 /** Teardrop map pin — no letter badges (A/B chips). */
 const PIN_ICON_CACHE = new Map();
+/** Bright Google-style route blue for numbered options */
+const ROUTE_BLUE = "#2979FF";
+const ROUTE_BLUE_ALT = "#82B1FF";
 
 function pinIcon(kind = "default") {
   const cached = PIN_ICON_CACHE.get(kind);
@@ -25,8 +28,8 @@ function pinIcon(kind = "default") {
     default: "#EA4335",
     start: "#34A853",
     end: "#EA4335",
-    stop: "#1A73E8",
-    search: "#1A73E8",
+    stop: ROUTE_BLUE,
+    search: ROUTE_BLUE,
   };
   const color = colors[kind] || colors.default;
   const icon = L.divIcon({
@@ -43,6 +46,32 @@ function pinIcon(kind = "default") {
   });
   PIN_ICON_CACHE.set(kind, icon);
   return icon;
+}
+
+const ROUTE_NUM_ICON_CACHE = new Map();
+function routeNumberIcon(num, active = false) {
+  const key = `${num}-${active ? 1 : 0}`;
+  const cached = ROUTE_NUM_ICON_CACHE.get(key);
+  if (cached) return cached;
+  const bg = active ? ROUTE_BLUE : "#fff";
+  const fg = active ? "#fff" : ROUTE_BLUE;
+  const border = ROUTE_BLUE;
+  const icon = L.divIcon({
+    className: "atlas-route-num",
+    html: `<div class="map-route-num ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE};background:${bg};color:${fg};border-color:${border}">${num}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+  ROUTE_NUM_ICON_CACHE.set(key, icon);
+  return icon;
+}
+
+function geometryMidpoint(geometry) {
+  if (!geometry?.length) return null;
+  const i = Math.floor(geometry.length / 2);
+  const pt = geometry[i];
+  if (!pt) return null;
+  return { lat: pt[0], lng: pt[1] };
 }
 
 const USER_LOC_ICON = L.divIcon({
@@ -529,9 +558,9 @@ export default function MapView({
             positions={opt.geometry}
             pane="routeAlt"
             pathOptions={{
-              color: "#64B5F6",
+              color: ROUTE_BLUE_ALT,
               weight: 5,
-              opacity: 0.82,
+              opacity: 0.88,
               lineJoin: "round",
               lineCap: "round",
             }}
@@ -560,7 +589,7 @@ export default function MapView({
               positions={opt.geometry}
               pane="routeSelected"
               pathOptions={{
-                color: "#1A73E8",
+                color: ROUTE_BLUE,
                 weight: 6,
                 opacity: 0.95,
                 lineJoin: "round",
@@ -588,6 +617,28 @@ export default function MapView({
                 weight: 18,
                 opacity: 0,
               }}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  onSelectRoute?.(opt);
+                },
+              }}
+            />
+          );
+        })}
+
+      {/* Numbered badges match the panel list (1, 2, 3…) in bright blue */}
+      {!showRouteEditor &&
+        routeOptions.map((opt, index) => {
+          const mid = geometryMidpoint(opt?.geometry);
+          if (!mid) return null;
+          const active = opt.id === selectedRouteId;
+          return (
+            <Marker
+              key={`num-${opt.id}`}
+              position={[mid.lat, mid.lng]}
+              icon={routeNumberIcon(index + 1, active)}
+              zIndexOffset={active ? 1600 : 1400}
               eventHandlers={{
                 click: (e) => {
                   L.DomEvent.stopPropagation(e);

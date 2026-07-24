@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import SuggestInput from "./SuggestInput";
-import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import { formatDistance, formatDuration } from "../utils/format";
 
@@ -20,17 +19,17 @@ function useIsCompact(query = "(max-width: 800px)") {
 
 /**
  * Landing search — Saved routes under the input; suggestions below.
- * Mobile: search field only until the field is focused.
- * Avoided roads live under Route preferences → Your road rules.
+ * Mobile: search-only until focus, unless Saved routes exist (then show them).
+ * Selecting a place drops a map pin only — no place details card.
  */
 export default function SearchPanel({
   query,
   onQueryChange,
   onSelectPlace,
-  place,
+  place: _place,
   onClear,
-  onDirectionsTo,
-  onDirectionsFrom,
+  onDirectionsTo: _onDirectionsTo,
+  onDirectionsFrom: _onDirectionsFrom,
   recentPlaces = [],
   near = null,
   savedRoutes = [],
@@ -59,8 +58,12 @@ export default function SearchPanel({
 
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
-  const showBody = !isCompact || mobileExpanded || Boolean(place) || listVisible;
-  const showSaved = showBody && !place && !listVisible && savedRoutes.length > 0;
+  const hasSaved = savedRoutes.length > 0;
+  // On mobile, expand when the user focuses search OR when Saved routes exist
+  // so Saved is reachable without hunting for a hidden section.
+  const showBody =
+    !isCompact || mobileExpanded || listVisible || hasSaved;
+  const showSaved = showBody && !listVisible && hasSaved;
 
   return (
     <section
@@ -77,6 +80,7 @@ export default function SearchPanel({
               onSelect={(selected) => {
                 onSelectPlace(selected);
                 clearPlaceList();
+                if (isCompact) setMobileExpanded(false);
               }}
               placeholder="Search here"
               allowCurrentLocation={false}
@@ -158,17 +162,10 @@ export default function SearchPanel({
                 onSelectPlace(selected);
                 clearPlaceList();
               }
+              if (isCompact) setMobileExpanded(false);
             }}
           />
         </div>
-      )}
-
-      {place && !listVisible && showBody && (
-        <PlaceDetailsCard
-          place={place}
-          onDirectionsTo={onDirectionsTo}
-          onDirectionsFrom={onDirectionsFrom}
-        />
       )}
     </section>
   );

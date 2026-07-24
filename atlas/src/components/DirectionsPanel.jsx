@@ -331,7 +331,12 @@ export default function DirectionsPanel({
                 >
                   <div className="dir-route-body">
                     <div className="dir-route-title-row">
-                      <md-icon class="dir-route-mode">{modeMeta.icon}</md-icon>
+                      <span
+                        className={`dir-route-num ${active ? "is-active" : ""}`}
+                        aria-hidden
+                      >
+                        {index + 1}
+                      </span>
                       <div>
                         <div className="md-typescale-title-small">
                           {opt.label}

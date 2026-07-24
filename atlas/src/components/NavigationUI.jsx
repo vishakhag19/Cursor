@@ -16,7 +16,6 @@ export default function NavigationUI({
   onRejectReroute = null,
   canReturnToOriginal = false,
   onReturnToOriginal = null,
-  onDemoReroute = null,
 }) {
   if (!route || !active) return null;
 
@@ -75,11 +74,6 @@ export default function NavigationUI({
           </div>
         </div>
         <div className="nav-footer-actions">
-          {!showPrompt && onDemoReroute ? (
-            <md-outlined-button type="button" onClick={onDemoReroute}>
-              Simulate reroute
-            </md-outlined-button>
-          ) : null}
           {canReturnToOriginal ? (
             <md-text-button type="button" onClick={onReturnToOriginal}>
               Return to original

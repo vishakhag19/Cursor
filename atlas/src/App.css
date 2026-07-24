@@ -311,7 +311,7 @@
 
 .dir-route-card.is-active {
   background: #e8f0fe;
-  border-color: #dadce0;
+  border-color: #2979ff;
 }
 
 .dir-route-card.is-editing {
@@ -633,6 +633,45 @@
 
 .dir-route-mode {
   color: var(--md-sys-color-on-surface-variant);
+}
+
+.dir-route-num {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #2979ff;
+  background: #fff;
+  border: 2px solid #2979ff;
+  box-sizing: border-box;
+}
+
+.dir-route-num.is-active {
+  color: #fff;
+  background: #2979ff;
+  border-color: #2979ff;
+}
+
+.atlas-route-num {
+  background: transparent !important;
+  border: none !important;
+}
+
+.map-route-num {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font: 700 13px/1 system-ui, sans-serif;
+  border: 2px solid #2979ff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
 }
 
 .dir-route-badge {
@@ -2153,9 +2192,10 @@ md-text-button {
     bottom: auto;
     width: auto;
     max-width: none;
-    max-height: min(62dvh, 560px);
-    border-radius: 0 0 16px 16px;
+    max-height: min(72dvh, 640px);
+    border-radius: 0 0 20px 20px;
     --panel-pad-x: 14px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .app.panel-collapsed .panel {
@@ -2167,8 +2207,16 @@ md-text-button {
   }
 
   .mode-panel {
-    padding: 6px var(--panel-pad-x) 14px;
+    padding: 6px var(--panel-pad-x) 28px;
     gap: 10px;
+  }
+
+  .search-panel.is-expanded {
+    padding-bottom: 32px;
+  }
+
+  .landing-saved {
+    margin-bottom: 8px;
   }
 
   /* Compact route option rows on phones */
