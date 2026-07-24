@@ -3082,11 +3082,11 @@ md-text-button {
   display: none;
 }
 
-/* Map chrome sits above the anchored nav footer */
+/* Map chrome: top-right under the maneuver banner (not beside the card) */
 .app.nav-mode .map-controls {
-  top: auto;
-  bottom: 88px;
-  right: 16px;
+  top: calc(env(safe-area-inset-top, 0px) + 148px);
+  bottom: auto;
+  right: 12px;
 }
 
 .app.nav-mode .leaflet-control-attribution {
@@ -3239,16 +3239,17 @@ md-text-button {
   overflow: visible;
 }
 
-/* Keep map chrome under the nav footer (above zoom / layers / recenter) */
+/* Keep map chrome clear of bottom FABs / sheets on compact layouts */
 @media (max-width: 800px) {
   .app.nav-mode .map-controls {
-    top: auto;
-    bottom: 84px;
+    top: calc(env(safe-area-inset-top, 0px) + 140px);
+    bottom: auto;
     right: 12px;
   }
 
   /* Raise map chrome above the steps FAB; sheet covers chrome while open */
   .app:has(.steps-fab) .map-controls {
+    top: auto;
     bottom: 84px;
   }
 
@@ -3620,17 +3621,21 @@ md-text-button {
 
 /*
  * Same compact mobile card on phone / tablet / desktop:
- * stacked Accept·Reject, width capped to the largest phone layout (~360).
+ * stacked Accept·Reject, width capped (~360), horizontally centered.
  */
 .reroute-prompt {
   --reroute-card-max: 360px;
+  --reroute-card-inset: 12px;
   position: absolute;
-  left: 12px;
+  left: 50%;
   right: auto;
   bottom: calc(94px + env(safe-area-inset-bottom, 0px));
   z-index: 1250;
   box-sizing: border-box;
-  width: min(var(--reroute-card-max), calc(100% - 76px));
+  width: min(
+    var(--reroute-card-max),
+    calc(100% - (2 * var(--reroute-card-inset)))
+  );
   max-width: var(--reroute-card-max);
   margin: 0;
   padding: 14px 16px 16px;
@@ -3638,6 +3643,7 @@ md-text-button {
   border-radius: 16px;
   border: 1px solid #e8eaed;
   box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
+  translate: -50% 0;
   animation: reroute-in 200ms ease-out;
   display: flex;
   flex-direction: column;
@@ -3647,11 +3653,11 @@ md-text-button {
 @keyframes reroute-in {
   from {
     opacity: 0;
-    translate: 0 12px;
+    translate: -50% 12px;
   }
   to {
     opacity: 1;
-    translate: 0 0;
+    translate: -50% 0;
   }
 }
 
@@ -3691,17 +3697,9 @@ md-text-button {
   bottom: calc(94px + env(safe-area-inset-bottom, 0px));
 }
 
-.app.nav-mode:has(.reroute-prompt) .map-controls {
-  bottom: calc(94px + 168px + env(safe-area-inset-bottom, 0px));
-}
-
 @media (min-width: 801px) {
   .app.nav-mode .reroute-prompt {
     bottom: calc(110px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .app.nav-mode:has(.reroute-prompt) .map-controls {
-    bottom: calc(110px + 168px + env(safe-area-inset-bottom, 0px));
   }
 }
 
