@@ -557,7 +557,7 @@
 }
 
 .landing-saved {
-  margin-top: 10px;
+  margin-top: 22px;
   padding-top: 0;
   padding-bottom: 0;
 }
@@ -1076,6 +1076,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel {
+  padding-top: 14px;
   padding-bottom: 8px;
   overflow: visible;
 }
