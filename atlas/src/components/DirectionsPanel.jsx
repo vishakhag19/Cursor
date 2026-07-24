@@ -368,23 +368,19 @@ export default function DirectionsPanel({
                 </button>
                 {active ? (
                   <div className="dir-route-actions">
-                    {onSaveRoute && !saving ? (
-                      <ActionTip tip="Save this exact path">
+                    {onShowSteps && !saving ? (
+                      <ActionTip tip="Steps">
                         <md-icon-button
                           type="button"
-                          class="dir-route-save-btn"
-                          aria-label="Save route"
+                          class="dir-route-steps-btn"
+                          aria-label="View turn-by-turn steps"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const from = stops[0]?.name || "Start";
-                            const to =
-                              stops[stops.length - 1]?.name || "Destination";
-                            setSaveName(`${from} to ${to}`);
-                            setSaving(true);
                             setMenuFor(null);
+                            onShowSteps();
                           }}
                         >
-                          <md-icon>bookmark</md-icon>
+                          <md-icon>list</md-icon>
                         </md-icon-button>
                       </ActionTip>
                     ) : null}
@@ -414,17 +410,22 @@ export default function DirectionsPanel({
                         </ActionTip>
                         {menuFor === opt.id ? (
                           <div className="dir-route-menu" role="menu">
-                            {onShowSteps ? (
+                            {onSaveRoute ? (
                               <button
                                 type="button"
                                 role="menuitem"
                                 onClick={() => {
                                   setMenuFor(null);
-                                  onShowSteps();
+                                  const from = stops[0]?.name || "Start";
+                                  const to =
+                                    stops[stops.length - 1]?.name ||
+                                    "Destination";
+                                  setSaveName(`${from} to ${to}`);
+                                  setSaving(true);
                                 }}
                               >
-                                <md-icon>list</md-icon>
-                                Steps
+                                <md-icon>bookmark</md-icon>
+                                Save route
                               </button>
                             ) : null}
                             {onOpenRoadRules ? (
