@@ -140,6 +140,8 @@ export default function App() {
   const [rerouteSuggestion, setRerouteSuggestion] = useState(null);
   const [navOriginalRoute, setNavOriginalRoute] = useState(null);
   const [acceptedReroute, setAcceptedReroute] = useState(false);
+  /** After Accept or Reject, do not auto-offer the demo prompt again. */
+  const [reroutePromptSettled, setReroutePromptSettled] = useState(false);
   const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantBusy, setAssistantBusy] = useState(false);
@@ -791,9 +793,12 @@ export default function App() {
     return run;
   }, []);
 
-  const ensureEditSession = useCallback(() => {
+  const ensureEditSession = useCallback((opts = {}) => {
     setShowSteps(false);
-    setNavigating(false);
+    // Mid-nav accept must keep turn-by-turn chrome; other edits leave nav.
+    if (!opts.keepNavigating) {
+      setNavigating(false);
+    }
     const selected =
       routeOptionsRef.current.find(
         (r) => r.id === selectedRouteIdRef.current,
@@ -999,24 +1004,27 @@ export default function App() {
   );
 
   /** Bend around the current corridor when the user asks about traffic. */
-  const rerouteAroundCorridor = useCallback(async () => {
-    const geometry = routeGeometryRef.current;
-    if (!geometry?.length) throw new Error("Get directions first");
-    const mid = geometryMidpoint(geometry);
-    if (!mid) throw new Error("No route to adjust");
-    ensureEditSession();
-    const detour = buildAvoidVia(mid, geometry, "busy corridor");
-    const via = {
-      id: uid(),
-      lat: detour.lat,
-      lng: detour.lng,
-      name: "Traffic detour",
-    };
-    await enqueueEdit(async () => {
-      const next = [...editViasRef.current, via];
-      await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
-    });
-  }, [ensureEditSession, enqueueEdit, rebuildFromVias]);
+  const rerouteAroundCorridor = useCallback(
+    async ({ keepNavigating = false } = {}) => {
+      const geometry = routeGeometryRef.current;
+      if (!geometry?.length) throw new Error("Get directions first");
+      const mid = geometryMidpoint(geometry);
+      if (!mid) throw new Error("No route to adjust");
+      ensureEditSession({ keepNavigating });
+      const detour = buildAvoidVia(mid, geometry, "busy corridor");
+      const via = {
+        id: uid(),
+        lat: detour.lat,
+        lng: detour.lng,
+        name: "Traffic detour",
+      };
+      await enqueueEdit(async () => {
+        const next = [...editViasRef.current, via];
+        await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
+      });
+    },
+    [ensureEditSession, enqueueEdit, rebuildFromVias],
+  );
 
   const undoEdit = useCallback(() => {
     const prev = editHistoryRef.current;
@@ -1647,6 +1655,7 @@ export default function App() {
     setPanelOpen(false);
     setRerouteSuggestion(null);
     setAcceptedReroute(false);
+    setReroutePromptSettled(false);
     // Snapshot the path we started with so "Return to original" can restore it.
     setNavOriginalRoute({
       ...selectedRoute,
@@ -1675,6 +1684,7 @@ export default function App() {
     setPanelOpen(true);
     setRerouteSuggestion(null);
     setAcceptedReroute(false);
+    setReroutePromptSettled(false);
     setNavOriginalRoute(null);
   }, []);
 
@@ -1706,7 +1716,13 @@ export default function App() {
   }, [selectedRoute, routeOptions]);
 
   useEffect(() => {
-    if (!navigating || !selectedRoute || rerouteSuggestion || acceptedReroute) {
+    if (
+      !navigating ||
+      !selectedRoute ||
+      rerouteSuggestion ||
+      acceptedReroute ||
+      reroutePromptSettled
+    ) {
       return undefined;
     }
     const t = setTimeout(() => {
@@ -1718,31 +1734,44 @@ export default function App() {
     selectedRoute,
     rerouteSuggestion,
     acceptedReroute,
+    reroutePromptSettled,
     offerRerouteDemo,
   ]);
 
   const acceptReroute = useCallback(async () => {
     const suggestion = rerouteSuggestion;
     setRerouteSuggestion(null);
+    setReroutePromptSettled(true);
     if (!suggestion) return;
+    setPanelOpen(false);
+    setNavigating(true);
     if (suggestion.altRoute) {
       selectRoute(suggestion.altRoute, { keepNavigating: true });
       setAcceptedReroute(true);
       setNavStepIndex(0);
+      showStatus("Reroute accepted");
       return;
     }
     try {
-      await rerouteAroundCorridor();
+      await rerouteAroundCorridor({ keepNavigating: true });
       setAcceptedReroute(true);
+      setNavigating(true);
       setNavStepIndex(0);
+      showStatus("Reroute accepted");
     } catch (err) {
+      setNavigating(true);
       showStatus(err.message || "Could not reroute");
     }
   }, [rerouteSuggestion, selectRoute, rerouteAroundCorridor, showStatus]);
 
   const rejectReroute = useCallback(() => {
     setRerouteSuggestion(null);
-  }, []);
+    setReroutePromptSettled(true);
+    setAcceptedReroute(false);
+    setNavigating(true);
+    setPanelOpen(false);
+    showStatus("Staying on current route");
+  }, [showStatus]);
 
   const returnToOriginalRoute = useCallback(() => {
     if (!navOriginalRoute) return;
