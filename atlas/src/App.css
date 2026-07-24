@@ -1307,6 +1307,10 @@ md-filled-tonal-button.is-edit-active {
   box-sizing: border-box;
 }
 
+.search-bar:has(.search-back-btn) {
+  padding-left: 4px;
+}
+
 .directions-panel {
   overflow-x: visible;
   overflow-y: auto;
@@ -2579,16 +2583,6 @@ md-text-button {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  .panel::before {
-    content: "";
-    display: block;
-    width: 36px;
-    height: 4px;
-    margin: 8px auto 0;
-    border-radius: 999px;
-    background: #dadce0;
-  }
-
   .app:has(.search-panel.is-searching) .panel,
   .app:has(.search-panel.has-suggest) .panel {
     max-height: min(92dvh, 860px);
@@ -2597,11 +2591,6 @@ md-text-button {
 
   .app:has(.search-panel.is-searching) .panel-header,
   .app:has(.search-panel.has-suggest) .panel-header {
-    display: none;
-  }
-
-  .app:has(.search-panel.is-searching) .panel::before,
-  .app:has(.search-panel.has-suggest) .panel::before {
     display: none;
   }
 
