@@ -2381,12 +2381,17 @@ md-outlined-text-field {
 .route-assistant-input {
   flex: 1;
   min-width: 0;
-  border: none;
+  border: 1px solid #e8eaed;
   outline: none;
-  background: transparent;
-  padding: 8px 4px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 10px 16px;
   color: inherit;
   font: inherit;
+}
+
+.route-assistant-input:focus {
+  border-color: #1a73e8;
 }
 
 .route-assistant-chips {
