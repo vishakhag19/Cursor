@@ -2001,14 +2001,24 @@ md-outlined-text-field {
   margin: 0;
   border: none;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  /* Solid white base so the map never shows through */
+  background: #ffffff;
   box-shadow: 0 1px 3px rgba(60, 64, 67, 0.28);
   /* Larger glyph only — button hit target stays --panel-control-size */
   --md-icon-button-icon-size: 28px;
   --md-icon-size: 28px;
   --md-icon-button-icon-color: #3c4043;
+  --md-icon-button-state-layer-color: #3c4043;
+  --md-icon-button-hover-state-layer-opacity: 0.08;
+  --md-icon-button-pressed-state-layer-opacity: 0.12;
   --md-icon-button-state-layer-width: var(--panel-control-size);
   --md-icon-button-state-layer-height: var(--panel-control-size);
+}
+
+/* Keep white base on hover — grey wash sits on top, not transparent over the map */
+md-icon-button.expand-panel:hover,
+.expand-panel:hover {
+  background: #ffffff;
 }
 
 /* Top-center of the visible map (offsets past the left panel when open) */
