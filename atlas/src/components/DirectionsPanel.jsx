@@ -57,7 +57,10 @@ export default function DirectionsPanel({
   const [saving, setSaving] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [menuFor, setMenuFor] = useState(null);
+  const [dragFrom, setDragFrom] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
   const menuRef = useRef(null);
+  const dragGhostRef = useRef(null);
   const [placeList, setPlaceList] = useState({
     open: false,
     items: [],
@@ -66,6 +69,57 @@ export default function DirectionsPanel({
     select: null,
   });
   const wasLoadingRef = useRef(false);
+
+  function clearDragGhost() {
+    const ghost = dragGhostRef.current;
+    if (ghost?.parentNode) ghost.parentNode.removeChild(ghost);
+    dragGhostRef.current = null;
+  }
+
+  function beginStopDrag(e, index) {
+    e.dataTransfer.setData("text/atlas-stop", String(index));
+    e.dataTransfer.setData("text/plain", String(index));
+    e.dataTransfer.effectAllowed = "move";
+
+    const field = e.currentTarget.closest(".dir-stop-field");
+    const label =
+      index === 0
+        ? "Starting point"
+        : index === stops.length - 1
+          ? "Destination"
+          : `Stop ${index}`;
+    const value = (stopTexts[index] || "").trim() || label;
+
+    clearDragGhost();
+    const ghost = document.createElement("div");
+    ghost.className = "dir-stop-drag-ghost";
+    ghost.innerHTML = `<span class="dir-stop-drag-ghost-label">${label}</span><span class="dir-stop-drag-ghost-value"></span>`;
+    ghost.querySelector(".dir-stop-drag-ghost-value").textContent = value;
+    const width = field?.offsetWidth || 260;
+    ghost.style.width = `${width}px`;
+    document.body.appendChild(ghost);
+    dragGhostRef.current = ghost;
+
+    const rect = ghost.getBoundingClientRect();
+    const offsetX = field
+      ? Math.min(
+          Math.max(e.clientX - field.getBoundingClientRect().left, 16),
+          width - 16,
+        )
+      : rect.width - 28;
+    const offsetY = rect.height / 2;
+    e.dataTransfer.setDragImage(ghost, offsetX, offsetY);
+    setDragFrom(index);
+    setDragOver(index);
+  }
+
+  function endStopDrag() {
+    clearDragGhost();
+    setDragFrom(null);
+    setDragOver(null);
+  }
+
+  useEffect(() => () => clearDragGhost(), []);
 
   function handleListChange(index, payload) {
     if (activeStop !== index && !payload.open) return;
@@ -250,15 +304,35 @@ export default function DirectionsPanel({
           <div className="dir-stops-fields">
             {stops.map((stop, i) => {
               const multi = stops.length > 2;
+              const rowClass = [
+                "dir-stop-row",
+                multi ? "has-controls" : "",
+                dragFrom === i ? "is-dragging" : "",
+                dragOver === i && dragFrom != null && dragFrom !== i
+                  ? "is-drop-target"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
               return (
               <div
-                className={`dir-stop-row ${multi ? "has-controls" : ""}`}
+                className={rowClass}
                 key={`stop-${i}`}
                 onDragOver={
                   multi
                     ? (e) => {
                         e.preventDefault();
                         e.dataTransfer.dropEffect = "move";
+                        if (dragOver !== i) setDragOver(i);
+                      }
+                    : undefined
+                }
+                onDragLeave={
+                  multi
+                    ? (e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget)) {
+                          setDragOver((cur) => (cur === i ? null : cur));
+                        }
                       }
                     : undefined
                 }
@@ -269,6 +343,7 @@ export default function DirectionsPanel({
                         const raw =
                           e.dataTransfer.getData("text/atlas-stop") ||
                           e.dataTransfer.getData("text/plain");
+                        endStopDrag();
                         if (raw === "" || raw == null) return;
                         const from = Number(raw);
                         if (
@@ -324,14 +399,8 @@ export default function DirectionsPanel({
                         aria-label="Drag to reorder"
                         title="Drag to reorder"
                         draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData(
-                            "text/atlas-stop",
-                            String(i),
-                          );
-                          e.dataTransfer.setData("text/plain", String(i));
-                          e.dataTransfer.effectAllowed = "move";
-                        }}
+                        onDragStart={(e) => beginStopDrag(e, i)}
+                        onDragEnd={endStopDrag}
                         onKeyDown={(e) => {
                           if (!onMoveStop) return;
                           if (e.key === "ArrowUp" && i > 0) {
