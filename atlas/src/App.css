@@ -117,7 +117,7 @@
   background: #fff;
   margin: 0 calc(-1 * var(--panel-pad-x, 16px));
   padding: 0 var(--panel-pad-x, 16px) 4px;
-  border-bottom: 1px solid #e8eaed;
+  border-bottom: none;
   box-sizing: border-box;
 }
 
