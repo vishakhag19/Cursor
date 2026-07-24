@@ -1244,11 +1244,6 @@ md-filled-tonal-button.is-edit-active {
   color: #202124;
 }
 
-.search-back-btn {
-  flex-shrink: 0;
-  margin-left: -6px;
-}
-
 .dir-avoid-chips {
   display: flex;
   gap: 8px;
@@ -1334,10 +1329,6 @@ md-filled-tonal-button.is-edit-active {
   overflow: visible;
   min-height: 48px;
   box-sizing: border-box;
-}
-
-.search-bar:has(.search-back-btn) {
-  padding-left: 4px;
 }
 
 .search-bar-field {
@@ -3667,10 +3658,6 @@ md-text-button {
 
 @media (min-width: 801px) {
   .dir-bottom-actions {
-    display: none;
-  }
-
-  .search-back-btn {
     display: none;
   }
 }
