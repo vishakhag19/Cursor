@@ -1170,7 +1170,24 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel.has-place {
-  padding-bottom: 12px;
+  /* Keep the place card snug — no tall empty strip under the action pills */
+  padding-bottom: 2px;
+  flex-grow: 0;
+}
+
+.search-panel.has-place .place-card.place-details,
+.search-panel.has-place .place-details.m3-card {
+  padding-bottom: 4px;
+  margin-bottom: 0;
+}
+
+.search-panel.has-place .place-actions {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.search-panel.has-place .place-coords {
+  margin-bottom: 6px;
 }
 
 .explore-chips {
@@ -2571,6 +2588,10 @@ md-text-button {
     padding-bottom: 8px;
   }
 
+  .search-panel.has-place.is-expanded {
+    padding-bottom: 2px;
+  }
+
   .search-panel.is-searching,
   .search-panel.has-suggest {
     padding-top: max(8px, env(safe-area-inset-top, 0px));
@@ -2584,6 +2605,11 @@ md-text-button {
     margin: 4px calc(-1 * var(--panel-pad-x, 16px)) 0;
     padding: 14px var(--panel-pad-x, 16px) 12px;
     box-shadow: none;
+  }
+
+  .search-panel.has-place .place-card.place-details,
+  .search-panel.has-place .place-details.m3-card {
+    padding-bottom: 4px;
   }
 
   .landing-saved {
