@@ -1758,7 +1758,10 @@ export default function App() {
     Boolean(editPreview?.active) ||
     editBusy;
   const showEditBar =
-    !panelOpen && !navigating && hasCustomEdits && Boolean(selectedRoute);
+    view === "directions" &&
+    !navigating &&
+    hasCustomEdits &&
+    Boolean(selectedRoute);
 
   // Collapsing the left panel should dismiss floating sheets that reposition off it.
   useEffect(() => {
@@ -1892,10 +1895,6 @@ export default function App() {
                 throw new Error("location");
               }
             }}
-            canUndo={editHistory.length > 0}
-            onUndo={undoEdit}
-            canReset={canReset}
-            onResetSuggested={resetToSuggested}
             comparison={hasCustomEdits ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
             onSaveRoute={saveCurrentRoute}
@@ -1917,37 +1916,6 @@ export default function App() {
         )}
       </aside>
 
-      {showEditBar && (
-        <div
-          className="route-reshape-bar"
-          role="toolbar"
-          aria-label="Route reshape actions"
-        >
-          <ActionTip tip="Undo last reshape (Ctrl+Z)">
-            <md-icon-button
-              type="button"
-              class="route-reshape-undo"
-              aria-label="Undo last reshape"
-              onClick={undoEdit}
-              disabled={editHistory.length === 0 || undefined}
-            >
-              <md-icon>undo</md-icon>
-            </md-icon-button>
-          </ActionTip>
-          <ActionTip tip="Reset to original route">
-            <md-icon-button
-              type="button"
-              class="route-reshape-reset"
-              aria-label="Reset to original route"
-              onClick={resetToSuggested}
-              disabled={!canReset || undefined}
-            >
-              <md-icon>restart_alt</md-icon>
-            </md-icon-button>
-          </ActionTip>
-        </div>
-      )}
-
       {!panelOpen && (
         <ActionTip tip="Open panel" className="expand-panel-tip">
           <md-icon-button
@@ -1962,6 +1930,36 @@ export default function App() {
       )}
 
       <main className="map-stage">
+        {showEditBar ? (
+          <div
+            className="route-reshape-bar"
+            role="toolbar"
+            aria-label="Route reshape actions"
+          >
+            <ActionTip tip="Undo last reshape (Ctrl+Z)">
+              <md-icon-button
+                type="button"
+                class="route-reshape-undo"
+                aria-label="Undo last reshape"
+                onClick={undoEdit}
+                disabled={editHistory.length === 0 || undefined}
+              >
+                <md-icon>undo</md-icon>
+              </md-icon-button>
+            </ActionTip>
+            <ActionTip tip="Reset to original route">
+              <md-icon-button
+                type="button"
+                class="route-reshape-reset"
+                aria-label="Reset to original route"
+                onClick={resetToSuggested}
+                disabled={!canReset || undefined}
+              >
+                <md-icon>restart_alt</md-icon>
+              </md-icon-button>
+            </ActionTip>
+          </div>
+        ) : null}
         <MapView
           mode={mapMode}
           layer={layer}

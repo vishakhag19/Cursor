@@ -1923,12 +1923,12 @@ md-outlined-text-field {
   --md-icon-button-state-layer-height: var(--panel-control-size);
 }
 
-/* Top-center undo / reset while reshaping with the panel collapsed */
+/* Center of the visible map (offsets past the left panel when open) */
 .route-reshape-bar {
   position: absolute;
-  top: 12px;
+  top: 50%;
   left: 50%;
-  translate: -50% 0;
+  translate: -50% -50%;
   z-index: 1100;
   display: flex;
   align-items: center;
@@ -1941,6 +1941,12 @@ md-outlined-text-field {
   border: 1px solid #e8eaed;
   border-radius: 999px;
   box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+  pointer-events: auto;
+}
+
+.app:not(.panel-collapsed) .route-reshape-bar {
+  /* Midpoint of the map to the right of the floating left panel */
+  left: calc(50% + (var(--atlas-panel-width, 400px) + 12px) / 2);
 }
 
 .route-reshape-bar md-icon-button {
@@ -1950,7 +1956,7 @@ md-outlined-text-field {
   --md-icon-button-icon-color: #5f6368;
 }
 
-/* Mobile: expand stays top-right; reshape bar stays centered */
+/* Mobile: panel is a top sheet — keep bar centered in the map below it */
 @media (max-width: 800px) {
   .expand-panel-tip {
     top: 12px;
@@ -1963,8 +1969,17 @@ md-outlined-text-field {
     height: var(--panel-control-size);
   }
 
-  .route-reshape-bar {
-    top: 10px;
+  .app:not(.panel-collapsed) .route-reshape-bar {
+    left: 50%;
+    top: auto;
+    bottom: 28%;
+    translate: -50% 0;
+  }
+
+  .app.panel-collapsed .route-reshape-bar {
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
   }
 }
 

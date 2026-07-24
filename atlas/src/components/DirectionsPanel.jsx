@@ -36,10 +36,6 @@ export default function DirectionsPanel({
   near = null,
   recentPlaces = [],
   onRequestLocation = null,
-  canUndo = false,
-  onUndo,
-  canReset = false,
-  onResetSuggested,
   comparison = null,
   editBusy = false,
   onShowSteps = null,
@@ -505,32 +501,6 @@ export default function DirectionsPanel({
                       >
                         <md-icon>auto_awesome</md-icon>
                         Ask assistant
-                      </button>
-                    ) : null}
-                    {canUndo ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setMenuFor(null);
-                          onUndo?.();
-                        }}
-                      >
-                        <md-icon>undo</md-icon>
-                        Undo
-                      </button>
-                    ) : null}
-                    {canReset ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setMenuFor(null);
-                          onResetSuggested?.();
-                        }}
-                      >
-                        <md-icon>restart_alt</md-icon>
-                        Reset to original
                       </button>
                     ) : null}
                   </div>
