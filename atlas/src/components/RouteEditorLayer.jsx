@@ -872,7 +872,7 @@ export default function RouteEditorLayer({
           positions={geometry}
           pane="routeEdit"
           pathOptions={{
-            color: "#1A73E8",
+            color: "#2979FF",
             weight: 4,
             opacity: 0.28,
             lineJoin: "round",
@@ -886,7 +886,7 @@ export default function RouteEditorLayer({
         positions={displayGeometry}
         pane="routeEdit"
         pathOptions={{
-          color: isDragging || isCommitting ? "#F9AB00" : "#1A73E8",
+          color: isDragging || isCommitting ? "#F9AB00" : "#2979FF",
           weight: 6,
           opacity: 0.95,
           dashArray: isDragging || isCommitting ? "10 8" : null,
@@ -937,7 +937,7 @@ export default function RouteEditorLayer({
                 radius={7}
                 pane="routeEdit"
                 pathOptions={{
-                  color: "#1A73E8",
+                  color: "#2979FF",
                   fillColor: "#1A73E8",
                   fillOpacity: dragState.snapped ? 0.95 : 0.35,
                   weight: 2,
