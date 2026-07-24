@@ -98,16 +98,6 @@ export default function SearchPanel({
     >
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
         <div className={`search-bar ${query ? "has-query" : ""}`}>
-          {listVisible || (isCompact && mobileExpanded) ? (
-            <md-icon-button
-              type="button"
-              class="search-back-btn"
-              aria-label="Back"
-              onClick={collapseSearch}
-            >
-              <md-icon>arrow_back</md-icon>
-            </md-icon-button>
-          ) : null}
           <div className="search-bar-field">
             <SuggestInput
               id="main-search"
@@ -132,10 +122,7 @@ export default function SearchPanel({
               <md-icon-button
                 class="search-clear-btn"
                 aria-label="Clear search"
-                onClick={() => {
-                  onClear();
-                  clearPlaceList();
-                }}
+                onClick={collapseSearch}
               >
                 <md-icon>close</md-icon>
               </md-icon-button>
