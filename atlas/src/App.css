@@ -1170,24 +1170,24 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel.has-place {
-  /* Keep the place card snug — no tall empty strip under the action pills */
-  padding-bottom: 2px;
+  /* Comfortable breathing room under the pills — not a tall empty strip */
+  padding-bottom: 4px;
   flex-grow: 0;
 }
 
 .search-panel.has-place .place-card.place-details,
 .search-panel.has-place .place-details.m3-card {
-  padding-bottom: 4px;
+  padding-bottom: 12px;
   margin-bottom: 0;
 }
 
 .search-panel.has-place .place-actions {
   margin-bottom: 0;
-  padding-bottom: 0;
+  padding-bottom: 4px;
 }
 
 .search-panel.has-place .place-coords {
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .explore-chips {
@@ -2589,7 +2589,7 @@ md-text-button {
   }
 
   .search-panel.has-place.is-expanded {
-    padding-bottom: 2px;
+    padding-bottom: 4px;
   }
 
   .search-panel.is-searching,
@@ -2609,7 +2609,7 @@ md-text-button {
 
   .search-panel.has-place .place-card.place-details,
   .search-panel.has-place .place-details.m3-card {
-    padding-bottom: 4px;
+    padding-bottom: 12px;
   }
 
   .landing-saved {
