@@ -310,6 +310,13 @@
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.dir-stop-field .suggest-wrap md-outlined-text-field {
+  width: 100%;
+  max-width: 100%;
 }
 
 .dir-stop-row .suggest-wrap.is-open {
@@ -1474,11 +1481,19 @@ md-filled-tonal-button.is-edit-active {
   width: 100%;
 }
 
-/* Shared fully-rounded inputs — search, directions stops, create */
+/*
+ * Labeled md-outlined-text-field cannot use stadium (999px) corners —
+ * Material’s notch outline path collapses into broken mid-field lines.
+ * Landing search stays fully rounded via the native .search-bar input.
+ */
 .suggest-wrap md-outlined-text-field,
 .create-panel md-outlined-text-field,
 md-outlined-text-field {
-  --md-outlined-text-field-container-shape: 999px;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  --md-outlined-text-field-container-shape: 24px;
   --md-outlined-text-field-outline-width: 1px;
   --md-outlined-text-field-hover-outline-width: 1px;
   --md-outlined-text-field-focus-outline-width: 2px;
@@ -2483,7 +2498,6 @@ md-outlined-text-field {
   background: rgba(255, 255, 255, 0.85) !important;
 }
 
-md-outlined-text-field,
 md-filled-button,
 md-filled-tonal-button,
 md-outlined-button,
@@ -2491,9 +2505,13 @@ md-text-button {
   width: auto;
 }
 
+/* Outlined fields fill their row; avoid width:auto collapsing the outline */
+.suggest-wrap md-outlined-text-field,
 .create-panel md-outlined-text-field,
-.create-panel .suggest-wrap md-outlined-text-field {
+.create-panel .suggest-wrap md-outlined-text-field,
+.directions-panel md-outlined-text-field {
   width: 100%;
+  max-width: 100%;
 }
 
 @media (max-width: 800px) {
