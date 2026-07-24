@@ -109,20 +109,23 @@
   margin: 0 calc(-1 * var(--panel-pad-x, 16px));
   padding: 0 var(--panel-pad-x, 16px) 4px;
   border-bottom: 1px solid #f1f3f4;
+  box-sizing: border-box;
 }
 
 .dir-top-bar {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 4px;
   min-height: 40px;
+  padding-inline: 0;
 }
 
 .dir-title {
   color: var(--md-sys-color-on-surface);
   min-width: 0;
-  flex: 1;
+  text-align: center;
+  justify-self: center;
 }
 
 .dir-travel-modes {
@@ -189,6 +192,14 @@
   justify-content: flex-end;
   gap: 0;
   flex-shrink: 0;
+  justify-self: end;
+}
+
+.dir-top-bar > md-icon-button {
+  justify-self: start;
+  margin: 0;
+  width: var(--panel-control-size);
+  height: var(--panel-control-size);
 }
 
 .dir-top-actions md-icon-button {
@@ -204,7 +215,8 @@
 
 .dir-stops {
   display: grid;
-  grid-template-columns: 16px 1fr 40px;
+  /* Equal side columns so left rail and right swap share the same gutter */
+  grid-template-columns: 40px 1fr 40px;
   gap: 4px 8px;
   align-items: stretch;
 }
@@ -510,6 +522,7 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  margin-inline-end: 0;
 }
 
 .dir-start-btn {
@@ -525,11 +538,13 @@
 }
 
 .dir-inline-step {
-  display: flex;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
   align-items: flex-start;
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid #e8eaed;
+  box-sizing: border-box;
 }
 
 .dir-inline-step:last-child {
@@ -1075,6 +1090,16 @@ md-filled-tonal-button.is-edit-active {
   box-sizing: border-box;
 }
 
+.directions-panel {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: calc(100dvh - 88px);
+  /* Keep left/right gutters equal when the scrollbar appears */
+  scrollbar-gutter: stable both-edges;
+  padding-inline: var(--panel-pad-x, 16px);
+  box-sizing: border-box;
+}
+
 .search-panel {
   padding-top: 14px;
   padding-bottom: 8px;
@@ -1312,7 +1337,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .directions-panel {
-  overflow-x: visible;
+  overflow-x: hidden;
   overflow-y: auto;
   max-height: calc(100dvh - 88px);
 }
