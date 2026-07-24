@@ -2,7 +2,12 @@ name: Deploy Atlas to GitHub Pages
 
 on:
   push:
-    branches: [main, cursor/interactive-route-editor-9bbe]
+    branches:
+      [
+        main,
+        cursor/interactive-route-editor-9bbe,
+        cursor/route-control-suite-9bbe,
+      ]
     paths:
       - "atlas/**"
       - ".github/workflows/deploy-pages.yml"
