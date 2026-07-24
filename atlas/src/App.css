@@ -337,7 +337,7 @@
     #fff 28%
   );
   padding-left: 8px;
-  border-radius: 0 24px 24px 0;
+  border-radius: 0 999px 999px 0;
 }
 
 .dir-stop-reorder md-icon-button {
@@ -1362,7 +1362,7 @@ md-filled-tonal-button.is-edit-active {
   padding: 4px var(--search-pad-r) 4px var(--search-pad-l);
   background: #fff;
   border: 1px solid #e8eaed;
-  border-radius: 12px;
+  border-radius: 999px;
   box-shadow: none;
   overflow: visible;
   min-height: 48px;
@@ -1474,10 +1474,11 @@ md-filled-tonal-button.is-edit-active {
   width: 100%;
 }
 
-/* Shared pill inputs — match landing search across directions / create */
+/* Shared fully-rounded inputs — search, directions stops, create */
 .suggest-wrap md-outlined-text-field,
-.create-panel md-outlined-text-field {
-  --md-outlined-text-field-container-shape: 24px;
+.create-panel md-outlined-text-field,
+md-outlined-text-field {
+  --md-outlined-text-field-container-shape: 999px;
   --md-outlined-text-field-outline-width: 1px;
   --md-outlined-text-field-hover-outline-width: 1px;
   --md-outlined-text-field-focus-outline-width: 2px;
@@ -2152,8 +2153,8 @@ md-filled-tonal-button.is-edit-active {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid #dadce0;
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 999px;
+  padding: 10px 16px;
   font: inherit;
   background: #fff;
   color: inherit;
@@ -3410,8 +3411,8 @@ md-text-button {
 .route-pref-select,
 .road-rules-select {
   border: 1px solid #dadce0;
-  border-radius: 8px;
-  padding: 8px 32px 8px 12px;
+  border-radius: 999px;
+  padding: 8px 32px 8px 14px;
   font: inherit;
   font-size: 0.8125rem;
   background-color: #fff;
