@@ -32,11 +32,12 @@
   flex-direction: column;
   min-width: 0;
   height: auto;
+  /* Match Route options sheet surface */
   background: #ffffff;
   border: 1px solid #e8eaed;
   border-radius: 16px;
-  box-shadow: none;
-  overflow: visible;
+  box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
+  overflow: hidden;
   transition: transform 0.22s ease, opacity 0.22s ease;
   --panel-pad-x: 16px;
   --md-sys-color-surface: #ffffff;
@@ -44,6 +45,10 @@
   --md-sys-color-surface-container-lowest: #ffffff;
   --md-sys-color-surface-container: #ffffff;
   --md-sys-color-surface-container-high: #f8f9fa;
+  --md-sys-color-on-surface: #202124;
+  --md-sys-color-on-surface-variant: #5f6368;
+  --md-sys-color-outline: #80868b;
+  --md-sys-color-outline-variant: #e8eaed;
 }
 
 .app.panel-collapsed .panel {
@@ -56,12 +61,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px var(--panel-pad-x) 0;
+  gap: 4px;
+  padding: 10px 8px 10px 16px;
   box-sizing: border-box;
+  border-bottom: 1px solid #e8eaed;
+  background: #fff;
+  flex-shrink: 0;
 }
 
-/* White circular chip, no border — md-icon-button hover/press states */
+/* Match route-sheet close control */
 .collapse-panel-btn {
   width: var(--panel-control-size);
   height: var(--panel-control-size);
@@ -69,10 +77,10 @@
   flex-shrink: 0;
   border: none;
   border-radius: 999px;
-  background: #fff;
-  /* Larger glyph only — button hit target stays --panel-control-size */
-  --md-icon-button-icon-size: 28px;
-  --md-icon-size: 28px;
+  background: transparent;
+  --md-icon-button-icon-size: 24px;
+  --md-icon-size: 24px;
+  --md-icon-button-icon-color: #5f6368;
   --md-icon-button-state-layer-width: var(--panel-control-size);
   --md-icon-button-state-layer-height: var(--panel-control-size);
 }
@@ -82,22 +90,23 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  color: var(--md-sys-color-primary);
+  flex: 1;
+  color: #1a73e8;
 }
 
 .brand-logo {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   display: block;
   border-radius: 50%;
 }
 
 .brand-name {
-  color: var(--md-sys-color-on-surface);
-  letter-spacing: -0.01em;
-  font-size: 1.375rem;
-  line-height: 1.2;
+  color: #202124;
+  letter-spacing: 0;
+  font-size: 1.125rem;
+  line-height: 1.25;
   font-weight: 500;
 }
 
@@ -108,7 +117,7 @@
   background: #fff;
   margin: 0 calc(-1 * var(--panel-pad-x, 16px));
   padding: 0 var(--panel-pad-x, 16px) 4px;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid #e8eaed;
   box-sizing: border-box;
 }
 
@@ -175,6 +184,7 @@
 .dir-travel-mode.is-active {
   background: #e8f0fe;
   color: #174ea6;
+  border-radius: 12px;
 }
 
 .dir-travel-mode:hover:not(.is-active) {
@@ -576,24 +586,28 @@
 }
 
 .landing-saved {
-  margin-top: 22px;
-  padding-top: 0;
-  padding-bottom: 0;
+  margin-top: 8px;
+  padding: 4px 0 8px;
+  border-top: 1px solid #e8eaed;
 }
 
 .landing-saved-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 0;
+  margin: 0;
+  padding: 12px 0 8px;
 }
 
 .landing-saved-head h2 {
   margin: 0;
+  color: #202124;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .landing-saved-icon {
-  color: #1a73e8;
+  color: #5f6368;
 }
 
 .landing-saved-tabs {
@@ -626,6 +640,15 @@
   padding: 0;
 }
 
+.landing-saved-list md-list-item.landing-saved-item {
+  --md-list-item-container-color: transparent;
+  transition: background 120ms ease;
+}
+
+.landing-saved-list md-list-item.landing-saved-item:hover {
+  background: #f8f9fa;
+}
+
 .landing-saved-item {
   --md-list-item-container-color: transparent;
   --md-list-item-top-space: 4px;
@@ -654,12 +677,15 @@
 
 .landing-saved-open-title {
   color: #202124;
-  font-size: 0.9375rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 .landing-saved-open-meta {
   color: #70757a;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .landing-saved-actions {
@@ -1084,9 +1110,10 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .mode-panel {
-  flex: 0 1 auto;
-  overflow: visible;
-  padding: 0 var(--panel-pad-x, 16px) 12px;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 8px var(--panel-pad-x, 16px) 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1097,7 +1124,7 @@ md-filled-tonal-button.is-edit-active {
 .directions-panel {
   overflow-x: hidden;
   overflow-y: auto;
-  max-height: calc(100dvh - 88px);
+  max-height: none;
   /* Keep left/right gutters equal when the scrollbar appears */
   scrollbar-gutter: stable both-edges;
   padding-inline: var(--panel-pad-x, 16px);
@@ -1105,9 +1132,10 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel {
-  padding-top: 14px;
+  padding-top: 12px;
   padding-bottom: 8px;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .search-panel.is-collapsed {
@@ -1323,8 +1351,8 @@ md-filled-tonal-button.is-edit-active {
   gap: 0;
   padding: 4px var(--search-pad-r) 4px var(--search-pad-l);
   background: #fff;
-  border: 1px solid #dadce0;
-  border-radius: 24px;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
   box-shadow: none;
   overflow: visible;
   min-height: 48px;
@@ -1608,10 +1636,11 @@ md-filled-tonal-button.is-edit-active {
 .place-card.place-details,
 .place-details.m3-card {
   box-shadow: none;
-  border: 1px solid #e8eaed;
-  border-radius: 16px;
-  margin-top: 8px;
-  padding: 14px 16px 16px;
+  border: none;
+  border-top: 1px solid #e8eaed;
+  border-radius: 0;
+  margin: 4px calc(-1 * var(--panel-pad-x, 16px)) 0;
+  padding: 14px var(--panel-pad-x, 16px) 12px;
   background: #fff;
 }
 
@@ -2445,9 +2474,13 @@ md-text-button {
     width: auto;
     max-width: none;
     max-height: min(72dvh, 640px);
-    border-radius: 0 0 28px 28px;
-    --panel-pad-x: 14px;
+    border-radius: 0 0 16px 16px;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    --panel-pad-x: 16px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
   }
 
   .app:has(.search-panel.is-searching) .panel,
@@ -2466,16 +2499,16 @@ md-text-button {
   }
 
   .panel-header {
-    padding: 4px var(--panel-pad-x) 0;
+    padding: 10px 8px 10px 16px;
   }
 
   .mode-panel {
-    padding: 0 var(--panel-pad-x) 12px;
+    padding: 8px var(--panel-pad-x) 12px;
     gap: 8px;
   }
 
   .search-panel {
-    padding-top: 8px;
+    padding-top: 12px;
   }
 
   .search-panel.is-expanded {
@@ -2490,15 +2523,16 @@ md-text-button {
   .place-card.place-details,
   .place-details.m3-card {
     border: none;
+    border-top: 1px solid #e8eaed;
     border-radius: 0;
-    margin-top: 4px;
-    padding: 8px 0 12px;
+    margin: 4px calc(-1 * var(--panel-pad-x, 16px)) 0;
+    padding: 14px var(--panel-pad-x, 16px) 12px;
     box-shadow: none;
   }
 
   .landing-saved {
     margin-bottom: 0;
-    padding-bottom: 0;
+    padding-bottom: 8px;
   }
 
   .dir-travel-modes {
