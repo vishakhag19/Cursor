@@ -237,7 +237,9 @@ export default function DirectionsPanel({
       ) : null}
 
       <div className="dir-stops-block">
-        <div className="dir-stops">
+        <div
+          className={`dir-stops ${stops.length > 2 ? "has-mid-stops" : ""}`}
+        >
           <div className="dir-stops-rail" aria-hidden>
             {stops.map((_, i) => (
               <span
@@ -341,16 +343,18 @@ export default function DirectionsPanel({
             })}
           </div>
 
-          <ActionTip tip="Swap start and destination">
-            <md-icon-button
-              class="dir-swap"
-              type="button"
-              aria-label="Swap start and destination"
-              onClick={onSwap}
-            >
-              <md-icon>swap_vert</md-icon>
-            </md-icon-button>
-          </ActionTip>
+          {stops.length <= 2 ? (
+            <ActionTip tip="Swap start and destination">
+              <md-icon-button
+                class="dir-swap"
+                type="button"
+                aria-label="Swap start and destination"
+                onClick={onSwap}
+              >
+                <md-icon>swap_vert</md-icon>
+              </md-icon-button>
+            </ActionTip>
+          ) : null}
         </div>
 
         {placeList.open && (placeList.items.length > 0 || placeList.loading) && (

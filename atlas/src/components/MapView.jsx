@@ -403,6 +403,7 @@ export default function MapView({
   selectedViaId = null,
   onSelectVia,
   onEditPreview,
+  onSuppressMapClick = null,
   onCommitVia,
   onMoveVia,
   onDeleteVia,
@@ -664,6 +665,7 @@ export default function MapView({
           selectedViaId={selectedViaId}
           onSelectVia={onSelectVia}
           onPreview={onEditPreview}
+          onSuppressMapClick={onSuppressMapClick}
           onCommitVia={onCommitVia}
           onMoveVia={onMoveVia}
           onDeleteVia={onDeleteVia}

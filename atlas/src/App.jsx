@@ -1601,7 +1601,7 @@ export default function App() {
           id: "road-rules",
           label: "Your road rules",
           onClick: () => {
-            setRoadRulesOpen(true);
+            setPrefsOpen(true);
             setPanelOpen(true);
           },
         },
@@ -1906,7 +1906,7 @@ export default function App() {
             onStart={startNavigation}
             onOpenAssistant={() => setAssistantOpen(true)}
             onOpenPrefs={() => setPrefsOpen(true)}
-            onOpenRoadRules={() => setRoadRulesOpen(true)}
+            onOpenRoadRules={() => setPrefsOpen(true)}
             hasCustomEdits={hasCustomEdits}
             travelMode={travelMode}
             onTravelMode={handleTravelModeChange}
@@ -2035,12 +2035,15 @@ export default function App() {
           selectedViaId={selectedViaId}
           onSelectVia={setSelectedViaId}
           onEditPreview={setEditPreview}
+          onSuppressMapClick={() => {
+            suppressMapClickUntil.current = Date.now() + 900;
+          }}
           onCommitVia={(snapped, segmentIndex) => {
-            suppressMapClickUntil.current = Date.now() + 600;
+            suppressMapClickUntil.current = Date.now() + 900;
             return commitVia(snapped, segmentIndex);
           }}
           onMoveVia={(viaId, snapped) => {
-            suppressMapClickUntil.current = Date.now() + 600;
+            suppressMapClickUntil.current = Date.now() + 900;
             return moveVia(viaId, snapped);
           }}
           onDeleteVia={deleteVia}
@@ -2205,19 +2208,8 @@ export default function App() {
         prefs={routePrefs}
         onChange={handleRoutePrefsChange}
         onClose={() => setPrefsOpen(false)}
-        roadRulesCount={roadRules.length}
-        onOpenRoadRules={() => {
-          setPrefsOpen(false);
-          setRoadRulesOpen(true);
-        }}
-      />
-
-      <RoadRulesSheet
-        open={roadRulesOpen}
-        rules={roadRules}
-        onClose={() => setRoadRulesOpen(false)}
-        onAdd={() => {
-          setRoadRulesOpen(false);
+        roadRules={roadRules}
+        onAddRoadRule={() => {
           setPrefsOpen(false);
           setPanelOpen(false);
           setRoadPickMode(true);
@@ -2226,7 +2218,7 @@ export default function App() {
             5000,
           );
         }}
-        onRemove={(id) => {
+        onRemoveRoadRule={(id) => {
           const rule = roadRules.find((r) => r.id === id);
           setRoadRules((prev) => removeRoadRule(prev, id));
           if (rule?.name) {
@@ -2235,12 +2227,48 @@ export default function App() {
             );
           }
         }}
-        onSetMode={(id, mode) =>
+        onSetRoadRuleMode={(id, mode) =>
           setRoadRules((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, mode, updatedAt: Date.now() } : r)),
+            prev.map((r) =>
+              r.id === id ? { ...r, mode, updatedAt: Date.now() } : r,
+            ),
           )
         }
       />
+
+      {roadRulesOpen ? (
+        <RoadRulesSheet
+          open={roadRulesOpen}
+          rules={roadRules}
+          onClose={() => setRoadRulesOpen(false)}
+          onAdd={() => {
+            setRoadRulesOpen(false);
+            setPrefsOpen(false);
+            setPanelOpen(false);
+            setRoadPickMode(true);
+            showStatus(
+              "Tap a road on the map to Prefer, Avoid, or Never use it",
+              5000,
+            );
+          }}
+          onRemove={(id) => {
+            const rule = roadRules.find((r) => r.id === id);
+            setRoadRules((prev) => removeRoadRule(prev, id));
+            if (rule?.name) {
+              setBlockedStreets((prev) =>
+                prev.filter((b) => !roadNamesMatch(b.name, rule.name)),
+              );
+            }
+          }}
+          onSetMode={(id, mode) =>
+            setRoadRules((prev) =>
+              prev.map((r) =>
+                r.id === id ? { ...r, mode, updatedAt: Date.now() } : r,
+              ),
+            )
+          }
+        />
+      ) : null}
 
       {view === "directions" &&
         selectedRoute &&

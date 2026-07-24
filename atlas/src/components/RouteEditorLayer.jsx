@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Marker, Polyline, CircleMarker, useMap } from "react-leaflet";
+import { Polyline, CircleMarker, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
   closestPointOnPolyline,
@@ -13,30 +13,6 @@ function isCoarsePointer() {
   } catch {
     return false;
   }
-}
-
-function handleIcon(dragging = false, selected = false, coarse = false) {
-  const base = coarse ? 28 : 18;
-  const size = dragging || selected ? base + 4 : base;
-  const selectedClass = selected ? "is-selected" : "";
-  return L.divIcon({
-    className: "atlas-drag-handle",
-    html: `<div class="drag-handle-core ${dragging ? "is-dragging" : ""} ${selectedClass}" style="width:${size}px;height:${size}px"></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
-}
-
-const HANDLE_ICON_CACHE = new Map();
-function getHandleIcon(dragging = false, selected = false) {
-  const coarse = isCoarsePointer();
-  const key = `${dragging ? 1 : 0}-${selected ? 1 : 0}-${coarse ? 1 : 0}`;
-  let icon = HANDLE_ICON_CACHE.get(key);
-  if (!icon) {
-    icon = handleIcon(dragging, selected, coarse);
-    HANDLE_ICON_CACHE.set(key, icon);
-  }
-  return icon;
 }
 
 /** Pixel hit slop for route line / via handles (larger on touch). */
@@ -114,6 +90,7 @@ export default function RouteEditorLayer({
   geometry,
   travelMode = "driving",
   onPreview,
+  onSuppressMapClick = null,
   onCommitVia,
   onMoveVia,
   onDeleteVia: _onDeleteVia,
@@ -135,6 +112,7 @@ export default function RouteEditorLayer({
   const destinationRef = useRef(destination);
   const travelModeRef = useRef(travelMode);
   const onSelectViaRef = useRef(onSelectVia);
+  const onSuppressMapClickRef = useRef(onSuppressMapClick);
   const beginPolylineDragRef = useRef(null);
   const beginViaDragRef = useRef(null);
 
@@ -144,6 +122,7 @@ export default function RouteEditorLayer({
   destinationRef.current = destination;
   travelModeRef.current = travelMode;
   onSelectViaRef.current = onSelectVia;
+  onSuppressMapClickRef.current = onSuppressMapClick;
 
   function clearDocListeners() {
     const L = listenersRef.current;
@@ -336,6 +315,9 @@ export default function RouteEditorLayer({
       return;
     }
 
+    // Suppress the synthetic map click that follows pointer-up before async snap.
+    onSuppressMapClickRef.current?.();
+
     // Keep the last preview visible until commit lands (avoids snap-back lag).
     if (holdGeom) {
       const holding = {
@@ -470,7 +452,11 @@ export default function RouteEditorLayer({
         const cur = map.latLngToContainerPoint([lat, lng]);
         const dx = cur.x - origin.x;
         const dy = cur.y - origin.y;
-        if (dx * dx + dy * dy >= DRAG_PX * DRAG_PX) movedEnough = true;
+        if (dx * dx + dy * dy >= DRAG_PX * DRAG_PX) {
+          movedEnough = true;
+          // Arm click-suppress as soon as reshape is real — before pointer-up.
+          onSuppressMapClickRef.current?.();
+        }
       }
 
       const localPreviewGeometry = movedEnough
@@ -906,20 +892,26 @@ export default function RouteEditorLayer({
         interactive={false}
       />
 
-      {/* Via pins stay internal for reshape math — only show while actively dragging one.
-          Dropping a reshape must not look like “adding a stop” on the map. */}
+      {/* Reshape uses internal vias only — no stop pins. While dragging, show a
+          small vector vertex (not a teardrop pin) at the snap point. */}
       {vias.map((via) => {
         const draggingThis = dragState?.viaId === via.id && dragState?.active;
         if (!draggingThis) return null;
         const lat = dragState.lat;
         const lng = dragState.lng;
         return (
-          <Marker
+          <CircleMarker
             key={via.id}
-            position={[lat, lng]}
-            icon={getHandleIcon(true, false)}
+            center={[lat, lng]}
+            radius={5}
+            pane="routeEdit"
+            pathOptions={{
+              color: "#0066FF",
+              fillColor: "#fff",
+              fillOpacity: 1,
+              weight: 2.5,
+            }}
             interactive={false}
-            zIndexOffset={2000}
           />
         );
       })}
@@ -944,40 +936,28 @@ export default function RouteEditorLayer({
               />
               <CircleMarker
                 center={[dragState.snapLat, dragState.snapLng]}
-                radius={7}
+                radius={5}
                 pane="routeEdit"
                 pathOptions={{
                   color: "#0066FF",
-                  fillColor: "#0066FF",
-                  fillOpacity: dragState.snapped ? 0.95 : 0.35,
-                  weight: 2,
+                  fillColor: "#fff",
+                  fillOpacity: 1,
+                  weight: 2.5,
                 }}
                 interactive={false}
               />
             </>
           )}
-          <CircleMarker
-            center={[dragState.lat, dragState.lng]}
-            radius={dragState.snapped ? 10 : 14}
-            pane="routeEdit"
-            pathOptions={{
-              color: dragState.snapped ? "#0066FF" : "#EA4335",
-              fillColor: "#fff",
-              fillOpacity: 1,
-              weight: 3,
-            }}
-            interactive={false}
-          />
           {!dragState.snapped && (
             <CircleMarker
               center={[dragState.lat, dragState.lng]}
-              radius={22}
+              radius={6}
               pane="routeEdit"
               pathOptions={{
-                color: "#EA4335",
-                fillOpacity: 0.08,
-                weight: 1,
-                dashArray: "4 4",
+                color: "#9AA0A6",
+                fillColor: "#fff",
+                fillOpacity: 1,
+                weight: 2,
               }}
               interactive={false}
             />

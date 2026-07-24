@@ -4,13 +4,6 @@ import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import { formatDistance, formatDuration } from "../utils/format";
 
-const EXPLORE_CHIPS = [
-  { id: "restaurants", label: "Restaurants", icon: "restaurant", query: "restaurants" },
-  { id: "coffee", label: "Coffee", icon: "local_cafe", query: "coffee" },
-  { id: "petrol", label: "Petrol", icon: "local_gas_station", query: "petrol" },
-  { id: "grocery", label: "Grocery", icon: "local_grocery_store", query: "grocery" },
-];
-
 function useIsCompact(query = "(max-width: 800px)") {
   const [compact, setCompact] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia(query).matches : false,
@@ -26,8 +19,7 @@ function useIsCompact(query = "(max-width: 800px)") {
 }
 
 /**
- * Landing search — Google Maps mobile reference:
- * chips under search, Home/Work/More when focused, Recent list, Saved.
+ * Landing search — place card after a selection; Saved underneath when idle.
  */
 export default function SearchPanel({
   query,
@@ -66,7 +58,6 @@ export default function SearchPanel({
 
   function handleQueryChange(next) {
     onQueryChange(next);
-    // Typing away from a selected place dismisses the card until they pick again.
     if (place && next.trim() !== (place.name || "").trim()) {
       onDismissPlace?.();
     }
@@ -95,8 +86,7 @@ export default function SearchPanel({
     hasSaved;
   const showSaved = showBody && !listVisible && !place && hasSaved;
   const showPlaceCard = Boolean(place) && !listVisible && showBody;
-  const showShortcuts = listVisible || (isCompact && mobileExpanded && !place);
-  const showChips = !listVisible && !place && !query.trim();
+  const isSearching = listVisible || (isCompact && mobileExpanded && !place);
   const showingRecents =
     listVisible &&
     !(placeList.query || "").trim() &&
@@ -104,7 +94,7 @@ export default function SearchPanel({
 
   return (
     <section
-      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""} ${showShortcuts ? "is-searching" : ""}`}
+      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""} ${isSearching ? "is-searching" : ""}`}
     >
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
         <div className={`search-bar ${query ? "has-query" : ""}`}>
@@ -157,58 +147,6 @@ export default function SearchPanel({
           </div>
         </div>
       </div>
-
-      {showShortcuts ? (
-        <div className="search-shortcuts" role="group" aria-label="Shortcuts">
-          <button type="button" className="search-shortcut" disabled>
-            <span className="search-shortcut-icon" aria-hidden>
-              <md-icon>home</md-icon>
-            </span>
-            <span className="search-shortcut-text">
-              <span className="search-shortcut-title">Home</span>
-              <span className="search-shortcut-sub">Set location</span>
-            </span>
-          </button>
-          <button type="button" className="search-shortcut" disabled>
-            <span className="search-shortcut-icon" aria-hidden>
-              <md-icon>work</md-icon>
-            </span>
-            <span className="search-shortcut-text">
-              <span className="search-shortcut-title">Work</span>
-              <span className="search-shortcut-sub">Set location</span>
-            </span>
-          </button>
-          <button type="button" className="search-shortcut" disabled>
-            <span className="search-shortcut-icon" aria-hidden>
-              <md-icon>more_horiz</md-icon>
-            </span>
-            <span className="search-shortcut-text">
-              <span className="search-shortcut-title">More</span>
-              <span className="search-shortcut-sub">Labels</span>
-            </span>
-          </button>
-        </div>
-      ) : null}
-
-      {showChips ? (
-        <div className="explore-chips" role="list" aria-label="Explore nearby">
-          {EXPLORE_CHIPS.map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              className="explore-chip"
-              role="listitem"
-              onClick={() => {
-                handleQueryChange(chip.query);
-                if (isCompact) setMobileExpanded(true);
-              }}
-            >
-              <md-icon>{chip.icon}</md-icon>
-              <span>{chip.label}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
 
       {listVisible && (
         <div className="landing-suggest">

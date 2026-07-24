@@ -1,21 +1,20 @@
-import {
-  DRIVING_AVATARS,
-  ENGINE_TYPES,
-  ROUTE_OPTION_FIELDS,
-} from "../utils/routePreferences";
+import { ENGINE_TYPES, ROUTE_OPTION_FIELDS } from "../utils/routePreferences";
+import { modeLabel, ROAD_RULE_MODES } from "../utils/roadRules";
 import MdSwitch from "./MdSwitch";
 
 /**
- * Route preferences sheet — Google Maps–style options with instant toggles.
- * Mobile: full-screen modal. Desktop: floating panel beside the map.
+ * Route preferences sheet — toggles apply instantly.
+ * Road rules live inline here (no separate panel).
  */
 export default function RoutePrefsSheet({
   open,
   prefs,
   onChange,
   onClose,
-  onOpenRoadRules = null,
-  roadRulesCount = 0,
+  roadRules = [],
+  onAddRoadRule = null,
+  onRemoveRoadRule = null,
+  onSetRoadRuleMode = null,
 }) {
   if (!open) return null;
 
@@ -39,9 +38,6 @@ export default function RoutePrefsSheet({
         <div className="route-sheet-header">
           <div className="route-sheet-heading">
             <div className="md-typescale-title-small">Route options</div>
-            <div className="md-typescale-body-small route-sheet-sub">
-              Changes apply as you toggle
-            </div>
           </div>
           <md-icon-button type="button" aria-label="Close" onClick={onClose}>
             <md-icon>close</md-icon>
@@ -56,9 +52,11 @@ export default function RoutePrefsSheet({
               </span>
               <span className="route-pref-copy">
                 <span className="md-typescale-body-large">{f.label}</span>
-                <span className="md-typescale-body-small route-sheet-sub">
-                  {f.hint}
-                </span>
+                {f.id === "preferFuelEfficient" ? (
+                  <span className="md-typescale-body-small route-sheet-sub">
+                    {f.hint}
+                  </span>
+                ) : null}
               </span>
               <MdSwitch
                 selected={Boolean(prefs?.[f.id])}
@@ -67,64 +65,6 @@ export default function RoutePrefsSheet({
               />
             </label>
           ))}
-
-          <div className="route-pref-section-label md-typescale-title-small">
-            In your vehicle
-          </div>
-
-          <div className="route-pref-avatar-block">
-            <div className="route-pref-row route-pref-row-static">
-              <span className="route-pref-icon" aria-hidden>
-                <md-icon>directions_car</md-icon>
-              </span>
-              <span className="route-pref-copy">
-                <span className="md-typescale-body-large">Driving avatar</span>
-                <span className="md-typescale-body-small route-sheet-sub">
-                  Icon shown while you navigate
-                </span>
-              </span>
-            </div>
-            <div
-              className="route-pref-avatar-row"
-              role="radiogroup"
-              aria-label="Driving avatar"
-            >
-              {DRIVING_AVATARS.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={
-                    prefs?.drivingAvatar === a.id ? "true" : "false"
-                  }
-                  className={`route-pref-avatar-btn ${prefs?.drivingAvatar === a.id ? "is-selected" : ""}`}
-                  onClick={() => setPref({ drivingAvatar: a.id })}
-                  title={a.label}
-                >
-                  <md-icon>{a.icon}</md-icon>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <label className="route-pref-row">
-            <span className="route-pref-icon" aria-hidden>
-              <md-icon>sell</md-icon>
-            </span>
-            <span className="route-pref-copy">
-              <span className="md-typescale-body-large">
-                See toll pass prices
-              </span>
-              <span className="md-typescale-body-small route-sheet-sub">
-                Show estimated pass cost on route cards
-              </span>
-            </span>
-            <MdSwitch
-              selected={Boolean(prefs?.showTollPassPrices)}
-              aria-label="See toll pass prices"
-              onChange={(on) => setPref({ showTollPassPrices: on })}
-            />
-          </label>
 
           <div className="route-pref-row route-pref-row-static">
             <span className="route-pref-icon" aria-hidden>
@@ -150,29 +90,88 @@ export default function RoutePrefsSheet({
             </select>
           </div>
 
-          {onOpenRoadRules ? (
-            <button
-              type="button"
-              className="route-pref-row route-pref-link"
-              onClick={() => {
-                onClose?.();
-                onOpenRoadRules();
-              }}
-            >
-              <span className="route-pref-icon" aria-hidden>
-                <md-icon>alt_route</md-icon>
+          <div className="route-pref-section-label md-typescale-title-small">
+            In your vehicle
+          </div>
+
+          <label className="route-pref-row">
+            <span className="route-pref-icon" aria-hidden>
+              <md-icon>sell</md-icon>
+            </span>
+            <span className="route-pref-copy">
+              <span className="md-typescale-body-large">
+                See toll pass prices
               </span>
-              <span className="route-pref-copy">
-                <span className="md-typescale-body-large">Your road rules</span>
-                <span className="md-typescale-body-small route-sheet-sub">
-                  {roadRulesCount > 0
-                    ? `${roadRulesCount} prefer / avoid / never rule${roadRulesCount === 1 ? "" : "s"}`
-                    : "Prefer, avoid, or never use named roads"}
-                </span>
+              <span className="md-typescale-body-small route-sheet-sub">
+                Show estimated pass cost on route cards
               </span>
-              <md-icon class="route-pref-chevron">chevron_right</md-icon>
-            </button>
-          ) : null}
+            </span>
+            <MdSwitch
+              selected={Boolean(prefs?.showTollPassPrices)}
+              aria-label="See toll pass prices"
+              onChange={(on) => setPref({ showTollPassPrices: on })}
+            />
+          </label>
+
+          <div className="route-pref-section-label md-typescale-title-small">
+            Your road rules
+          </div>
+
+          <div className="route-pref-road-rules">
+            <div className="route-pref-road-rules-head">
+              <p className="md-typescale-body-small route-sheet-sub">
+                Prefer, avoid, or never use named roads when routing
+              </p>
+              {onAddRoadRule ? (
+                <md-icon-button
+                  type="button"
+                  aria-label="Add road rule"
+                  onClick={onAddRoadRule}
+                >
+                  <md-icon>add</md-icon>
+                </md-icon-button>
+              ) : null}
+            </div>
+
+            {roadRules.length === 0 ? (
+              <p className="hint tight md-typescale-body-medium">
+                Tap + then tap a road on the map, or long-press a road and choose
+                Prefer, Avoid, or Never use.
+              </p>
+            ) : (
+              <md-list class="road-rules-list">
+                {roadRules.map((r) => (
+                  <md-list-item key={r.id}>
+                    <div slot="headline">{r.name}</div>
+                    <div slot="supporting-text">{modeLabel(r.mode)}</div>
+                    <div slot="end" className="road-rules-actions">
+                      <select
+                        className="road-rules-select"
+                        aria-label={`Rule for ${r.name}`}
+                        value={r.mode}
+                        onChange={(e) =>
+                          onSetRoadRuleMode?.(r.id, e.target.value)
+                        }
+                      >
+                        {ROAD_RULE_MODES.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                      <md-icon-button
+                        type="button"
+                        aria-label={`Remove ${r.name}`}
+                        onClick={() => onRemoveRoadRule?.(r.id)}
+                      >
+                        <md-icon>delete</md-icon>
+                      </md-icon-button>
+                    </div>
+                  </md-list-item>
+                ))}
+              </md-list>
+            )}
+          </div>
         </div>
       </div>
     </>

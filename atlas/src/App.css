@@ -221,6 +221,10 @@
   align-items: stretch;
 }
 
+.dir-stops.has-mid-stops {
+  grid-template-columns: 40px 1fr;
+}
+
 .dir-stops-rail {
   display: flex;
   flex-direction: column;
@@ -2829,6 +2833,10 @@ md-text-button {
   .dir-stops {
     grid-template-columns: 36px 1fr 36px;
   }
+
+  .dir-stops.has-mid-stops {
+    grid-template-columns: 36px 1fr;
+  }
 }
 
 /* —— Google Maps mobile–style navigation —— */
@@ -3473,12 +3481,34 @@ md-text-button {
 .route-pref-select {
   border: 1px solid #dadce0;
   border-radius: 8px;
-  padding: 6px 8px;
+  padding: 6px 28px 6px 10px;
   font: inherit;
   font-size: 0.8125rem;
   background: #fff;
   color: #3c4043;
-  max-width: 110px;
+  max-width: 120px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%235f6368'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.route-pref-road-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.route-pref-road-rules-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.route-pref-road-rules-head .route-sheet-sub {
+  margin: 0;
 }
 
 .road-rules-list {
