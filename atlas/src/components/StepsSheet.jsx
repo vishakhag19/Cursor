@@ -18,15 +18,15 @@ export default function StepsSheet({
       aria-label="Trip steps"
     >
       <div className="steps-sheet-header">
-        <div>
+        <md-icon-button type="button" aria-label="Back" onClick={onClose}>
+          <md-icon>arrow_back</md-icon>
+        </md-icon-button>
+        <div className="steps-sheet-heading">
           <div className="md-typescale-title-medium">Steps</div>
           <div className="md-typescale-body-small steps-sheet-meta">
             {formatDuration(route.duration)} · {formatDistance(route.distance)}
           </div>
         </div>
-        <md-icon-button type="button" aria-label="Close steps" onClick={onClose}>
-          <md-icon>close</md-icon>
-        </md-icon-button>
       </div>
       <ol className="steps-list">
         {steps.map((s, i) => (
@@ -51,7 +51,6 @@ export default function StepsSheet({
         <md-filled-button type="button" class="steps-start-btn" onClick={onStart}>
           <span slot="icon" className="steps-start-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="18" height="18" focusable="false">
-              {/* Inset navigation triangle so edges aren’t clipped by the button */}
               <path
                 fill="currentColor"
                 d="M12 3.2 5.2 20.1l.65.34L12 17.4l6.15 3.04.65-.34z"

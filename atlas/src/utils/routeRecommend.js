@@ -119,23 +119,26 @@ function routeUsesRoad(route, roadName) {
 export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
   const turns = route.metrics?.turns ?? countTurns(route.steps);
   const hwy = route.metrics?.highwayShare ?? estimateHighwayShare(route.steps);
-  const named =
-    route.metrics?.namedShare ?? estimateNamedRoadShare(route.steps);
   const traffic = route.traffic?.id || "moderate";
 
   // Base: blend duration (sec) with a light distance term.
   let cost = (route.duration || 0) + (route.distance || 0) / 20;
 
-  if (prefs.fewestTurns) cost += turns * 45;
   if (prefs.avoidHighways) cost += hwy * 900;
-  if (prefs.preferMajorRoads) cost += (1 - Math.min(1, named + hwy * 0.5)) * 500;
-  if (prefs.scenic) {
-    cost += hwy * 700;
-    // Slightly reward longer non-highway paths (scenic detour).
-    cost -= Math.min(400, (route.distance || 0) / 40) * (1 - hwy);
-  }
-  if (prefs.betterRoadQuality) cost += (1 - named) * 600;
   if (prefs.avoidTolls && route.metrics?.mayHaveTolls) cost += 800;
+  if (prefs.avoidFerries && route.metrics?.mayHaveFerry) cost += 1200;
+  if (prefs.preferFuelEfficient) {
+    // Soft eco bias: prefer less highway for hybrid/EV; diesel ok on hwy.
+    const engine = prefs.engineType || "gas";
+    if (engine === "electric" || engine === "hybrid") {
+      cost += hwy * 350;
+      cost += traffic === "heavy" ? 80 : 0;
+    } else if (engine === "diesel") {
+      cost += (1 - hwy) * 120;
+    } else {
+      cost += hwy * 180 + turns * 8;
+    }
+  }
 
   if (traffic === "heavy") cost += 180;
   if (traffic === "moderate") cost += 60;
@@ -151,7 +154,7 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
   return cost;
 }
 
-function buildReason(route, prefs, rank, fastestId, shortestId, fewestTurnsId) {
+function buildReason(route, prefs, rank, fastestId, shortestId, _fewestTurnsId) {
   const hwy = route.metrics?.highwayShare ?? 0;
   const turns = route.metrics?.turns ?? 0;
   const traffic = route.traffic;
@@ -160,20 +163,14 @@ function buildReason(route, prefs, rank, fastestId, shortestId, fewestTurnsId) {
   if (prefs.avoidHighways && hwy < 0.08 && rank === 0) {
     return "Avoids highways · stays on surface streets";
   }
-  if (prefs.fewestTurns && route.id === fewestTurnsId) {
-    return `Fewest turns · only ${turns} maneuver${turns === 1 ? "" : "s"}`;
-  }
-  if (prefs.scenic && hwy < 0.15 && rank === 0) {
-    return "Scenic pick · quieter roads, skips the freeway";
-  }
-  if (prefs.preferMajorRoads && rank === 0) {
-    return "Prefers major roads · fewer narrow shortcuts";
-  }
-  if (prefs.betterRoadQuality && rank === 0) {
-    return "Better road quality · named arterials first";
+  if (prefs.preferFuelEfficient && rank === 0) {
+    return "Fuel-efficient pick · similar ETA, lower estimated use";
   }
   if (prefs.avoidTolls && rank === 0) {
     return "Toll-free option · matches your preference";
+  }
+  if (prefs.avoidFerries && rank === 0) {
+    return "Avoids ferries · stays on land routes";
   }
 
   if (route.id === fastestId && route.id === shortestId) {
@@ -248,9 +245,15 @@ export function enrichAndRankRoutes(
     const traffic = pickTraffic(r);
     // ASSUMPTION: tolls unknown from OSRM — mark maybe when prefs ask for avoid.
     const mayHaveTolls = Boolean(prefs.avoidTolls && highwayShare > 0.35);
+    const mayHaveFerry = Boolean(
+      prefs.avoidFerries &&
+        (r.steps || []).some((s) =>
+          /ferry|boat/i.test(`${s.name || ""} ${s.instruction || ""}`),
+        ),
+    );
     return {
       ...r,
-      metrics: { turns, highwayShare, namedShare, mayHaveTolls },
+      metrics: { turns, highwayShare, namedShare, mayHaveTolls, mayHaveFerry },
       traffic,
     };
   });

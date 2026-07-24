@@ -31,6 +31,8 @@ import {
 import {
   DEFAULT_ROUTE_PREFS,
   excludesFromPrefs,
+  routingModeFor,
+  travelModeMeta,
 } from "./utils/routePreferences";
 import { enrichAndRankRoutes } from "./utils/routeRecommend";
 import { removeRoadRule, upsertRoadRule } from "./utils/roadRules";
@@ -156,6 +158,7 @@ export default function App() {
   const [ctx, setCtx] = useState(null);
   const [followingLocation, setFollowingLocation] = useState(false);
   const [editCoachOpen, setEditCoachOpen] = useState(false);
+  const suppressMapClickUntil = useRef(0);
   const locateFn = useRef(null);
   const zoomFn = useRef(null);
   const locateFlightRef = useRef(false);
@@ -410,6 +413,17 @@ export default function App() {
         setDirError("Choose a starting point and destination");
         return;
       }
+
+      const meta = travelModeMeta(mode);
+      if (meta.unsupported) {
+        clearRoutes();
+        setDirError(
+          "Public transit isn’t available in this prototype yet. Try Drive, Walk, or Bicycle.",
+        );
+        return;
+      }
+
+      const routeMode = routingModeFor(mode);
       setDirLoading(true);
       setDirError(null);
       clearEditState();
@@ -418,13 +432,13 @@ export default function App() {
         const excludes = excludesFromPrefs(prefs);
         let options;
         try {
-          options = await fetchShortestRoutes(filled, mode, {
+          options = await fetchShortestRoutes(filled, routeMode, {
             limit: 5,
             excludes,
           });
         } catch {
           await new Promise((r) => setTimeout(r, 600));
-          options = await fetchShortestRoutes(filled, mode, {
+          options = await fetchShortestRoutes(filled, routeMode, {
             limit: 5,
             excludes,
           });
@@ -461,26 +475,32 @@ export default function App() {
     ],
   );
 
-  const applyPrefsToRoutes = useCallback(() => {
-    // Re-rank existing options without a full network round-trip when possible.
-    if (routeOptions.length >= 2) {
-      const ranked = enrichAndRankRoutes(routeOptions, routePrefs, roadRules, {
-        limit: 5,
-      });
-      setRouteOptions(ranked);
-      selectRoute(ranked[0]);
-      return;
-    }
-    runDirections(stops, travelMode, routePrefs);
-  }, [
-    routeOptions,
-    routePrefs,
-    roadRules,
-    selectRoute,
-    runDirections,
-    stops,
-    travelMode,
-  ]);
+  const applyPrefsToRoutes = useCallback(
+    (prefs = routePrefs) => {
+      if (stops.filter(Boolean).length >= 2) {
+        runDirections(stops, travelMode, prefs);
+      }
+    },
+    [runDirections, stops, travelMode, routePrefs],
+  );
+
+  const handleRoutePrefsChange = useCallback(
+    (next) => {
+      setRoutePrefs(next);
+      applyPrefsToRoutes(next);
+    },
+    [applyPrefsToRoutes],
+  );
+
+  const handleTravelModeChange = useCallback(
+    (mode) => {
+      setTravelMode(mode);
+      if (stops.filter(Boolean).length >= 2) {
+        runDirections(stops, mode, routePrefs);
+      }
+    },
+    [stops, runDirections, routePrefs],
+  );
 
   const openDirections = useCallback(
     async ({ from = null, to = null } = {}) => {
@@ -534,9 +554,28 @@ export default function App() {
     async (latlng) => {
       setCtx(null);
 
+      // Ignore the click that follows a route-line drag (otherwise it inserts a stop).
+      if (Date.now() < suppressMapClickUntil.current) return;
+
       // Directions: fill empty stop, or insert a mid-waypoint when A/B are set
       // (Feature 3 — tap map to add pins). Route-line drag still owns reshape.
       if (view === "directions") {
+        // Clicks near the active route belong to reshape — don't add a stop.
+        const geom = routeGeometryRef.current;
+        if (geom?.length > 1) {
+          const closest = closestPointOnPolyline(latlng, geom);
+          if (closest) {
+            // ~28m / ~40px-ish at city zoom — keep taps on empty map working.
+            const d = haversineMeters(
+              latlng.lat,
+              latlng.lng,
+              closest.lat,
+              closest.lng,
+            );
+            if (d < 35) return;
+          }
+        }
+
         const emptyIdx = stops.findIndex((s) => !s);
         try {
           const place = await reverseGeocode(latlng.lat, latlng.lng);
@@ -706,7 +745,7 @@ export default function App() {
           editOrigin,
           ordered.map((v) => ({ lat: v.lat, lng: v.lng })),
           editDestination,
-          travelMode,
+          routingModeFor(travelMode),
         );
         if (epoch !== editEpochRef.current) return;
         applyEditedRoute(route, ordered, {
@@ -835,7 +874,7 @@ export default function App() {
         const snapped = await nearestRoadPoint(
           latlng.lat,
           latlng.lng,
-          travelMode,
+          routingModeFor(travelMode),
         );
         focus = { lat: snapped.lat, lng: snapped.lng };
         name = name || snapped.name || null;
@@ -905,7 +944,7 @@ export default function App() {
       }
       let point = { lat: hit.lat, lng: hit.lng, name: hit.address?.road || hit.name };
       try {
-        const snapped = await nearestRoadPoint(hit.lat, hit.lng, travelMode);
+        const snapped = await nearestRoadPoint(hit.lat, hit.lng, routingModeFor(travelMode));
         point = {
           lat: snapped.lat,
           lng: snapped.lng,
@@ -1413,7 +1452,7 @@ export default function App() {
       const snapped = await nearestRoadPoint(
         latlng.lat,
         latlng.lng,
-        travelMode,
+        routingModeFor(travelMode),
       );
       focus = { lat: snapped.lat, lng: snapped.lng };
       name = snapped.name || null;
@@ -1863,6 +1902,9 @@ export default function App() {
             onOpenPrefs={() => setPrefsOpen(true)}
             onOpenRoadRules={() => setRoadRulesOpen(true)}
             hasCustomEdits={hasCustomEdits}
+            travelMode={travelMode}
+            onTravelMode={handleTravelModeChange}
+            showTollPassPrices={Boolean(routePrefs.showTollPassPrices)}
           />
         )}
       </aside>
@@ -1981,12 +2023,18 @@ export default function App() {
           editOrigin={editOrigin}
           editDestination={editDestination}
           editVias={editVias}
-          editTravelMode={travelMode}
+          editTravelMode={routingModeFor(travelMode)}
           selectedViaId={selectedViaId}
           onSelectVia={setSelectedViaId}
           onEditPreview={setEditPreview}
-          onCommitVia={commitVia}
-          onMoveVia={moveVia}
+          onCommitVia={(snapped, segmentIndex) => {
+            suppressMapClickUntil.current = Date.now() + 600;
+            return commitVia(snapped, segmentIndex);
+          }}
+          onMoveVia={(viaId, snapped) => {
+            suppressMapClickUntil.current = Date.now() + 600;
+            return moveVia(viaId, snapped);
+          }}
           onDeleteVia={deleteVia}
           onEditError={(msg) => showStatus(msg)}
           flyTarget={flyTarget}
@@ -2161,9 +2209,8 @@ export default function App() {
       <RoutePrefsSheet
         open={prefsOpen}
         prefs={routePrefs}
-        onChange={setRoutePrefs}
+        onChange={handleRoutePrefsChange}
         onClose={() => setPrefsOpen(false)}
-        onApply={applyPrefsToRoutes}
         roadRulesCount={roadRules.length}
         onOpenRoadRules={() => {
           setPrefsOpen(false);

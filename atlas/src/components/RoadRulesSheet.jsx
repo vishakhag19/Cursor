@@ -17,7 +17,10 @@ export default function RoadRulesSheet({
   return (
     <div className="route-sheet" role="dialog" aria-label="Your road rules">
       <div className="route-sheet-header">
-        <div>
+        <md-icon-button type="button" aria-label="Back" onClick={onClose}>
+          <md-icon>arrow_back</md-icon>
+        </md-icon-button>
+        <div className="route-sheet-heading">
           <div className="md-typescale-title-small">Your road rules</div>
           <div className="md-typescale-body-small route-sheet-sub">
             Prefer, avoid, or never use a named road when routing
@@ -33,9 +36,6 @@ export default function RoadRulesSheet({
               <md-icon>add</md-icon>
             </md-icon-button>
           ) : null}
-          <md-icon-button type="button" aria-label="Close" onClick={onClose}>
-            <md-icon>close</md-icon>
-          </md-icon-button>
         </div>
       </div>
 

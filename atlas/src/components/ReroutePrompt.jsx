@@ -1,7 +1,7 @@
 /**
  * Mid-navigation reroute interruption (Feature 6).
  * Accept and Reject are equally prominent — neither is buried.
- * DESIGN GUESS: bottom sheet over nav chrome; copy is illustrative — review.
+ * Desktop: actions sit beside the copy; mobile: stacked below.
  */
 export default function ReroutePrompt({
   open,
@@ -19,17 +19,22 @@ export default function ReroutePrompt({
       aria-describedby="reroute-reason"
     >
       <div className="reroute-prompt-handle" aria-hidden />
-      <div className="reroute-prompt-kicker md-typescale-label-large">
-        Reroute suggested
-      </div>
-      <p id="reroute-reason" className="reroute-prompt-reason md-typescale-title-small">
-        {suggestion.reason}
-      </p>
-      {suggestion.detail ? (
-        <p className="reroute-prompt-detail md-typescale-body-medium">
-          {suggestion.detail}
+      <div className="reroute-prompt-copy">
+        <div className="reroute-prompt-kicker md-typescale-label-large">
+          Reroute suggested
+        </div>
+        <p
+          id="reroute-reason"
+          className="reroute-prompt-reason md-typescale-title-small"
+        >
+          {suggestion.reason}
         </p>
-      ) : null}
+        {suggestion.detail ? (
+          <p className="reroute-prompt-detail md-typescale-body-medium">
+            {suggestion.detail}
+          </p>
+        ) : null}
+      </div>
       <div className="reroute-prompt-actions">
         <md-outlined-button type="button" onClick={onReject}>
           Reject

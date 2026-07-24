@@ -3,6 +3,7 @@ import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
 import { formatDistance, formatDuration } from "../utils/format";
+import { TRAVEL_MODES, travelModeMeta } from "../utils/routePreferences";
 
 /**
  * Directions panel — recommendations with traffic + reasons (Features 1, 7),
@@ -39,6 +40,9 @@ export default function DirectionsPanel({
   onOpenPrefs = null,
   onOpenRoadRules = null,
   hasCustomEdits = false,
+  travelMode = "driving",
+  onTravelMode = null,
+  showTollPassPrices = false,
 }) {
   const [activeStop, setActiveStop] = useState(null);
   const [forceShowStops, setForceShowStops] = useState(false);
@@ -98,18 +102,27 @@ export default function DirectionsPanel({
 
   const bothEndsSet = stops.filter(Boolean).length >= 2;
   const hasRouteResults = bothEndsSet && routeOptions.length > 0;
+  const modeMeta = travelModeMeta(travelMode);
 
   return (
     <section
       className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""}`}
     >
       <div className="dir-top-bar">
+        <md-icon-button
+          type="button"
+          aria-label="Back to search"
+          onClick={onClose}
+        >
+          <md-icon>arrow_back</md-icon>
+        </md-icon-button>
         <span className="md-typescale-title-medium dir-title">Directions</span>
         <div className="dir-top-actions">
           {onOpenPrefs ? (
             <ActionTip tip="Route preferences">
               <md-icon-button
                 type="button"
+                class="dir-prefs-btn"
                 aria-label="Route preferences"
                 onClick={onOpenPrefs}
               >
@@ -138,15 +151,36 @@ export default function DirectionsPanel({
               </span>
             </button>
           )}
-          <md-icon-button
-            type="button"
-            aria-label="Back to search"
-            onClick={onClose}
-          >
-            <md-icon>arrow_back</md-icon>
-          </md-icon-button>
         </div>
       </div>
+
+      <div
+        className="dir-travel-modes"
+        role="tablist"
+        aria-label="Travel mode"
+      >
+        {TRAVEL_MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            role="tab"
+            aria-selected={travelMode === m.id ? "true" : "false"}
+            className={`dir-travel-mode ${travelMode === m.id ? "is-active" : ""}`}
+            title={m.label}
+            onClick={() => onTravelMode?.(m.id)}
+          >
+            <md-icon>{m.icon}</md-icon>
+            <span className="dir-travel-mode-label">{m.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {modeMeta.unsupported ? (
+        <p className="hint tight md-typescale-body-medium" role="status">
+          Public transit isn’t available in this prototype yet. Try Drive,
+          Walk, or Bicycle.
+        </p>
+      ) : null}
 
       <div className="dir-stops-block">
         <div className="dir-stops">
@@ -297,7 +331,7 @@ export default function DirectionsPanel({
                 >
                   <div className="dir-route-body">
                     <div className="dir-route-title-row">
-                      <md-icon class="dir-route-mode">directions_car</md-icon>
+                      <md-icon class="dir-route-mode">{modeMeta.icon}</md-icon>
                       <div>
                         <div className="md-typescale-title-small">
                           {opt.label}
@@ -362,6 +396,9 @@ export default function DirectionsPanel({
                         {opt.metrics.highwayShare > 0.2
                           ? ` · ${Math.round(opt.metrics.highwayShare * 100)}% highway`
                           : " · mostly surface streets"}
+                        {showTollPassPrices && opt.metrics?.mayHaveTolls
+                          ? " · Toll pass ~$3–8"
+                          : ""}
                       </p>
                     ) : null}
                   </div>

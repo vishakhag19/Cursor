@@ -1,38 +1,44 @@
 /**
- * Session route preferences (Feature 2).
+ * Session route preferences — Google Maps–style route options + vehicle.
  *
  * ASSUMPTION: In-memory only for this prototype — no localStorage.
- * Ranking weights below are design-judgment guesses; flag for review.
+ * Fuel-efficiency ranking is a soft heuristic (no real consumption model).
  */
 
 export const DEFAULT_ROUTE_PREFS = {
-  scenic: false,
-  fewestTurns: false,
-  preferMajorRoads: false,
-  avoidHighways: false,
   avoidTolls: false,
-  betterRoadQuality: false,
+  avoidHighways: false,
+  avoidFerries: false,
+  preferFuelEfficient: false,
+  /** Driving avatar for navigation chrome */
+  drivingAvatar: "arrow",
+  /** Show estimated toll / pass prices on route cards */
+  showTollPassPrices: false,
+  /** Engine type used when preferFuelEfficient is on */
+  engineType: "gas",
 };
 
-/** Human labels for the prefs sheet (copy is a design guess — review). */
-export const ROUTE_PREF_FIELDS = [
+export const DRIVING_AVATARS = [
+  { id: "arrow", label: "Arrow", icon: "navigation" },
+  { id: "car", label: "Car", icon: "directions_car" },
+  { id: "suv", label: "SUV", icon: "airport_shuttle" },
+  { id: "truck", label: "Truck", icon: "local_shipping" },
+];
+
+export const ENGINE_TYPES = [
+  { id: "gas", label: "Gas" },
+  { id: "diesel", label: "Diesel" },
+  { id: "hybrid", label: "Hybrid" },
+  { id: "electric", label: "Electric" },
+];
+
+/** Route option toggles shown in the preferences sheet. */
+export const ROUTE_OPTION_FIELDS = [
   {
-    id: "scenic",
-    label: "Scenic routes",
-    hint: "Favor quieter corridors over freeways",
-    icon: "park",
-  },
-  {
-    id: "fewestTurns",
-    label: "Fewest turns",
-    hint: "Simpler paths with fewer maneuvers",
-    icon: "straight",
-  },
-  {
-    id: "preferMajorRoads",
-    label: "Prefer major roads",
-    hint: "Bias toward arterials and collectors",
-    icon: "add_road",
+    id: "avoidTolls",
+    label: "Avoid tolls",
+    hint: "Prefer toll-free corridors",
+    icon: "money_off",
   },
   {
     id: "avoidHighways",
@@ -41,27 +47,79 @@ export const ROUTE_PREF_FIELDS = [
     icon: "no_crash",
   },
   {
-    id: "avoidTolls",
-    label: "Avoid tolls",
-    hint: "Prefer toll-free corridors",
-    icon: "money_off",
+    id: "avoidFerries",
+    label: "Avoid ferries",
+    hint: "Stay on land routes when possible",
+    icon: "directions_boat",
   },
   {
-    id: "betterRoadQuality",
-    label: "Better road quality",
-    hint: "Deprioritize narrow / unnamed shortcuts",
-    icon: "road",
+    id: "preferFuelEfficient",
+    label: "Prefer fuel-efficient routes",
+    hint: "Favor greener options when arrival time is similar",
+    icon: "eco",
   },
 ];
 
 /**
  * OSRM exclude flags derived from prefs.
- * ASSUMPTION: public OSRM only supports class excludes (motorway/toll/ferry),
- * not arbitrary OSM ways — per-road rules are handled separately in ranking.
+ * Public OSRM supports motorway / toll / ferry class excludes.
  */
 export function excludesFromPrefs(prefs = DEFAULT_ROUTE_PREFS) {
   const out = [];
   if (prefs.avoidHighways) out.push("motorway");
   if (prefs.avoidTolls) out.push("toll");
+  if (prefs.avoidFerries) out.push("ferry");
   return out;
+}
+
+/** Travel modes shown like Google Maps directions tabs. */
+export const TRAVEL_MODES = [
+  {
+    id: "driving",
+    label: "Drive",
+    icon: "directions_car",
+    /** OSRM / internal profile key passed to routing */
+    profile: "driving",
+  },
+  {
+    id: "two_wheeler",
+    label: "Two-wheeler",
+    icon: "two_wheeler",
+    profile: "driving",
+  },
+  {
+    id: "transit",
+    label: "Transit",
+    icon: "directions_transit",
+    profile: null,
+    unsupported: true,
+  },
+  {
+    id: "walking",
+    label: "Walk",
+    icon: "directions_walk",
+    profile: "walking",
+  },
+  {
+    id: "cycling",
+    label: "Bicycle",
+    icon: "directions_bike",
+    profile: "cycling",
+  },
+  {
+    id: "rides",
+    label: "Ride",
+    icon: "local_taxi",
+    profile: "driving",
+  },
+];
+
+export function travelModeMeta(id) {
+  return TRAVEL_MODES.find((m) => m.id === id) || TRAVEL_MODES[0];
+}
+
+/** Map UI mode → OSRM profile mode used by routing.js */
+export function routingModeFor(travelMode) {
+  const meta = travelModeMeta(travelMode);
+  return meta.profile || "driving";
 }

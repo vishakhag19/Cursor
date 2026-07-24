@@ -119,19 +119,19 @@ export default function SearchPanel({
           </div>
           <md-list class="landing-saved-list">
             {savedRoutes.map((r) => (
-              <md-list-item key={r.id}>
-                <div slot="headline">{r.name}</div>
-                <div slot="supporting-text">
-                  {formatDistance(r.route?.distance || 0)} ·{" "}
-                  {formatDuration(r.route?.duration || 0)}
-                </div>
+              <md-list-item key={r.id} class="landing-saved-item">
+                <button
+                  type="button"
+                  className="landing-saved-open"
+                  onClick={() => onLoadSaved?.(r)}
+                >
+                  <span className="landing-saved-open-title">{r.name}</span>
+                  <span className="landing-saved-open-meta">
+                    {formatDistance(r.route?.distance || 0)} ·{" "}
+                    {formatDuration(r.route?.duration || 0)}
+                  </span>
+                </button>
                 <div slot="end" className="landing-saved-actions">
-                  <md-text-button
-                    type="button"
-                    onClick={() => onLoadSaved?.(r)}
-                  >
-                    Open
-                  </md-text-button>
                   <md-icon-button
                     type="button"
                     aria-label={`Delete ${r.name}`}

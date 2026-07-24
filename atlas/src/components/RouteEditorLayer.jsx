@@ -49,29 +49,6 @@ function viaHitPixels() {
   return isCoarsePointer() ? 30 : 22;
 }
 
-function isTouchLikeEvent(e) {
-  return (
-    e?.pointerType === "touch" ||
-    e?.type === "touchstart" ||
-    e?.type === "touchmove" ||
-    e?.type === "touchend" ||
-    Boolean(e?.touches)
-  );
-}
-
-const VIA_DELETE_ICON = L.divIcon({
-  className: "atlas-via-delete",
-      html: `<button type="button" class="via-map-delete" title="Remove this via point" aria-label="Remove this via point">
-      <span aria-hidden="true">×</span>
-    </button>`,
-  iconSize: [28, 28],
-  iconAnchor: [-6, 28],
-});
-
-function viaDeleteIcon() {
-  return VIA_DELETE_ICON;
-}
-
 function orderedViasWithInsert(vias, geometry, segmentIndex, newVia) {
   if (!vias.length) return [newVia];
   const withMeta = vias.map((v) => {
@@ -129,9 +106,9 @@ export default function RouteEditorLayer({
   onPreview,
   onCommitVia,
   onMoveVia,
-  onDeleteVia,
+  onDeleteVia: _onDeleteVia,
   onSelectVia,
-  selectedViaId = null,
+  selectedViaId: _selectedViaId = null,
   onError,
 }) {
   const map = useMap();
@@ -919,57 +896,23 @@ export default function RouteEditorLayer({
         interactive={false}
       />
 
+      {/* Via pins stay internal for reshape math — only show while actively dragging one.
+          Dropping a reshape must not look like “adding a stop” on the map. */}
       {vias.map((via) => {
         const draggingThis = dragState?.viaId === via.id && dragState?.active;
-        const lat = draggingThis ? dragState.lat : via.lat;
-        const lng = draggingThis ? dragState.lng : via.lng;
+        if (!draggingThis) return null;
+        const lat = dragState.lat;
+        const lng = dragState.lng;
         return (
           <Marker
             key={via.id}
             position={[lat, lng]}
-            icon={getHandleIcon(
-              draggingThis,
-              selectedViaId === via.id,
-            )}
-            eventHandlers={{
-              click: (e) => {
-                L.DomEvent.stopPropagation(e);
-                onSelectVia?.(via.id);
-              },
-              contextmenu: (e) => {
-                L.DomEvent.stopPropagation(e);
-                L.DomEvent.preventDefault(e);
-                onSelectVia?.(via.id);
-                onDeleteVia?.(via.id);
-              },
-            }}
+            icon={getHandleIcon(true, false)}
+            interactive={false}
             zIndexOffset={2000}
           />
         );
       })}
-
-      {selectedViaId &&
-        !dragState?.active &&
-        vias
-          .filter((v) => v.id === selectedViaId)
-          .map((via) => (
-            <Marker
-              key={`del-${via.id}`}
-              position={[via.lat, via.lng]}
-              icon={viaDeleteIcon()}
-              eventHandlers={{
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  L.DomEvent.preventDefault(e);
-                  onDeleteVia?.(via.id);
-                },
-                mousedown: (e) => {
-                  L.DomEvent.stop(e);
-                },
-              }}
-              zIndexOffset={3000}
-            />
-          ))}
 
       {dragState?.active && (
         <>

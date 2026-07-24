@@ -105,7 +105,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px;
   min-height: 40px;
 }
 
@@ -113,6 +113,57 @@
   color: var(--md-sys-color-on-surface);
   min-width: 0;
   flex: 1;
+}
+
+.dir-travel-modes {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  margin: 0 -4px 4px;
+  padding: 2px 4px 4px;
+  scrollbar-width: none;
+}
+
+.dir-travel-modes::-webkit-scrollbar {
+  display: none;
+}
+
+.dir-travel-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 56px;
+  padding: 8px 6px 6px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #5f6368;
+  cursor: pointer;
+  font: inherit;
+  flex: 1 0 auto;
+}
+
+.dir-travel-mode md-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  --md-icon-size: 22px;
+}
+
+.dir-travel-mode-label {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.dir-travel-mode.is-active {
+  background: #e8f0fe;
+  color: #174ea6;
+}
+
+.dir-travel-mode:hover:not(.is-active) {
+  background: #f1f3f4;
 }
 
 .dir-top-actions {
@@ -344,7 +395,7 @@
 }
 
 .landing-saved {
-  margin-top: 0;
+  margin-top: 20px;
   padding-top: 0;
 }
 
@@ -352,7 +403,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .landing-saved-head h2 {
@@ -389,6 +440,36 @@
 .landing-saved-list {
   background: transparent;
   --md-list-container-color: transparent;
+  margin-top: 0;
+}
+
+.landing-saved-item {
+  --md-list-item-container-color: transparent;
+}
+
+.landing-saved-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.landing-saved-open-title {
+  color: #202124;
+  font-size: 0.9375rem;
+}
+
+.landing-saved-open-meta {
+  color: #70757a;
+  font-size: 0.8125rem;
 }
 
 .landing-saved-actions {
@@ -2439,11 +2520,15 @@ md-text-button {
 
 .steps-sheet-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 14px 8px 10px 16px;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px 10px 8px;
   border-bottom: 1px solid #dadce0;
+}
+
+.steps-sheet-heading {
+  min-width: 0;
+  flex: 1;
 }
 
 .steps-sheet-meta {
@@ -2610,8 +2695,11 @@ md-text-button {
   .route-sheet {
     left: auto;
     right: 16px;
-    bottom: 24px;
+    /* Top-align with the preferences (tune) icon in the panel header */
+    top: 64px;
+    bottom: auto;
     width: min(360px, calc(100% - 32px));
+    max-height: calc(100dvh - 80px);
   }
 
   .app:not(.panel-collapsed) .route-sheet {
@@ -2623,11 +2711,15 @@ md-text-button {
 
 .route-sheet-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 8px 10px 16px;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px 10px 8px;
   border-bottom: 1px solid #e8eaed;
+}
+
+.route-sheet-heading {
+  min-width: 0;
+  flex: 1;
 }
 
 .route-sheet-header-actions {
@@ -2703,6 +2795,58 @@ md-text-button {
   accent-color: #1a73e8;
 }
 
+.route-pref-section-label {
+  margin: 12px 16px 4px;
+  color: #202124;
+}
+
+.route-pref-row-static {
+  cursor: default;
+}
+
+.route-pref-row-static:hover {
+  background: transparent;
+}
+
+.route-pref-avatar-block {
+  padding-bottom: 4px;
+}
+
+.route-pref-avatar-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 10px 64px;
+}
+
+.route-pref-avatar-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  background: #fff;
+  color: #5f6368;
+  cursor: pointer;
+}
+
+.route-pref-avatar-btn.is-selected {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+  color: #174ea6;
+}
+
+.route-pref-select {
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.8125rem;
+  background: #fff;
+  color: #3c4043;
+  max-width: 110px;
+}
+
 .road-rules-list {
   background: transparent;
   --md-list-container-color: transparent;
@@ -2738,6 +2882,9 @@ md-text-button {
   border: 1px solid #e8eaed;
   box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
   animation: reroute-in 200ms ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 @keyframes reroute-in {
@@ -2756,7 +2903,11 @@ md-text-button {
   height: 4px;
   border-radius: 2px;
   background: #dadce0;
-  margin: 0 auto 10px;
+  margin: 0 auto 6px;
+}
+
+.reroute-prompt-copy {
+  min-width: 0;
 }
 
 .reroute-prompt-kicker {
@@ -2783,6 +2934,69 @@ md-text-button {
 .reroute-prompt-actions md-outlined-button,
 .reroute-prompt-actions md-filled-button {
   width: 100%;
+}
+
+/* Mobile: nudge prompt down 16px; clear map controls on the right */
+@media (max-width: 800px) {
+  .app.nav-mode .reroute-prompt {
+    bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+    right: 64px;
+  }
+
+  .app.nav-mode:has(.reroute-prompt) .map-controls {
+    bottom: calc(94px + 168px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 801px) {
+  .reroute-prompt {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "handle handle"
+      "copy actions";
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 4px;
+    right: 72px;
+    padding: 12px 16px;
+  }
+
+  .reroute-prompt-handle {
+    grid-area: handle;
+    margin: 0 0 2px;
+  }
+
+  .reroute-prompt-copy {
+    grid-area: copy;
+  }
+
+  .reroute-prompt-detail {
+    margin-bottom: 0;
+  }
+
+  .reroute-prompt-actions {
+    grid-area: actions;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+  }
+
+  .reroute-prompt-actions md-outlined-button,
+  .reroute-prompt-actions md-filled-button {
+    width: auto;
+    min-width: 96px;
+  }
+
+  .app.nav-mode .reroute-prompt {
+    bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .app.nav-mode:has(.reroute-prompt) .map-controls {
+    bottom: calc(110px + 96px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .nav-footer-actions {
@@ -2812,9 +3026,4 @@ md-text-button {
   .nav-footer-actions md-text-button {
     width: auto;
   }
-}
-
-.app.nav-mode .reroute-prompt {
-  /* keep absolute placement above the nav footer */
-  bottom: calc(110px + env(safe-area-inset-bottom, 0px));
 }
