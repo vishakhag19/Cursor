@@ -649,6 +649,14 @@
   padding-right: calc(var(--panel-pad-x, 16px) - 4px);
 }
 
+/* Match delete icon to secondary label color (meta), not a third tone */
+.landing-saved-actions md-icon-button {
+  --md-icon-button-icon-color: #70757a;
+  --md-icon-button-hover-icon-color: #70757a;
+  --md-icon-button-pressed-icon-color: #70757a;
+  --md-icon-button-focus-icon-color: #70757a;
+}
+
 .landing-avoid-head {
   display: flex;
   align-items: center;
@@ -3307,19 +3315,24 @@ md-text-button {
 }
 
 /* —— Shared hover / focus for clickable surfaces —— */
-.landing-saved-open {
-  border-radius: 8px;
+/* One hover for the whole Saved row (labels + delete), not just the text button */
+.landing-saved-list md-list-item.landing-saved-item {
+  border-radius: 0;
   transition: background 120ms ease;
 }
 
-.landing-saved-open:hover,
-.landing-saved-item:hover .landing-saved-open {
+.landing-saved-list md-list-item.landing-saved-item:hover {
   background: #f1f3f4;
 }
 
 .landing-saved-open:focus-visible {
   outline: 2px solid #448aff;
   outline-offset: 2px;
+}
+
+/* Keep delete on the same row wash — no separate circular chip hover */
+.landing-saved-actions md-icon-button:hover {
+  background: transparent;
 }
 
 .place-suggest-item {
@@ -3370,8 +3383,7 @@ md-text-button {
   background: #f1f3f4;
 }
 
-.road-rules-list md-list-item:hover,
-.landing-saved-list md-list-item:hover {
+.road-rules-list md-list-item:hover {
   background: #f8f9fa;
 }
 
