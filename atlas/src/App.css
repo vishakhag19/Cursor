@@ -1336,12 +1336,6 @@ md-filled-tonal-button.is-edit-active {
   padding-left: 4px;
 }
 
-.directions-panel {
-  overflow-x: hidden;
-  overflow-y: auto;
-  max-height: calc(100dvh - 88px);
-}
-
 .search-bar-field {
   position: relative;
   flex: 1;
@@ -2833,7 +2827,7 @@ md-text-button {
   }
 
   .dir-stops {
-    grid-template-columns: 12px 1fr 36px;
+    grid-template-columns: 36px 1fr 36px;
   }
 }
 
