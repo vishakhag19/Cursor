@@ -111,6 +111,7 @@ export default function SearchPanel({
               near={near}
               bare
               externalList
+              enterSelectsFirst={false}
               onListChange={setPlaceList}
               onFocusField={() => {
                 if (isCompact) setMobileExpanded(true);

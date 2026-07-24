@@ -69,6 +69,11 @@ export default function SuggestInput({
   onFocusField = null,
   /** Native <input> — pixel-exact padding (landing search). */
   bare = false,
+  /**
+   * Enter key: pick the top suggestion (directions) or run search and
+   * keep the matching places listed as rows (landing search).
+   */
+  enterSelectsFirst = true,
 }) {
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
@@ -191,6 +196,64 @@ export default function SuggestInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalList, open, suggestions, listQuery, loading]);
 
+  async function runSearch(q, { forceOpen = false } = {}) {
+    const seq = ++requestSeq.current;
+    setLoading(true);
+    setOpen(true);
+    publish({ open: true, loading: true, query: q });
+    try {
+      const loc = currentLocationRef.current;
+      const results = await searchPlaces(q, {
+        near: nearRef.current || loc,
+        limit: 8,
+      });
+      if (seq !== requestSeq.current) return;
+      if (committedRef.current && !forceOpen) {
+        setLoading(false);
+        publish({ loading: false });
+        return;
+      }
+      const merged = [];
+      if (allowCurrentLocation && LOCATION_QUERY.test(q)) {
+        merged.push(currentPlace(loc));
+      }
+      // Keep nearby recents that still match the typed query near the top.
+      const qLower = q.toLowerCase();
+      const recent = (recentPlacesRef.current || [])
+        .filter((p) => !p?.isCurrentLocation)
+        .filter((p) => {
+          const hay = `${p.name || ""} ${p.display_name || ""}`.toLowerCase();
+          return hay.includes(qLower);
+        })
+        .slice(0, 3)
+        .map((p) => ({ ...p, id: String(p.id), isRecent: true }));
+      merged.push(...recent, ...results);
+      const unique = dedupe(merged).slice(0, 8);
+      setSuggestions(unique);
+      setOpen(unique.length > 0 || forceOpen);
+      publish({
+        open: unique.length > 0 || forceOpen,
+        items: unique,
+        query: q,
+        loading: false,
+      });
+    } catch {
+      if (seq !== requestSeq.current) return;
+      if (forceOpen) {
+        setSuggestions([]);
+        setOpen(true);
+        publish({ open: true, items: [], query: q, loading: false });
+      } else {
+        showDefaultList();
+      }
+    } finally {
+      if (seq === requestSeq.current) {
+        setLoading(false);
+        publish({ loading: false });
+      }
+    }
+  }
+
   function scheduleSearch(raw) {
     clearTimeout(debounceRef.current);
     const q = raw.trim();
@@ -216,56 +279,40 @@ export default function SuggestInput({
       return;
     }
 
-    const seq = ++requestSeq.current;
-    setLoading(true);
-    publish({ loading: true, query: q });
-    debounceRef.current = setTimeout(async () => {
-      if (seq !== requestSeq.current) return;
-      try {
-        const loc = currentLocationRef.current;
-        const results = await searchPlaces(q, {
-          near: nearRef.current || loc,
-          limit: 8,
-        });
-        if (seq !== requestSeq.current) return;
-        if (committedRef.current) {
-          setLoading(false);
-          return;
-        }
-        const merged = [];
-        if (allowCurrentLocation && LOCATION_QUERY.test(q)) {
-          merged.push(currentPlace(loc));
-        }
-        // Keep nearby recents that still match the typed query near the top.
-        const qLower = q.toLowerCase();
-        const recent = (recentPlacesRef.current || [])
-          .filter((p) => !p?.isCurrentLocation)
-          .filter((p) => {
-            const hay = `${p.name || ""} ${p.display_name || ""}`.toLowerCase();
-            return hay.includes(qLower);
-          })
-          .slice(0, 3)
-          .map((p) => ({ ...p, id: String(p.id), isRecent: true }));
-        merged.push(...recent, ...results);
-        const unique = dedupe(merged).slice(0, 8);
-        setSuggestions(unique);
-        setOpen(unique.length > 0);
-        publish({
-          open: unique.length > 0,
-          items: unique,
-          query: q,
-          loading: false,
-        });
-      } catch {
-        if (seq !== requestSeq.current) return;
-        showDefaultList();
-      } finally {
-        if (seq === requestSeq.current) {
-          setLoading(false);
-          publish({ loading: false });
-        }
-      }
+    debounceRef.current = setTimeout(() => {
+      void runSearch(q);
     }, 200);
+  }
+
+  /** Immediate search — used when Enter should show the match list. */
+  function submitSearchList(raw) {
+    clearTimeout(debounceRef.current);
+    const q = (raw || "").trim();
+    committedRef.current = null;
+    setListQuery(q);
+
+    if (allowCurrentLocation && q.toLowerCase() === "your location") {
+      showDefaultList();
+      return;
+    }
+
+    if (q.length < 1) {
+      showDefaultList();
+      return;
+    }
+
+    // Already showing matches for this query — keep the list open.
+    if (
+      open &&
+      suggestions.length > 0 &&
+      listQuery.trim().toLowerCase() === q.toLowerCase() &&
+      !loading
+    ) {
+      publish({ open: true, items: suggestions, query: q, loading: false });
+      return;
+    }
+
+    void runSearch(q, { forceOpen: true });
   }
 
   useEffect(() => {
@@ -313,7 +360,11 @@ export default function SuggestInput({
   function handleKeyDown(e) {
     if (e.key !== "Enter") return;
     e.preventDefault();
-    if (suggestions[0]) choosePlace(suggestions[0]);
+    if (enterSelectsFirst) {
+      if (suggestions[0]) choosePlace(suggestions[0]);
+      return;
+    }
+    submitSearchList(value);
   }
 
   return (

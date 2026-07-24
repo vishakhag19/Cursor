@@ -1648,7 +1648,7 @@ md-outlined-text-field {
 .place-details.m3-card {
   box-shadow: none;
   border: none;
-  border-top: 1px solid #e8eaed;
+  border-top: none;
   border-radius: 0;
   margin: 4px calc(-1 * var(--panel-pad-x, 16px)) 0;
   padding: 14px var(--panel-pad-x, 16px) 12px;
@@ -2554,7 +2554,7 @@ md-text-button {
   .place-card.place-details,
   .place-details.m3-card {
     border: none;
-    border-top: 1px solid #e8eaed;
+    border-top: none;
     border-radius: 0;
     margin: 4px calc(-1 * var(--panel-pad-x, 16px)) 0;
     padding: 14px var(--panel-pad-x, 16px) 12px;
