@@ -125,7 +125,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-height: 40px;
   padding-inline: 0;
 }
@@ -133,8 +133,13 @@
 .dir-title {
   color: var(--md-sys-color-on-surface);
   min-width: 0;
-  text-align: center;
-  justify-self: center;
+  text-align: left;
+  justify-self: start;
+  margin: 0;
+  padding-inline-end: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dir-travel-modes {
