@@ -1768,6 +1768,14 @@ export default function App() {
     setAssistantOpen(false);
   }, [panelOpen]);
 
+  // Leave directions / start navigating → dismiss Route options.
+  useEffect(() => {
+    if (view !== "directions" || navigating) {
+      setPrefsOpen(false);
+      setRoadRulesOpen(false);
+    }
+  }, [view, navigating]);
+
   const fitPadding = useMemo(() => {
     const mobile =
       typeof window !== "undefined" &&
@@ -1855,6 +1863,7 @@ export default function App() {
             onMoveStop={moveStop}
             onSwap={swapStops}
             onClose={() => {
+              setPrefsOpen(false);
               setView("search");
               clearRoutes();
             }}
@@ -1891,7 +1900,10 @@ export default function App() {
             editBusy={editBusy || Boolean(editPreview?.active)}
             onSaveRoute={saveCurrentRoute}
             onStart={startNavigation}
-            onOpenAssistant={() => setAssistantOpen(true)}
+            onOpenAssistant={() => {
+              setPrefsOpen(false);
+              setAssistantOpen(true);
+            }}
             onOpenPrefs={() => setPrefsOpen((open) => !open)}
             prefsOpen={prefsOpen}
             onOpenRoadRules={() => setPrefsOpen(true)}

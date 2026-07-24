@@ -3179,8 +3179,17 @@ md-text-button {
   color: #70757a;
 }
 
+/* Catch outside clicks on every breakpoint so Route options dismisses */
 .route-sheet-backdrop {
-  display: none;
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 1290;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
 }
 
 .route-sheet {
@@ -3199,16 +3208,9 @@ md-text-button {
   overflow: hidden;
 }
 
-/* Mobile / tablet: full-screen modal for route options & road rules */
+/* Mobile / tablet: dimmed full-screen modal for route options & road rules */
 @media (max-width: 800px) {
   .route-sheet-backdrop {
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 1290;
-    border: none;
-    margin: 0;
-    padding: 0;
     background: rgba(32, 33, 36, 0.45);
     cursor: pointer;
   }
