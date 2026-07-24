@@ -2013,7 +2013,14 @@ export default function App() {
             geometry: routeGeometry,
           }}
           createRoute={{
-            waypoints: view === "directions" ? filledStops : [],
+            waypoints:
+              view === "directions"
+                ? stops
+                    .map((wp, stopIndex) =>
+                      wp ? { ...wp, stopIndex } : null,
+                    )
+                    .filter(Boolean)
+                : [],
             geometry: null,
             alternatives: [],
           }}
@@ -2051,13 +2058,13 @@ export default function App() {
           onContextMenu={(latlng, pos) => {
             setCtx({ latlng, ...pos });
           }}
-          onWaypointDrag={async (index, lat, lng) => {
+          onWaypointDrag={async (stopIndex, lat, lng) => {
             try {
               const place = await reverseGeocode(lat, lng);
-              setStopPlace(index, place);
+              setStopPlace(stopIndex, place);
               rememberPlace(place);
             } catch {
-              setStopPlace(index, {
+              setStopPlace(stopIndex, {
                 id: uid(),
                 name: "Moved pin",
                 display_name: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,

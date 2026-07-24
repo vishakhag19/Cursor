@@ -266,10 +266,17 @@ export default function DirectionsPanel({
                   multi
                     ? (e) => {
                         e.preventDefault();
-                        const from = Number(
-                          e.dataTransfer.getData("text/atlas-stop"),
-                        );
-                        if (Number.isFinite(from) && onMoveStop) {
+                        const raw =
+                          e.dataTransfer.getData("text/atlas-stop") ||
+                          e.dataTransfer.getData("text/plain");
+                        if (raw === "" || raw == null) return;
+                        const from = Number(raw);
+                        if (
+                          Number.isFinite(from) &&
+                          from >= 0 &&
+                          from < stops.length &&
+                          onMoveStop
+                        ) {
                           onMoveStop(from, i);
                         }
                       }
@@ -310,9 +317,10 @@ export default function DirectionsPanel({
                   />
                   {multi ? (
                     <div className="dir-stop-reorder">
-                      <button
-                        type="button"
+                      <div
                         className="dir-stop-drag"
+                        role="button"
+                        tabIndex={0}
                         aria-label="Drag to reorder"
                         title="Drag to reorder"
                         draggable
@@ -321,11 +329,25 @@ export default function DirectionsPanel({
                             "text/atlas-stop",
                             String(i),
                           );
+                          e.dataTransfer.setData("text/plain", String(i));
                           e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onKeyDown={(e) => {
+                          if (!onMoveStop) return;
+                          if (e.key === "ArrowUp" && i > 0) {
+                            e.preventDefault();
+                            onMoveStop(i, i - 1);
+                          } else if (
+                            e.key === "ArrowDown" &&
+                            i < stops.length - 1
+                          ) {
+                            e.preventDefault();
+                            onMoveStop(i, i + 1);
+                          }
                         }}
                       >
                         <md-icon>drag_indicator</md-icon>
-                      </button>
+                      </div>
                       <md-icon-button
                         type="button"
                         aria-label="Remove stop"

@@ -792,9 +792,10 @@ export default function RouteEditorLayer({
       const target = e.target;
       if (
         target?.closest?.(
-          ".leaflet-control, .via-map-delete, .atlas-via-delete, button, a, input, textarea",
+          ".leaflet-control, .leaflet-marker-icon, .atlas-pin, .via-map-delete, .atlas-via-delete, button, a, input, textarea",
         )
       ) {
+        // Let stop pins (and other markers) own the gesture — don't steal for reshape.
         return;
       }
 
@@ -804,6 +805,17 @@ export default function RouteEditorLayer({
 
       const latlng = clientToLatLng(clientX, clientY);
       const pt = map.latLngToContainerPoint(latlng);
+
+      // Also bail when the press is on a stop pin (anchor is tip of teardrop).
+      const PIN_HIT_PX = 28;
+      for (const stop of [originRef.current, destinationRef.current]) {
+        if (stop?.lat == null || stop?.lng == null) continue;
+        if (stop.isCurrentLocation) continue;
+        const sp = map.latLngToContainerPoint([stop.lat, stop.lng]);
+        if (Math.hypot(sp.x - pt.x, sp.y - pt.y) <= PIN_HIT_PX) {
+          return;
+        }
+      }
 
       const viasNow = viasRef.current;
       let bestVia = null;

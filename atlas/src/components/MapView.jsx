@@ -520,14 +520,16 @@ export default function MapView({
               : i === last
                 ? "end"
                 : "stop";
+        const stopIndex =
+          typeof wp.stopIndex === "number" ? wp.stopIndex : i;
         return (
           <DraggableStopMarker
-            key={wp.id || `dir-wp-${i}`}
+            key={wp.id || `dir-wp-${stopIndex}`}
             position={[wp.lat, wp.lng]}
             icon={pinIcon(kind)}
             draggable
             onClick={() => onMarkerClick?.(wp)}
-            onDragEnd={(lat, lng) => onWaypointDrag?.(i, lat, lng)}
+            onDragEnd={(lat, lng) => onWaypointDrag?.(stopIndex, lat, lng)}
           />
         );
       })}
@@ -542,6 +544,8 @@ export default function MapView({
                   createRoute.waypoints.length > 1
                 ? "end"
                 : "stop";
+          const stopIndex =
+            typeof wp.stopIndex === "number" ? wp.stopIndex : i;
           return (
             <DraggableStopMarker
               key={wp.id}
@@ -549,7 +553,7 @@ export default function MapView({
               icon={pinIcon(kind)}
               draggable
               onClick={() => onMarkerClick?.(wp)}
-              onDragEnd={(lat, lng) => onWaypointDrag?.(i, lat, lng)}
+              onDragEnd={(lat, lng) => onWaypointDrag?.(stopIndex, lat, lng)}
             />
           );
         })}

@@ -365,14 +365,19 @@
   background: transparent;
   color: #5f6368;
   cursor: grab;
+  user-select: none;
+  -webkit-user-drag: element;
+  touch-action: none;
 }
 
 .dir-stop-drag:active {
   cursor: grabbing;
 }
 
-.dir-stop-drag:hover {
+.dir-stop-drag:hover,
+.dir-stop-drag:focus-visible {
   background: #f1f3f4;
+  outline: none;
 }
 
 .dir-stop-drag md-icon {
