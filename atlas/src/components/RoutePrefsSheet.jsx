@@ -113,18 +113,20 @@ export default function RoutePrefsSheet({
             />
           </label>
 
-          <div className="route-pref-section-label md-typescale-title-small">
-            Your road rules
-          </div>
-
-          <div className="route-pref-road-rules">
-            <div className="route-pref-road-rules-head">
-              <p className="md-typescale-body-small route-sheet-sub">
-                Prefer, avoid, or never use named roads when routing
-              </p>
+          <section className="route-pref-section" aria-label="Your road rules">
+            <div className="route-pref-section-head">
+              <div className="route-pref-section-copy">
+                <h3 className="route-pref-section-label md-typescale-title-small">
+                  Your road rules
+                </h3>
+                <p className="md-typescale-body-small route-sheet-sub">
+                  Prefer, avoid, or never use named roads when routing
+                </p>
+              </div>
               {onAddRoadRule ? (
                 <md-icon-button
                   type="button"
+                  class="route-pref-section-add"
                   aria-label="Add road rule"
                   onClick={onAddRoadRule}
                 >
@@ -134,7 +136,7 @@ export default function RoutePrefsSheet({
             </div>
 
             {roadRules.length === 0 ? (
-              <p className="hint tight md-typescale-body-medium">
+              <p className="hint tight md-typescale-body-medium route-pref-section-empty">
                 Tap + then tap a road on the map, or long-press a road and choose
                 Prefer, Avoid, or Never use.
               </p>
@@ -171,7 +173,7 @@ export default function RoutePrefsSheet({
                 ))}
               </md-list>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </>
