@@ -16,12 +16,14 @@ export default function NavigationUI({
   onRejectReroute = null,
   canReturnToOriginal = false,
   onReturnToOriginal = null,
+  onDemoReroute = null,
 }) {
   if (!route || !active) return null;
 
   const steps = route.steps || [];
   const step = steps[currentStepIndex] || steps[0];
   const nextStep = steps[currentStepIndex + 1];
+  const showPrompt = Boolean(rerouteSuggestion);
 
   return (
     <div className="nav-active" role="region" aria-label="Navigation">
@@ -54,12 +56,14 @@ export default function NavigationUI({
         </md-icon-button>
       </div>
 
-      <ReroutePrompt
-        open={Boolean(rerouteSuggestion)}
-        suggestion={rerouteSuggestion}
-        onAccept={onAcceptReroute}
-        onReject={onRejectReroute}
-      />
+      {showPrompt ? (
+        <ReroutePrompt
+          open
+          suggestion={rerouteSuggestion}
+          onAccept={onAcceptReroute}
+          onReject={onRejectReroute}
+        />
+      ) : null}
 
       <div className="nav-footer">
         <div className="nav-footer-stats">
@@ -71,6 +75,11 @@ export default function NavigationUI({
           </div>
         </div>
         <div className="nav-footer-actions">
+          {!showPrompt && onDemoReroute ? (
+            <md-outlined-button type="button" onClick={onDemoReroute}>
+              Simulate reroute
+            </md-outlined-button>
+          ) : null}
           {canReturnToOriginal ? (
             <md-text-button type="button" onClick={onReturnToOriginal}>
               Return to original

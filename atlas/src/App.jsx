@@ -1580,42 +1580,46 @@ export default function App() {
   }, []);
 
   /**
-   * Feature 6 demo: after ~12s of navigation, surface a reroute prompt.
+   * Feature 6: mid-nav reroute interruption.
+   * Auto-demo ~5s after Start; also triggerable via "Simulate reroute".
    * ASSUMPTION: no live incident feed — mock reason for prototype testing.
-   * DESIGN GUESS: timing + copy — review with user testing.
    */
+  const offerRerouteDemo = useCallback(() => {
+    if (!selectedRoute) return;
+    const alt =
+      routeOptions.find((r) => r.id !== selectedRoute.id && !r.edited) || null;
+    const saveMin = alt
+      ? Math.max(
+          3,
+          Math.round(
+            ((selectedRoute.duration || 0) - (alt.duration || 0)) / 60,
+          ) + 8,
+        )
+      : 8;
+    setRerouteSuggestion({
+      reason: `Accident reported ahead — this saves ~${saveMin} min`,
+      detail: alt?.reason
+        ? `Suggested: ${alt.label}. ${alt.reason}`
+        : "Takes a parallel corridor around the blockage.",
+      altRoute: alt,
+      saveMin,
+    });
+  }, [selectedRoute, routeOptions]);
+
   useEffect(() => {
     if (!navigating || !selectedRoute || rerouteSuggestion || acceptedReroute) {
       return undefined;
     }
     const t = setTimeout(() => {
-      const alt =
-        routeOptions.find((r) => r.id !== selectedRoute.id && !r.edited) ||
-        null;
-      const saveMin = alt
-        ? Math.max(
-            3,
-            Math.round(((selectedRoute.duration || 0) - (alt.duration || 0)) / 60) +
-              8,
-          )
-        : 8;
-      setRerouteSuggestion({
-        reason: `Accident reported ahead — this saves ~${saveMin} min`,
-        detail: alt?.reason
-          ? `Suggested: ${alt.label}. ${alt.reason}`
-          : "Takes a parallel corridor around the blockage.",
-        // If we have an alternate option, accept switches to it; else bend mid-route.
-        altRoute: alt,
-        saveMin,
-      });
-    }, 12000);
+      offerRerouteDemo();
+    }, 5000);
     return () => clearTimeout(t);
   }, [
     navigating,
     selectedRoute,
     rerouteSuggestion,
     acceptedReroute,
-    routeOptions,
+    offerRerouteDemo,
   ]);
 
   const acceptReroute = useCallback(async () => {
@@ -2087,6 +2091,11 @@ export default function App() {
                 onRejectReroute={rejectReroute}
                 canReturnToOriginal={acceptedReroute && Boolean(navOriginalRoute)}
                 onReturnToOriginal={returnToOriginalRoute}
+                onDemoReroute={
+                  !rerouteSuggestion && !acceptedReroute
+                    ? offerRerouteDemo
+                    : null
+                }
               />
             )}
             {!navigating && !showSteps && selectedRoute.steps?.length > 0 && (
