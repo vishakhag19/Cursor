@@ -1938,12 +1938,12 @@ md-outlined-text-field {
   --md-icon-button-state-layer-height: var(--panel-control-size);
 }
 
-/* Center of the visible map (offsets past the left panel when open) */
+/* Top-center of the visible map (offsets past the left panel when open) */
 .route-reshape-bar {
   position: absolute;
-  top: 50%;
+  top: 12px;
   left: 50%;
-  translate: -50% -50%;
+  translate: -50% 0;
   z-index: 1100;
   display: flex;
   align-items: center;
@@ -1960,7 +1960,7 @@ md-outlined-text-field {
 }
 
 .app:not(.panel-collapsed) .route-reshape-bar {
-  /* Midpoint of the map to the right of the floating left panel */
+  /* Horizontal center of the map to the right of the floating left panel */
   left: calc(50% + (var(--atlas-panel-width, 400px) + 12px) / 2);
 }
 
@@ -1971,7 +1971,7 @@ md-outlined-text-field {
   --md-icon-button-icon-color: #5f6368;
 }
 
-/* Mobile: panel is a top sheet — keep bar centered in the map below it */
+/* Mobile: panel is a top sheet — keep bar at top center of the viewport */
 @media (max-width: 800px) {
   .expand-panel-tip {
     top: 12px;
@@ -1984,17 +1984,12 @@ md-outlined-text-field {
     height: var(--panel-control-size);
   }
 
-  .app:not(.panel-collapsed) .route-reshape-bar {
-    left: 50%;
-    top: auto;
-    bottom: 28%;
-    translate: -50% 0;
-  }
-
+  .app:not(.panel-collapsed) .route-reshape-bar,
   .app.panel-collapsed .route-reshape-bar {
-    top: 50%;
+    top: max(12px, env(safe-area-inset-top, 0px));
     left: 50%;
-    translate: -50% -50%;
+    bottom: auto;
+    translate: -50% 0;
   }
 }
 
