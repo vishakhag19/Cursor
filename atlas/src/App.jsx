@@ -2238,7 +2238,10 @@ export default function App() {
             type="button"
             className="assistant-fab"
             aria-label="Ask route assistant"
-            onClick={() => setAssistantOpen(true)}
+            onClick={() => {
+              setPrefsOpen(false);
+              setAssistantOpen(true);
+            }}
           >
             <md-icon>auto_awesome</md-icon>
           </button>
