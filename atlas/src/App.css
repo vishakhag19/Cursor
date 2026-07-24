@@ -69,7 +69,7 @@
   flex-shrink: 0;
 }
 
-/* Match route-sheet close control */
+/* Match floating Open panel chevron weight/color */
 .collapse-panel-btn {
   width: var(--panel-control-size);
   height: var(--panel-control-size);
@@ -78,9 +78,9 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  --md-icon-button-icon-size: 24px;
-  --md-icon-size: 24px;
-  --md-icon-button-icon-color: #5f6368;
+  --md-icon-button-icon-size: 28px;
+  --md-icon-size: 28px;
+  --md-icon-button-icon-color: #3c4043;
   --md-icon-button-state-layer-width: var(--panel-control-size);
   --md-icon-button-state-layer-height: var(--panel-control-size);
 }
@@ -1911,7 +1911,7 @@ md-outlined-text-field {
   margin: 0;
 }
 
-/* Floating expand: position the tip wrap so the icon centers in the chip */
+/* Floating expand — circular chip at top-left (not the undo/reset bar) */
 .expand-panel-tip {
   position: absolute;
   top: 16px;
@@ -1930,10 +1930,12 @@ md-outlined-text-field {
   margin: 0;
   border: none;
   border-radius: 999px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.28);
   /* Larger glyph only — button hit target stays --panel-control-size */
   --md-icon-button-icon-size: 28px;
   --md-icon-size: 28px;
+  --md-icon-button-icon-color: #3c4043;
   --md-icon-button-state-layer-width: var(--panel-control-size);
   --md-icon-button-state-layer-height: var(--panel-control-size);
 }
@@ -1944,7 +1946,7 @@ md-outlined-text-field {
   top: 12px;
   left: 50%;
   translate: -50% 0;
-  z-index: 1100;
+  z-index: 1105;
   display: flex;
   align-items: center;
   gap: 2px;
