@@ -146,7 +146,6 @@ export default function SearchPanel({
       {showPlaceCard ? (
         <PlaceDetailsCard
           place={place}
-          onClose={onClear}
           onDirectionsTo={onDirectionsTo}
           onDirectionsFrom={onDirectionsFrom}
         />

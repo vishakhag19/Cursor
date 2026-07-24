@@ -2,7 +2,6 @@ import { formatAddressLines } from "../api/geocode";
 
 export default function PlaceDetailsCard({
   place,
-  onClose,
   onDirectionsTo,
   onDirectionsFrom,
 }) {
@@ -17,18 +16,11 @@ export default function PlaceDetailsCard({
   return (
     <div className="place-card m3-card place-details">
       <div className="place-details-header">
-        <div>
-          <h2 className="md-typescale-title-large">{place.name}</h2>
-          {(place.type || place.category) && (
-            <p className="md-typescale-label-medium place-type">
-              {[place.category, place.type].filter(Boolean).join(" · ")}
-            </p>
-          )}
-        </div>
-        {onClose && (
-          <md-icon-button type="button" aria-label="Close" onClick={onClose}>
-            <md-icon>close</md-icon>
-          </md-icon-button>
+        <h2 className="md-typescale-title-large">{place.name}</h2>
+        {(place.type || place.category) && (
+          <p className="md-typescale-label-medium place-type">
+            {[place.category, place.type].filter(Boolean).join(" · ")}
+          </p>
         )}
       </div>
 
