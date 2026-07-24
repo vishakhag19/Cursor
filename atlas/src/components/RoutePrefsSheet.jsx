@@ -2,7 +2,7 @@ import { ROUTE_PREF_FIELDS } from "../utils/routePreferences";
 
 /**
  * Route preferences sheet (Feature 2).
- * DESIGN GUESS: bottom sheet on mobile / panel card on desktop — review layout.
+ * Road avoid/prefer/never lives under "Your road rules" (not Saved).
  */
 export default function RoutePrefsSheet({
   open,
@@ -10,6 +10,8 @@ export default function RoutePrefsSheet({
   onChange,
   onClose,
   onApply,
+  onOpenRoadRules = null,
+  roadRulesCount = 0,
 }) {
   if (!open) return null;
 
@@ -50,6 +52,30 @@ export default function RoutePrefsSheet({
             />
           </label>
         ))}
+
+        {onOpenRoadRules ? (
+          <button
+            type="button"
+            className="route-pref-row route-pref-link"
+            onClick={() => {
+              onClose?.();
+              onOpenRoadRules();
+            }}
+          >
+            <span className="route-pref-icon" aria-hidden>
+              <md-icon>alt_route</md-icon>
+            </span>
+            <span className="route-pref-copy">
+              <span className="md-typescale-body-large">Your road rules</span>
+              <span className="md-typescale-body-small route-sheet-sub">
+                {roadRulesCount > 0
+                  ? `${roadRulesCount} prefer / avoid / never rule${roadRulesCount === 1 ? "" : "s"}`
+                  : "Prefer, avoid, or never use named roads"}
+              </span>
+            </span>
+            <md-icon class="route-pref-chevron">chevron_right</md-icon>
+          </button>
+        ) : null}
       </div>
 
       <div className="route-sheet-footer">

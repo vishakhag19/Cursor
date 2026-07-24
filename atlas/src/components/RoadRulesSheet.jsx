@@ -2,7 +2,7 @@ import { modeLabel, ROAD_RULE_MODES } from "../utils/roadRules";
 
 /**
  * "Your Road Rules" list (Feature 4).
- * DESIGN GUESS: title wording — review vs "Saved roads" / "Road preferences".
+ * Home for avoided / preferred roads — not under Saved routes.
  */
 export default function RoadRulesSheet({
   open,
@@ -10,6 +10,7 @@ export default function RoadRulesSheet({
   onClose,
   onRemove,
   onSetMode,
+  onAdd = null,
 }) {
   if (!open) return null;
 
@@ -19,19 +20,30 @@ export default function RoadRulesSheet({
         <div>
           <div className="md-typescale-title-small">Your road rules</div>
           <div className="md-typescale-body-small route-sheet-sub">
-            Prefer, avoid, or never use a named road
+            Prefer, avoid, or never use a named road when routing
           </div>
         </div>
-        <md-icon-button type="button" aria-label="Close" onClick={onClose}>
-          <md-icon>close</md-icon>
-        </md-icon-button>
+        <div className="route-sheet-header-actions">
+          {onAdd ? (
+            <md-icon-button
+              type="button"
+              aria-label="Add road rule"
+              onClick={onAdd}
+            >
+              <md-icon>add</md-icon>
+            </md-icon-button>
+          ) : null}
+          <md-icon-button type="button" aria-label="Close" onClick={onClose}>
+            <md-icon>close</md-icon>
+          </md-icon-button>
+        </div>
       </div>
 
       <div className="route-sheet-body">
         {rules.length === 0 ? (
           <p className="hint tight md-typescale-body-medium">
-            Long-press a road on the map, then choose Prefer, Avoid, or Never
-            use.
+            Tap + or long-press a road on the map, then choose Prefer, Avoid, or
+            Never use. Rules apply when Atlas ranks and builds routes.
           </p>
         ) : (
           <md-list class="road-rules-list">

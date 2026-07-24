@@ -139,7 +139,6 @@ export default function App() {
   const [navOriginalRoute, setNavOriginalRoute] = useState(null);
   const [acceptedReroute, setAcceptedReroute] = useState(false);
   const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
-  const [savedTab, setSavedTab] = useState("routes");
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [assistantMessages, setAssistantMessages] = useState(() => [
@@ -230,6 +229,27 @@ export default function App() {
   useEffect(() => {
     persistRoadRules(roadRules);
   }, [roadRules]);
+
+  // Fold legacy Saved → Avoided streets into Your road rules (prefer/avoid/never).
+  useEffect(() => {
+    if (!blockedStreets.length) return;
+    setRoadRules((prev) => {
+      let next = prev;
+      let changed = false;
+      for (const b of blockedStreets) {
+        if (!b?.name) continue;
+        if (next.some((r) => roadNamesMatch(r.name, b.name))) continue;
+        next = upsertRoadRule(next, {
+          name: b.name,
+          lat: b.lat,
+          lng: b.lng,
+          mode: "avoid",
+        });
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [blockedStreets]);
 
   useEffect(() => {
     if (!userLocation) return;
@@ -1764,11 +1784,6 @@ export default function App() {
             savedRoutes={savedRoutes}
             onLoadSaved={loadSavedRoute}
             onDeleteSaved={deleteSavedRoute}
-            blockedStreets={blockedStreets}
-            onRemoveBlocked={removeBlockedStreet}
-            onClearBlocked={() => setBlockedStreets([])}
-            savedTab={savedTab}
-            onSavedTab={setSavedTab}
             onClear={() => {
               setSearchQuery("");
               setSelectedPlace(null);
@@ -2149,13 +2164,34 @@ export default function App() {
         onChange={setRoutePrefs}
         onClose={() => setPrefsOpen(false)}
         onApply={applyPrefsToRoutes}
+        roadRulesCount={roadRules.length}
+        onOpenRoadRules={() => {
+          setPrefsOpen(false);
+          setRoadRulesOpen(true);
+        }}
       />
 
       <RoadRulesSheet
         open={roadRulesOpen}
         rules={roadRules}
         onClose={() => setRoadRulesOpen(false)}
-        onRemove={(id) => setRoadRules((prev) => removeRoadRule(prev, id))}
+        onAdd={() => {
+          setRoadRulesOpen(false);
+          setPanelOpen(false);
+          showStatus(
+            "Long-press a road on the map, then choose Prefer, Avoid, or Never",
+            5000,
+          );
+        }}
+        onRemove={(id) => {
+          const rule = roadRules.find((r) => r.id === id);
+          setRoadRules((prev) => removeRoadRule(prev, id));
+          if (rule?.name) {
+            setBlockedStreets((prev) =>
+              prev.filter((b) => !roadNamesMatch(b.name, rule.name)),
+            );
+          }
+        }}
         onSetMode={(id, mode) =>
           setRoadRules((prev) =>
             prev.map((r) => (r.id === id ? { ...r, mode, updatedAt: Date.now() } : r)),

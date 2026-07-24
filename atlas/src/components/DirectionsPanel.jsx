@@ -140,10 +140,10 @@ export default function DirectionsPanel({
           )}
           <md-icon-button
             type="button"
-            aria-label="Close directions"
+            aria-label="Back to search"
             onClick={onClose}
           >
-            <md-icon>close</md-icon>
+            <md-icon>arrow_back</md-icon>
           </md-icon-button>
         </div>
       </div>
@@ -193,14 +193,14 @@ export default function DirectionsPanel({
                   onFocusField={() => setActiveStop(i)}
                   onListChange={(payload) => handleListChange(i, payload)}
                 />
-                {stops.length > 2 && (
+                {stops.length > 2 && i > 0 && i < stops.length - 1 ? (
                   <div className="dir-stop-reorder">
                     {onMoveStop ? (
                       <>
                         <md-icon-button
                           type="button"
                           aria-label="Move stop up"
-                          disabled={i === 0 || undefined}
+                          disabled={i <= 1 || undefined}
                           onClick={() => onMoveStop(i, i - 1)}
                         >
                           <md-icon>arrow_upward</md-icon>
@@ -208,7 +208,7 @@ export default function DirectionsPanel({
                         <md-icon-button
                           type="button"
                           aria-label="Move stop down"
-                          disabled={i === stops.length - 1 || undefined}
+                          disabled={i >= stops.length - 2 || undefined}
                           onClick={() => onMoveStop(i, i + 1)}
                         >
                           <md-icon>arrow_downward</md-icon>
@@ -220,10 +220,10 @@ export default function DirectionsPanel({
                       aria-label="Remove stop"
                       onClick={() => onRemoveStop(i)}
                     >
-                      <md-icon>close</md-icon>
+                      <md-icon>remove_circle_outline</md-icon>
                     </md-icon-button>
                   </div>
-                )}
+                ) : null}
               </div>
             ))}
           </div>
