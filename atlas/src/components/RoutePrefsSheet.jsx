@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { ENGINE_TYPES, ROUTE_OPTION_FIELDS } from "../utils/routePreferences";
 import { modeLabel, ROAD_RULE_MODES } from "../utils/roadRules";
 import MdSwitch from "./MdSwitch";
@@ -12,14 +13,59 @@ export default function RoutePrefsSheet({
   onChange,
   onClose,
   roadRules = [],
-  onAddRoadRule = null,
+  onAddTypedRoadRule = null,
+  onPickRoadOnMap = null,
   onRemoveRoadRule = null,
   onSetRoadRuleMode = null,
 }) {
+  const [addingRoad, setAddingRoad] = useState(false);
+  const [roadName, setRoadName] = useState("");
+  const [roadMode, setRoadMode] = useState("avoid");
+  const nameInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) {
+      setAddingRoad(false);
+      setRoadName("");
+      setRoadMode("avoid");
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!addingRoad) return;
+    const id = requestAnimationFrame(() => nameInputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [addingRoad]);
+
   if (!open) return null;
 
   function setPref(patch) {
     onChange?.({ ...prefs, ...patch });
+  }
+
+  function beginAddRoad() {
+    setAddingRoad(true);
+    setRoadName("");
+    setRoadMode("avoid");
+  }
+
+  function cancelAddRoad() {
+    setAddingRoad(false);
+    setRoadName("");
+    setRoadMode("avoid");
+  }
+
+  function submitTypedRoad(e) {
+    e?.preventDefault?.();
+    const name = roadName.trim();
+    if (!name) {
+      nameInputRef.current?.focus();
+      return;
+    }
+    onAddTypedRoadRule?.({ name, mode: roadMode });
+    setAddingRoad(false);
+    setRoadName("");
+    setRoadMode("avoid");
   }
 
   return (
@@ -119,24 +165,78 @@ export default function RoutePrefsSheet({
                   Prefer, avoid, or never use named roads when routing
                 </p>
               </div>
-              {onAddRoadRule ? (
+              {onAddTypedRoadRule || onPickRoadOnMap ? (
                 <md-icon-button
                   type="button"
                   class="route-pref-section-add"
-                  aria-label="Add road rule"
-                  onClick={onAddRoadRule}
+                  aria-label={addingRoad ? "Cancel add road" : "Add road rule"}
+                  onClick={() => (addingRoad ? cancelAddRoad() : beginAddRoad())}
                 >
-                  <md-icon>add</md-icon>
+                  <md-icon>{addingRoad ? "close" : "add"}</md-icon>
                 </md-icon-button>
               ) : null}
             </div>
 
-            {roadRules.length === 0 ? (
+            {addingRoad ? (
+              <form
+                className="road-rule-add-form"
+                onSubmit={submitTypedRoad}
+              >
+                <label className="road-rule-add-field">
+                  <span className="md-typescale-body-small road-rule-add-label">
+                    Road name
+                  </span>
+                  <input
+                    ref={nameInputRef}
+                    className="road-rule-add-input"
+                    type="text"
+                    value={roadName}
+                    onChange={(e) => setRoadName(e.target.value)}
+                    placeholder="e.g. Michigan St"
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-label="Road name"
+                  />
+                </label>
+                <label className="road-rule-add-field">
+                  <span className="md-typescale-body-small road-rule-add-label">
+                    Rule
+                  </span>
+                  <select
+                    className="road-rules-select road-rule-add-mode"
+                    aria-label="Road rule"
+                    value={roadMode}
+                    onChange={(e) => setRoadMode(e.target.value)}
+                  >
+                    {ROAD_RULE_MODES.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="road-rule-add-actions">
+                  <md-filled-button type="submit">Add road</md-filled-button>
+                  {onPickRoadOnMap ? (
+                    <md-text-button
+                      type="button"
+                      onClick={() => onPickRoadOnMap()}
+                    >
+                      Pick on map
+                    </md-text-button>
+                  ) : null}
+                </div>
+              </form>
+            ) : null}
+
+            {!addingRoad && roadRules.length === 0 ? (
               <p className="hint tight md-typescale-body-medium route-pref-section-empty">
-                Tap + then tap a road on the map, or long-press a road and choose
-                Prefer, Avoid, or Never use.
+                Tap + to type a road name, pick one on the map, or long-press a
+                road and choose Prefer, Avoid, or Never use.
               </p>
-            ) : (
+            ) : null}
+
+            {roadRules.length > 0 ? (
               <md-list class="road-rules-list">
                 {roadRules.map((r) => (
                   <md-list-item key={r.id}>
@@ -168,7 +268,7 @@ export default function RoutePrefsSheet({
                   </md-list-item>
                 ))}
               </md-list>
-            )}
+            ) : null}
           </section>
         </div>
       </div>

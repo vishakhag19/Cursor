@@ -1459,6 +1459,15 @@ export default function App() {
     return { name, ...focus };
   }, [travelMode]);
 
+  const openPrefsWithRoadRules = useCallback(() => {
+    setRoadPickMode(false);
+    setCtx(null);
+    setAssistantOpen(false);
+    setRoadRulesOpen(false);
+    setPanelOpen(true);
+    setPrefsOpen(true);
+  }, []);
+
   const applyRoadRuleAt = useCallback(
     async (latlng, mode) => {
       const road = await resolveRoadAt(latlng);
@@ -1501,6 +1510,36 @@ export default function App() {
     [resolveRoadAt, avoidStreetAt, preferStreetNamed, routePrefs, roadRules],
   );
 
+  const applyTypedRoadRule = useCallback(
+    async ({ name, mode }) => {
+      const trimmed = (name || "").trim();
+      if (!trimmed || !mode) return;
+      setRoadRules((prev) =>
+        upsertRoadRule(prev, { name: trimmed, mode, lat: null, lng: null }),
+      );
+      if (mode === "prefer" && routeGeometryRef.current?.length) {
+        try {
+          await preferStreetNamed(trimmed);
+        } catch {
+          /* list update still stands */
+        }
+      }
+      setRouteOptions((prev) => {
+        if (prev.length < 2) return prev;
+        return enrichAndRankRoutes(prev, routePrefs, [
+          ...roadRules.filter(
+            (r) => r.name.toLowerCase() !== trimmed.toLowerCase(),
+          ),
+          { name: trimmed, mode, lat: null, lng: null, id: "tmp" },
+        ]);
+      });
+      const verb =
+        mode === "prefer" ? "Preferring" : mode === "never" ? "Never use" : "Avoiding";
+      showStatus(`${verb} ${trimmed}`);
+    },
+    [preferStreetNamed, routePrefs, roadRules, showStatus],
+  );
+
   const ctxActions = ctx
     ? [
         {
@@ -1510,6 +1549,7 @@ export default function App() {
             try {
               const name = await applyRoadRuleAt(ctx.latlng, "prefer");
               showStatus(`Preferring ${name}`);
+              openPrefsWithRoadRules();
             } catch (err) {
               showStatus(err.message || "Could not set road rule");
             }
@@ -1522,6 +1562,7 @@ export default function App() {
             try {
               const name = await applyRoadRuleAt(ctx.latlng, "avoid");
               showStatus(`Avoiding ${name}`);
+              openPrefsWithRoadRules();
             } catch (err) {
               showStatus(err.message || "Could not set road rule");
             }
@@ -1534,6 +1575,7 @@ export default function App() {
             try {
               const name = await applyRoadRuleAt(ctx.latlng, "never");
               showStatus(`Never use ${name}`);
+              openPrefsWithRoadRules();
             } catch (err) {
               showStatus(err.message || "Could not set road rule");
             }
@@ -2163,7 +2205,8 @@ export default function App() {
         onChange={handleRoutePrefsChange}
         onClose={() => setPrefsOpen(false)}
         roadRules={roadRules}
-        onAddRoadRule={() => {
+        onAddTypedRoadRule={applyTypedRoadRule}
+        onPickRoadOnMap={() => {
           setPrefsOpen(false);
           setPanelOpen(false);
           setRoadPickMode(true);
