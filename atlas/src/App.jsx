@@ -1760,6 +1760,14 @@ export default function App() {
   const showEditBar =
     !panelOpen && !navigating && hasCustomEdits && Boolean(selectedRoute);
 
+  // Collapsing the left panel should dismiss floating sheets that reposition off it.
+  useEffect(() => {
+    if (panelOpen) return;
+    setPrefsOpen(false);
+    setRoadRulesOpen(false);
+    setAssistantOpen(false);
+  }, [panelOpen]);
+
   const fitPadding = useMemo(() => {
     const mobile =
       typeof window !== "undefined" &&
