@@ -791,9 +791,29 @@ export default function App() {
     return run;
   }, []);
 
+  const ensureEditSession = useCallback(() => {
+    setShowSteps(false);
+    setNavigating(false);
+    const selected =
+      routeOptionsRef.current.find(
+        (r) => r.id === selectedRouteIdRef.current,
+      ) || baselineRoute;
+    if (selected && !baselineRoute) setBaselineRoute(selected);
+    // Seed mid-stops into vias before the first reshape so rebuilds stay
+    // A → stops → B instead of collapsing to A → B.
+    if (!selected?.edited && editViasRef.current.length === 0) {
+      const seeded = seedViasFromStops(stops);
+      if (seeded.length) {
+        editViasRef.current = seeded;
+        setEditVias(seeded);
+      }
+    }
+  }, [baselineRoute, stops]);
+
   const commitVia = useCallback(
     (snapped, segmentIndex) =>
       enqueueEdit(async () => {
+        ensureEditSession();
         const currentVias = editViasRef.current;
         const geometry = routeGeometryRef.current || [];
         const newVia = {
@@ -822,12 +842,13 @@ export default function App() {
         if (!inserted) next.push(newVia);
         await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
       }),
-    [enqueueEdit, rebuildFromVias],
+    [enqueueEdit, rebuildFromVias, ensureEditSession],
   );
 
   const moveVia = useCallback(
     (viaId, snapped) =>
       enqueueEdit(async () => {
+        ensureEditSession();
         const next = editViasRef.current.map((v) =>
           v.id === viaId
             ? {
@@ -840,33 +861,19 @@ export default function App() {
         );
         await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
       }),
-    [enqueueEdit, rebuildFromVias],
+    [enqueueEdit, rebuildFromVias, ensureEditSession],
   );
 
   const deleteVia = useCallback(
     (viaId) =>
       enqueueEdit(async () => {
+        ensureEditSession();
         const next = editViasRef.current.filter((v) => v.id !== viaId);
         setSelectedViaId(null);
         await rebuildFromVias(next, { pushHistory: true, preserveOrder: true });
       }),
-    [enqueueEdit, rebuildFromVias],
+    [enqueueEdit, rebuildFromVias, ensureEditSession],
   );
-
-  const ensureEditSession = useCallback(() => {
-    setShowSteps(false);
-    setNavigating(false);
-    const selected =
-      routeOptionsRef.current.find(
-        (r) => r.id === selectedRouteIdRef.current,
-      ) || baselineRoute;
-    if (selected && !baselineRoute) setBaselineRoute(selected);
-    if (!selected?.edited && editViasRef.current.length === 0) {
-      const seeded = seedViasFromStops(stops);
-      editViasRef.current = seeded;
-      setEditVias(seeded);
-    }
-  }, [baselineRoute, stops]);
 
   const rememberBlockedStreet = useCallback((name, lat, lng) => {
     if (!name) return;
@@ -920,6 +927,7 @@ export default function App() {
         name: avoidVia.name,
       };
       await enqueueEdit(async () => {
+        ensureEditSession();
         const next = [...editViasRef.current, via];
         await rebuildFromVias(next, {
           pushHistory: true,
@@ -935,6 +943,7 @@ export default function App() {
       rememberBlockedStreet,
       enqueueEdit,
       rebuildFromVias,
+      ensureEditSession,
     ],
   );
 
@@ -1804,6 +1813,13 @@ export default function App() {
     !navigating &&
     hasCustomEdits &&
     Boolean(selectedRoute);
+
+  // Keep mid-stops in the reshape via list as soon as the route is editable
+  // so live drag preview and the first commit both honor them.
+  useEffect(() => {
+    if (!routeEditable) return;
+    ensureEditSession();
+  }, [routeEditable, selectedRouteId, stops, ensureEditSession]);
 
   // Collapsing the left panel should dismiss floating sheets that reposition off it.
   useEffect(() => {

@@ -51,12 +51,15 @@ export function comparisonVsSuggested(currentDuration, baselineDuration) {
   };
 }
 
+/** Mid filled stops become reshape vias so edits keep A→stops→B. */
 export function seedViasFromStops(stops) {
-  if (!stops || stops.length <= 2) return [];
-  return stops.slice(1, -1).filter(Boolean).map((s, i) => ({
+  const filled = (stops || []).filter(Boolean);
+  if (filled.length <= 2) return [];
+  return filled.slice(1, -1).map((s, i) => ({
     id: s.id || `stop-via-${i}`,
     lat: s.lat,
     lng: s.lng,
     name: s.name || "Stop",
+    fromStop: true,
   }));
 }
