@@ -1883,161 +1883,34 @@ md-filled-tonal-button.is-edit-active {
   --md-icon-button-state-layer-height: var(--panel-control-size);
 }
 
-/* Floating undo / reset / done when the panel is collapsed during edit */
-.mobile-edit-bar {
+/* Top-center undo / reset while reshaping with the panel collapsed */
+.route-reshape-bar {
   position: absolute;
-  /* Align with .expand-panel; taller so Done is an obvious primary action */
   top: 12px;
-  left: calc(16px + var(--panel-control-size) + 8px);
-  right: auto;
-  translate: none;
+  left: 50%;
+  translate: -50% 0;
   z-index: 1100;
   display: flex;
   align-items: center;
-  gap: 4px;
-  width: max-content;
-  max-width: calc(100% - 32px - var(--panel-control-size) - 8px);
+  gap: 2px;
   height: 48px;
   min-height: 48px;
-  padding: 4px 4px 4px 2px;
+  padding: 4px;
   box-sizing: border-box;
   background: #fff;
   border: 1px solid #e8eaed;
   border-radius: 999px;
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
 }
 
-.mobile-edit-spacer {
-  flex: 0 0 8px;
-  min-width: 8px;
-}
-
-.mobile-edit-comparison {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 220px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  padding: 0 10px;
-  color: #5f6368;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.mobile-edit-comparison-value {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 700;
-  color: #3c4043;
-}
-
-.mobile-edit-comparison-detail {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font: 500 11px/1.15 Roboto, sans-serif;
-  color: #80868b;
-}
-
-.mobile-edit-comparison.tone-better .mobile-edit-comparison-value {
-  color: #188038;
-}
-
-.mobile-edit-comparison.tone-better .mobile-edit-comparison-detail {
-  color: #137333;
-}
-
-.mobile-edit-comparison.tone-worse .mobile-edit-comparison-value {
-  color: #c5221f;
-}
-
-.mobile-edit-comparison.tone-worse .mobile-edit-comparison-detail {
-  color: #a50e0e;
-}
-
-.mobile-edit-done {
-  flex-shrink: 0;
-  align-self: stretch;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 88px;
-  min-height: 40px;
-  height: auto;
+.route-reshape-bar md-icon-button {
+  width: var(--panel-control-size);
+  height: var(--panel-control-size);
   margin: 0;
-  padding: 0 18px;
-  border: none;
-  border-radius: 999px;
-  background: #1a73e8;
-  color: #fff;
-  font: 500 15px/1 Roboto, sans-serif;
-  letter-spacing: 0.01em;
-  cursor: pointer;
+  --md-icon-button-icon-color: #5f6368;
 }
 
-.mobile-edit-done:hover {
-  background: #1765cc;
-}
-
-.mobile-edit-done:active {
-  background: #1557b0;
-}
-
-/* Persistent edit help on phones — snackbar alone disappears too quickly */
-.edit-coach {
-  position: absolute;
-  top: 68px;
-  left: 12px;
-  right: 12px;
-  z-index: 1100;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 12px 12px 14px;
-  box-sizing: border-box;
-  background: #fff;
-  border: 1px solid #e8eaed;
-  border-radius: 12px;
-  box-shadow: none;
-}
-
-.edit-coach-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: #1a73e8;
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
-  --md-icon-size: 22px;
-}
-
-.edit-coach-text {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  color: #3c4043;
-  line-height: 1.35;
-}
-
-.edit-coach-dismiss {
-  flex-shrink: 0;
-  align-self: center;
-  margin: 0;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 999px;
-  background: #e8f0fe;
-  color: #1a73e8;
-  font: 500 13px/1 Roboto, sans-serif;
-  cursor: pointer;
-}
-
-.edit-coach-dismiss:hover {
-  background: #d2e3fc;
-}
-
-/* Mobile: expand stays top-right (same corner as collapse); edit bar leaves room */
+/* Mobile: expand stays top-right; reshape bar stays centered */
 @media (max-width: 800px) {
   .expand-panel-tip {
     top: 12px;
@@ -2050,28 +1923,8 @@ md-filled-tonal-button.is-edit-active {
     height: var(--panel-control-size);
   }
 
-  .mobile-edit-bar {
+  .route-reshape-bar {
     top: 10px;
-    left: 12px;
-    right: calc(12px + var(--panel-control-size) + 8px);
-    translate: none;
-    width: auto;
-    max-width: none;
-    height: 48px;
-    min-height: 48px;
-  }
-
-  .mobile-edit-spacer {
-    flex: 1 1 auto;
-  }
-
-  .mobile-edit-comparison {
-    flex: 1 1 auto;
-    max-width: none;
-  }
-
-  .edit-coach {
-    top: 66px;
   }
 }
 
@@ -2357,7 +2210,7 @@ md-filled-tonal-button.is-edit-active {
   }
 
   .app.nav-mode .assistant-fab-tip,
-  .app:has(.mobile-edit-bar) .assistant-fab-tip {
+  .app:has(.route-reshape-bar) .assistant-fab-tip {
     display: none;
   }
 

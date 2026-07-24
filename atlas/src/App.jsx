@@ -157,7 +157,6 @@ export default function App() {
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
   const [followingLocation, setFollowingLocation] = useState(false);
-  const [editCoachOpen, setEditCoachOpen] = useState(false);
   const suppressMapClickUntil = useRef(0);
   const locateFn = useRef(null);
   const zoomFn = useRef(null);
@@ -567,6 +566,7 @@ export default function App() {
       }
 
       setCtx(null);
+      setSelectedViaId(null);
 
       // Ignore the click that follows a route-line drag (otherwise it inserts a stop).
       if (Date.now() < suppressMapClickUntil.current) return;
@@ -1069,32 +1069,6 @@ export default function App() {
     setRouteGeometry(baselineRoute.geometry);
     // Keep the user's zoom during edit — don't re-fit the full route.
   }, [baselineRoute, stops, clearEditHistory]);
-
-  const finishRouteEdits = useCallback(() => {
-    setEditPreview(null);
-    setSelectedViaId(null);
-    setEditCoachOpen(false);
-    setPanelOpen(true);
-    setShowSteps(false);
-    setNavigating(false);
-  }, []);
-
-  // Once the user makes an edit, the coach tip is no longer needed.
-  useEffect(() => {
-    if (editHistory.length > 0) setEditCoachOpen(false);
-  }, [editHistory.length]);
-
-  // First custom reshape on a phone: brief coach, then tools live in the bar.
-  useEffect(() => {
-    if (editHistory.length !== 1) return;
-    let mobile = false;
-    try {
-      mobile = window.matchMedia("(max-width: 800px)").matches;
-    } catch {
-      mobile = false;
-    }
-    if (mobile) setEditCoachOpen(true);
-  }, [editHistory.length]);
 
   // Ctrl/Cmd+Z + Delete via whenever a custom reshape stack exists.
   useEffect(() => {
@@ -1919,15 +1893,15 @@ export default function App() {
 
       {showEditBar && (
         <div
-          className="mobile-edit-bar"
+          className="route-reshape-bar"
           role="toolbar"
-          aria-label="Route edit actions"
+          aria-label="Route reshape actions"
         >
-          <ActionTip tip="Undo last edit (Ctrl+Z)">
+          <ActionTip tip="Undo last reshape (Ctrl+Z)">
             <md-icon-button
               type="button"
-              class="mobile-edit-undo"
-              aria-label="Undo last edit"
+              class="route-reshape-undo"
+              aria-label="Undo last reshape"
               onClick={undoEdit}
               disabled={editHistory.length === 0 || undefined}
             >
@@ -1937,7 +1911,7 @@ export default function App() {
           <ActionTip tip="Reset to original route">
             <md-icon-button
               type="button"
-              class="mobile-edit-reset"
+              class="route-reshape-reset"
               aria-label="Reset to original route"
               onClick={resetToSuggested}
               disabled={!canReset || undefined}
@@ -1945,50 +1919,6 @@ export default function App() {
               <md-icon>restart_alt</md-icon>
             </md-icon-button>
           </ActionTip>
-          {comparison ? (
-            <span
-              className={`mobile-edit-comparison tone-${comparison.tone}`}
-              title={comparison.label}
-            >
-              <span className="mobile-edit-comparison-value md-typescale-label-medium">
-                {editBusy || editPreview?.active
-                  ? "Updating…"
-                  : comparison.shortLabel}
-              </span>
-              {!editBusy && !editPreview?.active ? (
-                <span className="mobile-edit-comparison-detail">
-                  {comparison.detailLabel}
-                </span>
-              ) : null}
-            </span>
-          ) : (
-            <span className="mobile-edit-spacer" aria-hidden />
-          )}
-          <button
-            type="button"
-            className="mobile-edit-done"
-            aria-label="Done editing"
-            onClick={finishRouteEdits}
-          >
-            Done
-          </button>
-        </div>
-      )}
-
-      {editCoachOpen && isCompact && showEditBar && (
-        <div className="edit-coach" role="status">
-          <md-icon class="edit-coach-icon">touch_app</md-icon>
-          <p className="edit-coach-text md-typescale-body-medium">
-            Drag the blue route to bend it. Travel time updates in the bar
-            above. Tap Done to review the new steps.
-          </p>
-          <button
-            type="button"
-            className="edit-coach-dismiss"
-            onClick={() => setEditCoachOpen(false)}
-          >
-            Got it
-          </button>
         </div>
       )}
 

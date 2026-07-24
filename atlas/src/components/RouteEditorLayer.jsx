@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Polyline, CircleMarker, useMap } from "react-leaflet";
+import { useEffect, useRef, useState, Fragment } from "react";
+import { Marker, Polyline, CircleMarker, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
   closestPointOnPolyline,
@@ -24,6 +24,17 @@ function hitPixels() {
 function viaHitPixels() {
   return isCoarsePointer() ? 30 : 22;
 }
+
+function viaDeleteIcon() {
+  return L.divIcon({
+    className: "atlas-via-delete",
+    html: `<button type="button" class="via-map-delete" aria-label="Remove reshape point">×</button>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 36],
+  });
+}
+
+const VIA_DELETE_ICON = viaDeleteIcon();
 
 function isTouchLikeEvent(e) {
   return (
@@ -93,9 +104,9 @@ export default function RouteEditorLayer({
   onSuppressMapClick = null,
   onCommitVia,
   onMoveVia,
-  onDeleteVia: _onDeleteVia,
+  onDeleteVia = null,
   onSelectVia,
-  selectedViaId: _selectedViaId = null,
+  selectedViaId = null,
   onError,
 }) {
   const map = useMap();
@@ -892,27 +903,47 @@ export default function RouteEditorLayer({
         interactive={false}
       />
 
-      {/* Reshape uses internal vias only — no stop pins. While dragging, show a
-          small vector vertex (not a teardrop pin) at the snap point. */}
+      {/* Persistent vector points for reshape vias — tap to select + delete.
+          Not stop pins; small vertices on the route. */}
       {vias.map((via) => {
         const draggingThis = dragState?.viaId === via.id && dragState?.active;
-        if (!draggingThis) return null;
-        const lat = dragState.lat;
-        const lng = dragState.lng;
+        if (draggingThis) return null;
+        const selected = selectedViaId === via.id;
         return (
-          <CircleMarker
-            key={via.id}
-            center={[lat, lng]}
-            radius={5}
-            pane="routeEdit"
-            pathOptions={{
-              color: "#0066FF",
-              fillColor: "#fff",
-              fillOpacity: 1,
-              weight: 2.5,
-            }}
-            interactive={false}
-          />
+          <Fragment key={via.id}>
+            <CircleMarker
+              center={[via.lat, via.lng]}
+              radius={selected ? 6 : 5}
+              pane="routeEdit"
+              pathOptions={{
+                color: "#5f6368",
+                fillColor: "#fff",
+                fillOpacity: 1,
+                weight: selected ? 3 : 2.5,
+              }}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e.originalEvent);
+                  onSelectVia?.(via.id === selectedViaId ? null : via.id);
+                },
+              }}
+            />
+            {selected ? (
+              <Marker
+                position={[via.lat, via.lng]}
+                icon={VIA_DELETE_ICON}
+                interactive
+                zIndexOffset={2500}
+                eventHandlers={{
+                  click: (e) => {
+                    L.DomEvent.stopPropagation(e.originalEvent);
+                    onDeleteVia?.(via.id);
+                    onSelectVia?.(null);
+                  },
+                }}
+              />
+            ) : null}
+          </Fragment>
         );
       })}
 
@@ -939,7 +970,7 @@ export default function RouteEditorLayer({
                 radius={5}
                 pane="routeEdit"
                 pathOptions={{
-                  color: "#0066FF",
+                  color: "#5f6368",
                   fillColor: "#fff",
                   fillOpacity: 1,
                   weight: 2.5,
