@@ -281,7 +281,7 @@
 }
 
 .dir-stop-row.has-controls .suggest-wrap md-outlined-text-field {
-  --md-outlined-text-field-trailing-space: 112px;
+  --md-outlined-text-field-trailing-space: 76px;
 }
 
 .dir-stop-reorder {
@@ -308,6 +308,36 @@
   width: 34px;
   height: 34px;
   margin: 0;
+}
+
+.dir-stop-drag {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #5f6368;
+  cursor: grab;
+}
+
+.dir-stop-drag:active {
+  cursor: grabbing;
+}
+
+.dir-stop-drag:hover {
+  background: #f1f3f4;
+}
+
+.dir-stop-drag md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
+  pointer-events: none;
 }
 
 .dir-swap {
@@ -451,15 +481,16 @@
 }
 
 .landing-saved {
-  margin-top: 20px;
+  margin-top: 10px;
   padding-top: 0;
+  padding-bottom: 24px;
 }
 
 .landing-saved-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
 .landing-saved-head h2 {
@@ -496,26 +527,34 @@
 .landing-saved-list {
   background: transparent;
   --md-list-container-color: transparent;
-  margin-top: 0;
+  margin: 0 calc(-1 * var(--panel-pad-x, 16px));
+  padding: 0;
 }
 
 .landing-saved-item {
   --md-list-item-container-color: transparent;
+  --md-list-item-top-space: 4px;
+  --md-list-item-bottom-space: 4px;
+  --md-list-item-leading-space: 0px;
+  --md-list-item-trailing-space: 4px;
+  --md-list-item-one-line-container-height: 48px;
+  --md-list-item-two-line-container-height: 52px;
 }
 
 .landing-saved-open {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 1px;
   width: 100%;
-  padding: 10px 0;
+  padding: 4px var(--panel-pad-x, 16px);
   border: none;
   background: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: inherit;
+  box-sizing: border-box;
 }
 
 .landing-saved-open-title {
@@ -531,6 +570,7 @@
 .landing-saved-actions {
   display: flex;
   align-items: center;
+  padding-right: calc(var(--panel-pad-x, 16px) - 4px);
 }
 
 .landing-avoid-head {
@@ -952,12 +992,16 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel {
-  padding-bottom: 12px;
+  padding-bottom: 32px;
   overflow: visible;
 }
 
 .search-panel.is-collapsed {
   padding-bottom: 4px;
+}
+
+.search-panel.has-place {
+  padding-bottom: 32px;
 }
 
 .landing-section-divider {
@@ -1284,6 +1328,9 @@ md-filled-tonal-button.is-edit-active {
   box-shadow: none;
   border: 1px solid #e8eaed;
   border-radius: 16px;
+  margin-top: 8px;
+  padding: 14px 16px 16px;
+  background: #fff;
 }
 
 .place-details-header {
@@ -2272,7 +2319,8 @@ md-text-button {
   }
 
   .landing-saved {
-    margin-bottom: 8px;
+    margin-bottom: 0;
+    padding-bottom: 24px;
   }
 
   /* Compact route option rows on phones */

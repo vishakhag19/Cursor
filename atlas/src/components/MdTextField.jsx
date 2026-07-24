@@ -17,6 +17,7 @@ export default function MdTextField({
   maxLength,
   onFocus,
   onBlur,
+  onKeyDown,
   id,
 }) {
   const ref = useRef(null);
@@ -34,6 +35,14 @@ export default function MdTextField({
     el.addEventListener("input", handler);
     return () => el.removeEventListener("input", handler);
   }, [onChange]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !onKeyDown) return;
+    const handler = (e) => onKeyDown(e);
+    el.addEventListener("keydown", handler);
+    return () => el.removeEventListener("keydown", handler);
+  }, [onKeyDown]);
 
   return (
     <md-outlined-text-field

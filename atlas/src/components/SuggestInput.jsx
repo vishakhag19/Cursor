@@ -310,6 +310,12 @@ export default function SuggestInput({
     showDefaultList();
   }
 
+  function handleKeyDown(e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (suggestions[0]) choosePlace(suggestions[0]);
+  }
+
   return (
     <div
       className={`suggest-wrap ${externalList ? "is-external-list" : "is-inline-list"} ${bare ? "is-bare" : ""} ${open && !externalList ? "is-open" : ""}`}
@@ -328,6 +334,7 @@ export default function SuggestInput({
           aria-label={label || placeholder || "Search"}
           onChange={(e) => handleValueChange(e.target.value)}
           onFocus={handleFocus}
+          onKeyDown={handleKeyDown}
         />
       ) : (
         <MdTextField
@@ -338,6 +345,7 @@ export default function SuggestInput({
           placeholder={placeholder}
           onChange={handleValueChange}
           onFocus={handleFocus}
+          onKeyDown={handleKeyDown}
         />
       )}
       {loading && (

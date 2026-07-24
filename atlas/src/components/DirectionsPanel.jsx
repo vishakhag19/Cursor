@@ -210,11 +210,32 @@ export default function DirectionsPanel({
 
           <div className="dir-stops-fields">
             {stops.map((stop, i) => {
-              const isMid = stops.length > 2 && i > 0 && i < stops.length - 1;
+              const multi = stops.length > 2;
               return (
               <div
-                className={`dir-stop-row ${isMid ? "has-controls" : ""}`}
+                className={`dir-stop-row ${multi ? "has-controls" : ""}`}
                 key={`stop-${i}`}
+                onDragOver={
+                  multi
+                    ? (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }
+                    : undefined
+                }
+                onDrop={
+                  multi
+                    ? (e) => {
+                        e.preventDefault();
+                        const from = Number(
+                          e.dataTransfer.getData("text/atlas-stop"),
+                        );
+                        if (Number.isFinite(from) && onMoveStop) {
+                          onMoveStop(from, i);
+                        }
+                      }
+                    : undefined
+                }
               >
                 <div className="dir-stop-field">
                   <SuggestInput
@@ -248,28 +269,24 @@ export default function DirectionsPanel({
                     onFocusField={() => setActiveStop(i)}
                     onListChange={(payload) => handleListChange(i, payload)}
                   />
-                  {isMid ? (
+                  {multi ? (
                     <div className="dir-stop-reorder">
-                      {onMoveStop ? (
-                        <>
-                          <md-icon-button
-                            type="button"
-                            aria-label="Move stop up"
-                            disabled={i === 0 || undefined}
-                            onClick={() => onMoveStop(i, i - 1)}
-                          >
-                            <md-icon>arrow_upward</md-icon>
-                          </md-icon-button>
-                          <md-icon-button
-                            type="button"
-                            aria-label="Move stop down"
-                            disabled={i === stops.length - 1 || undefined}
-                            onClick={() => onMoveStop(i, i + 1)}
-                          >
-                            <md-icon>arrow_downward</md-icon>
-                          </md-icon-button>
-                        </>
-                      ) : null}
+                      <button
+                        type="button"
+                        className="dir-stop-drag"
+                        aria-label="Drag to reorder"
+                        title="Drag to reorder"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData(
+                            "text/atlas-stop",
+                            String(i),
+                          );
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                      >
+                        <md-icon>drag_indicator</md-icon>
+                      </button>
                       <md-icon-button
                         type="button"
                         aria-label="Remove stop"

@@ -19,8 +19,8 @@ function useIsCompact(query = "(max-width: 800px)") {
 }
 
 /**
- * Landing search — Saved under the input; place card after a selection;
- * suggestions while typing.
+ * Landing search — place card after a selection (Directions);
+ * Saved underneath when no place is selected.
  */
 export default function SearchPanel({
   query,
@@ -28,6 +28,7 @@ export default function SearchPanel({
   onSelectPlace,
   place,
   onClear,
+  onDismissPlace = null,
   onDirectionsTo,
   onDirectionsFrom,
   recentPlaces = [],
@@ -56,6 +57,20 @@ export default function SearchPanel({
     });
   }
 
+  function handleQueryChange(next) {
+    onQueryChange(next);
+    // Typing away from a selected place dismisses the card until they pick again.
+    if (place && next.trim() !== (place.name || "").trim()) {
+      onDismissPlace?.();
+    }
+  }
+
+  function pickPlace(selected) {
+    onSelectPlace(selected);
+    clearPlaceList();
+    if (isCompact) setMobileExpanded(true);
+  }
+
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
   const hasSaved = savedRoutes.length > 0;
@@ -66,10 +81,11 @@ export default function SearchPanel({
     Boolean(place) ||
     hasSaved;
   const showSaved = showBody && !listVisible && !place && hasSaved;
+  const showPlaceCard = Boolean(place) && !listVisible && showBody;
 
   return (
     <section
-      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"}`}
+      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""}`}
     >
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
         <div className={`search-bar ${query ? "has-query" : ""}`}>
@@ -78,12 +94,8 @@ export default function SearchPanel({
               id="main-search"
               label=""
               value={query}
-              onChange={onQueryChange}
-              onSelect={(selected) => {
-                onSelectPlace(selected);
-                clearPlaceList();
-                if (isCompact) setMobileExpanded(true);
-              }}
+              onChange={handleQueryChange}
+              onSelect={pickPlace}
               placeholder="Search here"
               allowCurrentLocation={false}
               recentPlaces={recentPlaces}
@@ -116,6 +128,29 @@ export default function SearchPanel({
           </div>
         </div>
       </div>
+
+      {listVisible && (
+        <div className="landing-suggest">
+          <PlaceSuggestionList
+            items={placeList.items}
+            query={placeList.query}
+            loading={placeList.loading}
+            onSelect={(selected) => {
+              if (placeList.select) placeList.select(selected);
+              else pickPlace(selected);
+            }}
+          />
+        </div>
+      )}
+
+      {showPlaceCard ? (
+        <PlaceDetailsCard
+          place={place}
+          onClose={onClear}
+          onDirectionsTo={onDirectionsTo}
+          onDirectionsFrom={onDirectionsFrom}
+        />
+      ) : null}
 
       {showSaved && (
         <div className="landing-saved">
@@ -150,33 +185,6 @@ export default function SearchPanel({
             ))}
           </md-list>
         </div>
-      )}
-
-      {listVisible && (
-        <div className="landing-suggest">
-          <PlaceSuggestionList
-            items={placeList.items}
-            query={placeList.query}
-            loading={placeList.loading}
-            onSelect={(selected) => {
-              if (placeList.select) placeList.select(selected);
-              else {
-                onSelectPlace(selected);
-                clearPlaceList();
-              }
-              if (isCompact) setMobileExpanded(true);
-            }}
-          />
-        </div>
-      )}
-
-      {place && !listVisible && showBody && (
-        <PlaceDetailsCard
-          place={place}
-          onClose={onClear}
-          onDirectionsTo={onDirectionsTo}
-          onDirectionsFrom={onDirectionsFrom}
-        />
       )}
     </section>
   );

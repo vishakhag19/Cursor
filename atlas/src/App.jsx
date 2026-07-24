@@ -1843,6 +1843,7 @@ export default function App() {
               setSearchQuery("");
               setSelectedPlace(null);
             }}
+            onDismissPlace={() => setSelectedPlace(null)}
             onDirectionsTo={() => {
               if (!selectedPlace) return;
               openDirections({ to: selectedPlace });
