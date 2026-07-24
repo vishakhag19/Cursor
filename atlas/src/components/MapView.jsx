@@ -663,6 +663,7 @@ export default function MapView({
           enabled={showRouteEditor}
           origin={editOrigin}
           destination={editDestination}
+          stopPins={directionWaypoints}
           vias={editVias}
           geometry={selectedGeometry}
           travelMode={editTravelMode}

@@ -97,6 +97,7 @@ export default function RouteEditorLayer({
   enabled,
   origin,
   destination,
+  stopPins = null,
   vias = [],
   geometry,
   travelMode = "driving",
@@ -121,6 +122,7 @@ export default function RouteEditorLayer({
   const viasRef = useRef(vias);
   const originRef = useRef(origin);
   const destinationRef = useRef(destination);
+  const stopPinsRef = useRef(stopPins);
   const travelModeRef = useRef(travelMode);
   const onSelectViaRef = useRef(onSelectVia);
   const onSuppressMapClickRef = useRef(onSuppressMapClick);
@@ -131,6 +133,7 @@ export default function RouteEditorLayer({
   viasRef.current = vias;
   originRef.current = origin;
   destinationRef.current = destination;
+  stopPinsRef.current = stopPins;
   travelModeRef.current = travelMode;
   onSelectViaRef.current = onSelectVia;
   onSuppressMapClickRef.current = onSuppressMapClick;
@@ -808,7 +811,11 @@ export default function RouteEditorLayer({
 
       // Also bail when the press is on a stop pin (anchor is tip of teardrop).
       const PIN_HIT_PX = 28;
-      for (const stop of [originRef.current, destinationRef.current]) {
+      const pins =
+        stopPinsRef.current?.length > 0
+          ? stopPinsRef.current
+          : [originRef.current, destinationRef.current];
+      for (const stop of pins) {
         if (stop?.lat == null || stop?.lng == null) continue;
         if (stop.isCurrentLocation) continue;
         const sp = map.latLngToContainerPoint([stop.lat, stop.lng]);
