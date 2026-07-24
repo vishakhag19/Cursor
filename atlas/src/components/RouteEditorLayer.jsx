@@ -49,6 +49,16 @@ function viaHitPixels() {
   return isCoarsePointer() ? 30 : 22;
 }
 
+function isTouchLikeEvent(e) {
+  return (
+    e?.pointerType === "touch" ||
+    e?.type === "touchstart" ||
+    e?.type === "touchmove" ||
+    e?.type === "touchend" ||
+    Boolean(e?.touches)
+  );
+}
+
 function orderedViasWithInsert(vias, geometry, segmentIndex, newVia) {
   if (!vias.length) return [newVia];
   const withMeta = vias.map((v) => {
@@ -872,7 +882,7 @@ export default function RouteEditorLayer({
           positions={geometry}
           pane="routeEdit"
           pathOptions={{
-            color: "#448AFF",
+            color: "#0066FF",
             weight: 4,
             opacity: 0.28,
             lineJoin: "round",
@@ -886,7 +896,7 @@ export default function RouteEditorLayer({
         positions={displayGeometry}
         pane="routeEdit"
         pathOptions={{
-          color: isDragging || isCommitting ? "#F9AB00" : "#448AFF",
+          color: isDragging || isCommitting ? "#F9AB00" : "#0066FF",
           weight: 6,
           opacity: 0.95,
           dashArray: isDragging || isCommitting ? "10 8" : null,
@@ -925,7 +935,7 @@ export default function RouteEditorLayer({
                 ]}
                 pane="routeEdit"
                 pathOptions={{
-                  color: dragState.snapped ? "#448AFF" : "#9AA0A6",
+                  color: dragState.snapped ? "#0066FF" : "#9AA0A6",
                   weight: 2,
                   dashArray: "4 4",
                   opacity: 0.9,
@@ -937,8 +947,8 @@ export default function RouteEditorLayer({
                 radius={7}
                 pane="routeEdit"
                 pathOptions={{
-                  color: "#448AFF",
-                  fillColor: "#448AFF",
+                  color: "#0066FF",
+                  fillColor: "#0066FF",
                   fillOpacity: dragState.snapped ? 0.95 : 0.35,
                   weight: 2,
                 }}
@@ -951,7 +961,7 @@ export default function RouteEditorLayer({
             radius={dragState.snapped ? 10 : 14}
             pane="routeEdit"
             pathOptions={{
-              color: dragState.snapped ? "#448AFF" : "#EA4335",
+              color: dragState.snapped ? "#0066FF" : "#EA4335",
               fillColor: "#fff",
               fillOpacity: 1,
               weight: 3,

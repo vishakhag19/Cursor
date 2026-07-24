@@ -57,7 +57,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px var(--panel-pad-x) 8px;
+  padding: 8px var(--panel-pad-x) 0;
   box-sizing: border-box;
 }
 
@@ -480,10 +480,86 @@
   color: #70757a;
 }
 
+.dir-selected-route {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  min-height: 0;
+}
+
+.dir-selected-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.dir-selected-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dir-selected-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dir-start-btn {
+  --md-filled-button-container-color: #0066ff;
+}
+
+.dir-inline-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 8px;
+  overflow: auto;
+  max-height: min(48dvh, 420px);
+}
+
+.dir-inline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.dir-inline-step:last-child {
+  border-bottom: none;
+}
+
+.dir-inline-step-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: #5f6368;
+  flex-shrink: 0;
+}
+
+.dir-inline-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dir-inline-step-dist {
+  color: #70757a;
+}
+
 .landing-saved {
   margin-top: 10px;
   padding-top: 0;
-  padding-bottom: 24px;
+  padding-bottom: 0;
 }
 
 .landing-saved-head {
@@ -983,16 +1059,16 @@ md-filled-tonal-button.is-edit-active {
 .mode-panel {
   flex: 0 1 auto;
   overflow: visible;
-  padding: 8px var(--panel-pad-x, 16px) 16px;
+  padding: 0 var(--panel-pad-x, 16px) 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-height: 0;
   box-sizing: border-box;
 }
 
 .search-panel {
-  padding-bottom: 32px;
+  padding-bottom: 8px;
   overflow: visible;
 }
 
@@ -1001,7 +1077,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel.has-place {
-  padding-bottom: 32px;
+  padding-bottom: 12px;
 }
 
 .landing-section-divider {
@@ -2310,17 +2386,47 @@ md-text-button {
   }
 
   .mode-panel {
-    padding: 6px var(--panel-pad-x) 28px;
-    gap: 10px;
+    padding: 0 var(--panel-pad-x) 12px;
+    gap: 8px;
   }
 
   .search-panel.is-expanded {
-    padding-bottom: 32px;
+    padding-bottom: 8px;
   }
 
   .landing-saved {
     margin-bottom: 0;
-    padding-bottom: 24px;
+    padding-bottom: 0;
+  }
+
+  .dir-travel-modes {
+    margin: 0 calc(-1 * var(--panel-pad-x, 14px)) 4px;
+    padding: 2px var(--panel-pad-x, 14px) 6px;
+    width: calc(100% + 2 * var(--panel-pad-x, 14px));
+    box-sizing: border-box;
+    justify-content: space-between;
+  }
+
+  .dir-travel-mode {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 2px 6px;
+  }
+
+  .dir-travel-mode-label {
+    font-size: 0.625rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .dir-sticky-chrome {
+    margin: 0 calc(-1 * var(--panel-pad-x, 14px));
+    padding: 0 var(--panel-pad-x, 14px) 4px;
+  }
+
+  .panel-header {
+    padding: 8px var(--panel-pad-x) 0;
   }
 
   /* Compact route option rows on phones */
@@ -3046,15 +3152,20 @@ md-text-button {
   bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   z-index: 1250;
   margin: 0;
-  padding: 14px 16px 16px;
+  padding: 12px 16px;
   background: #fff;
   border-radius: 16px;
   border: 1px solid #e8eaed;
   box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
   animation: reroute-in 200ms ease-out;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "handle handle"
+    "copy actions";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 4px;
 }
 
 @keyframes reroute-in {
@@ -3069,14 +3180,16 @@ md-text-button {
 }
 
 .reroute-prompt-handle {
+  grid-area: handle;
   width: 36px;
   height: 4px;
   border-radius: 2px;
   background: #dadce0;
-  margin: 0 auto 6px;
+  margin: 0 auto 2px;
 }
 
 .reroute-prompt-copy {
+  grid-area: copy;
   min-width: 0;
 }
 
@@ -3091,26 +3204,58 @@ md-text-button {
 }
 
 .reroute-prompt-detail {
-  margin: 0 0 12px;
+  margin: 0;
   color: #5f6368;
 }
 
 .reroute-prompt-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-area: actions;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
+  width: auto;
 }
 
 .reroute-prompt-actions md-outlined-button,
 .reroute-prompt-actions md-filled-button {
-  width: 100%;
+  width: auto;
+  min-width: 88px;
 }
 
-/* Mobile: nudge prompt down 16px; clear map controls on the right */
-@media (max-width: 800px) {
+/* Phones: stack actions under copy; sit a bit lower; clear map controls */
+@media (max-width: 600px) {
+  .reroute-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    right: 64px;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 16px 16px;
+  }
+
+  .reroute-prompt-handle {
+    margin: 0 auto 6px;
+  }
+
+  .reroute-prompt-detail {
+    margin: 0 0 12px;
+  }
+
+  .reroute-prompt-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .reroute-prompt-actions md-outlined-button,
+  .reroute-prompt-actions md-filled-button {
+    width: 100%;
+    min-width: 0;
+  }
+
   .app.nav-mode .reroute-prompt {
     bottom: calc(94px + env(safe-area-inset-bottom, 0px));
-    right: 64px;
   }
 
   .app.nav-mode:has(.reroute-prompt) .map-controls {
@@ -3118,46 +3263,9 @@ md-text-button {
   }
 }
 
-@media (min-width: 801px) {
+@media (min-width: 601px) {
   .reroute-prompt {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "handle handle"
-      "copy actions";
-    align-items: center;
-    column-gap: 16px;
-    row-gap: 4px;
     right: 72px;
-    padding: 12px 16px;
-  }
-
-  .reroute-prompt-handle {
-    grid-area: handle;
-    margin: 0 0 2px;
-  }
-
-  .reroute-prompt-copy {
-    grid-area: copy;
-  }
-
-  .reroute-prompt-detail {
-    margin-bottom: 0;
-  }
-
-  .reroute-prompt-actions {
-    grid-area: actions;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    width: auto;
-  }
-
-  .reroute-prompt-actions md-outlined-button,
-  .reroute-prompt-actions md-filled-button {
-    width: auto;
-    min-width: 96px;
   }
 
   .app.nav-mode .reroute-prompt {

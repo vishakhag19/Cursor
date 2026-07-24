@@ -3,7 +3,6 @@ import MapView from "./components/MapView";
 import SearchPanel from "./components/SearchPanel";
 import DirectionsPanel from "./components/DirectionsPanel";
 import NavigationUI from "./components/NavigationUI";
-import StepsSheet from "./components/StepsSheet";
 import ContextMenu from "./components/ContextMenu";
 import RouteAssistant from "./components/RouteAssistant";
 import RoutePrefsSheet from "./components/RoutePrefsSheet";
@@ -1855,16 +1854,6 @@ export default function App() {
           />
         )}
 
-        {view === "directions" && showSteps && selectedRoute && (
-          <StepsSheet
-            route={selectedRoute}
-            embedded
-            className="steps-in-panel"
-            onClose={() => setShowSteps(false)}
-            onStart={startNavigation}
-          />
-        )}
-
         {view === "directions" && (
           <DirectionsPanel
             stops={stops}
@@ -1913,8 +1902,8 @@ export default function App() {
             onResetSuggested={resetToSuggested}
             comparison={hasCustomEdits ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
-            onShowSteps={() => setShowSteps(true)}
             onSaveRoute={saveCurrentRoute}
+            onStart={startNavigation}
             onOpenAssistant={() => setAssistantOpen(true)}
             onOpenPrefs={() => setPrefsOpen(true)}
             onOpenRoadRules={() => setRoadRulesOpen(true)}
@@ -2160,7 +2149,7 @@ export default function App() {
 
         {view === "directions" && selectedRoute && !showEditBar && (
           <>
-            {navigating && !showSteps && (
+            {navigating && (
               <NavigationUI
                 active={navigating}
                 route={selectedRoute}
@@ -2171,27 +2160,6 @@ export default function App() {
                 onRejectReroute={rejectReroute}
                 canReturnToOriginal={acceptedReroute && Boolean(navOriginalRoute)}
                 onReturnToOriginal={returnToOriginalRoute}
-              />
-            )}
-            {!navigating && !showSteps && selectedRoute.steps?.length > 0 && (
-              <button
-                type="button"
-                className="steps-fab"
-                aria-label="Steps"
-                onClick={() => {
-                  setShowSteps(true);
-                  setPanelOpen(false);
-                }}
-              >
-                Steps
-              </button>
-            )}
-            {showSteps && (
-              <StepsSheet
-                route={selectedRoute}
-                className="steps-bottom-sheet"
-                onClose={() => setShowSteps(false)}
-                onStart={startNavigation}
               />
             )}
           </>

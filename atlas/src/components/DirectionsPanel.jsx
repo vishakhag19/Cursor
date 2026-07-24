@@ -35,6 +35,7 @@ export default function DirectionsPanel({
   comparison = null,
   editBusy = false,
   onShowSteps = null,
+  onStart = null,
   onSaveRoute = null,
   onOpenAssistant = null,
   onOpenPrefs = null,
@@ -104,6 +105,10 @@ export default function DirectionsPanel({
   const hasRouteResults = bothEndsSet && routeOptions.length > 0;
   const modeMeta = travelModeMeta(travelMode);
   const modesRef = useRef(null);
+  const selectedRoute =
+    routeOptions.find((r) => r.id === selectedRouteId) ||
+    routeOptions[0] ||
+    null;
 
   useEffect(() => {
     const root = modesRef.current;
@@ -349,267 +354,211 @@ export default function DirectionsPanel({
 
       {hasRouteResults && (
         <p className="dir-drag-hint md-typescale-body-small">
-          Drag the blue route to reshape · tap a card to preview · long-press a
-          road for Prefer / Avoid / Never
+          Drag the blue route to reshape · tap another route on the map to
+          switch · long-press a road for Prefer / Avoid / Never
         </p>
       )}
 
-      {routeOptions.length > 0 && (
-        <div className="dir-route-list" role="list" aria-label="Recommended routes">
-          {routeOptions.map((opt, index) => {
-            const active = opt.id === selectedRouteId;
-            return (
-              <div
-                key={opt.id}
-                role="listitem"
-                className={`dir-route-card ${active ? "is-active" : ""} ${active && opt.edited ? "is-editing" : ""}`}
-              >
-                <button
-                  type="button"
-                  className="dir-route-select"
-                  onClick={() => onSelectRoute(opt)}
+      {selectedRoute ? (
+        <div className="dir-selected-route">
+          <div className="dir-selected-summary">
+            <div className="dir-selected-stats">
+              <span className="dir-route-time md-typescale-headline-small">
+                {formatDuration(selectedRoute.duration)}
+              </span>
+              <span className="md-typescale-body-medium dir-route-dist">
+                {formatDistance(selectedRoute.distance)}
+                {selectedRoute.traffic
+                  ? ` · ${selectedRoute.traffic.label}`
+                  : ""}
+              </span>
+              {selectedRoute.edited && comparison?.label ? (
+                <span
+                  className={`dir-route-delta tone-${comparison.tone} md-typescale-body-small`}
                 >
-                  <div className="dir-route-body">
-                    <div className="dir-route-title-row">
-                      <span
-                        className={`dir-route-num ${active ? "is-active" : ""}`}
-                        aria-hidden
-                      >
-                        {index + 1}
-                      </span>
-                      <div>
-                        <div className="md-typescale-title-small">
-                          {opt.label}
-                        </div>
-                        {opt.badge && (
-                          <div className="md-typescale-body-small dir-route-badge">
-                            {opt.badge}
-                          </div>
-                        )}
-                        {!opt.badge && index > 0 && (
-                          <div className="md-typescale-body-small dir-route-badge muted">
-                            Option {index + 1}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="dir-route-stats">
-                      <span className="dir-route-time md-typescale-title-medium">
-                        {formatDuration(opt.duration)}
-                      </span>
-                      <span className="md-typescale-body-medium dir-route-dist">
-                        {formatDistance(opt.distance)}
-                      </span>
-                      {opt.traffic ? (
-                        <span
-                          className="dir-route-traffic"
-                          style={{ color: opt.traffic.color }}
-                          title={opt.traffic.label}
-                        >
-                          <md-icon>{opt.traffic.icon}</md-icon>
-                          <span className="md-typescale-body-small">
-                            {opt.traffic.label}
-                          </span>
-                        </span>
-                      ) : null}
-                      {active && opt.edited && comparison?.label ? (
-                        <span
-                          className={`dir-route-delta tone-${comparison.tone} md-typescale-body-small`}
-                          role="status"
-                          title={comparison.label}
-                        >
-                          {editBusy
-                            ? "Updating travel time…"
-                            : comparison.label}
-                        </span>
-                      ) : null}
-                    </div>
-                    {opt.reason ? (
-                      <p className="dir-route-reason md-typescale-body-small">
-                        {opt.reason}
-                      </p>
-                    ) : null}
-                    {opt.tradeOff && !active ? (
-                      <p className="dir-route-tradeoff md-typescale-body-small">
-                        vs recommended: {opt.tradeOff}
-                      </p>
-                    ) : null}
-                    {opt.metrics?.turns != null ? (
-                      <p className="dir-route-meta md-typescale-body-small">
-                        {opt.metrics.turns} turn
-                        {opt.metrics.turns === 1 ? "" : "s"}
-                        {opt.metrics.highwayShare > 0.2
-                          ? ` · ${Math.round(opt.metrics.highwayShare * 100)}% highway`
-                          : " · mostly surface streets"}
-                        {showTollPassPrices && opt.metrics?.mayHaveTolls
-                          ? " · Toll pass ~$3–8"
-                          : ""}
-                      </p>
-                    ) : null}
-                  </div>
-                </button>
-                {active ? (
-                  <div className="dir-route-actions">
-                    {onShowSteps && !saving ? (
-                      <ActionTip tip="Steps">
-                        <md-icon-button
-                          type="button"
-                          class="dir-route-steps-btn"
-                          aria-label="View turn-by-turn steps"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuFor(null);
-                            onShowSteps();
-                          }}
-                        >
-                          <md-icon>list</md-icon>
-                        </md-icon-button>
-                      </ActionTip>
-                    ) : null}
-                    {!saving ? (
-                      <div
-                        className="dir-route-more"
-                        ref={menuFor === opt.id ? menuRef : null}
-                      >
-                        <ActionTip tip="More">
-                          <md-icon-button
-                            type="button"
-                            class="dir-route-more-btn"
-                            aria-label="More route actions"
-                            aria-haspopup="menu"
-                            aria-expanded={
-                              menuFor === opt.id ? "true" : "false"
-                            }
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMenuFor((id) =>
-                                id === opt.id ? null : opt.id,
-                              );
-                            }}
-                          >
-                            <md-icon>more_vert</md-icon>
-                          </md-icon-button>
-                        </ActionTip>
-                        {menuFor === opt.id ? (
-                          <div className="dir-route-menu" role="menu">
-                            {onSaveRoute ? (
-                              <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuFor(null);
-                                  const from = stops[0]?.name || "Start";
-                                  const to =
-                                    stops[stops.length - 1]?.name ||
-                                    "Destination";
-                                  setSaveName(`${from} to ${to}`);
-                                  setSaving(true);
-                                }}
-                              >
-                                <md-icon>bookmark</md-icon>
-                                Save route
-                              </button>
-                            ) : null}
-                            {onOpenRoadRules ? (
-                              <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuFor(null);
-                                  onOpenRoadRules();
-                                }}
-                              >
-                                <md-icon>rule</md-icon>
-                                Your road rules
-                              </button>
-                            ) : null}
-                            {onOpenAssistant ? (
-                              <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuFor(null);
-                                  onOpenAssistant();
-                                }}
-                              >
-                                <md-icon>auto_awesome</md-icon>
-                                Ask assistant
-                              </button>
-                            ) : null}
-                            {canUndo ? (
-                              <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuFor(null);
-                                  onUndo?.();
-                                }}
-                              >
-                                <md-icon>undo</md-icon>
-                                Undo
-                              </button>
-                            ) : null}
-                            {canReset ? (
-                              <button
-                                type="button"
-                                role="menuitem"
-                                onClick={() => {
-                                  setMenuFor(null);
-                                  onResetSuggested?.();
-                                }}
-                              >
-                                <md-icon>restart_alt</md-icon>
-                                Reset to original
-                              </button>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-                {active && saving ? (
-                  <form
-                    className="dir-save-inline"
-                    onClick={(e) => e.stopPropagation()}
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const name = saveName.trim() || "Saved route";
-                      onSaveRoute?.(name);
-                      setSaving(false);
-                      setSaveName("");
-                    }}
+                  {editBusy ? "Updating…" : comparison.label}
+                </span>
+              ) : null}
+              {selectedRoute.reason ? (
+                <p className="dir-route-reason md-typescale-body-small">
+                  {selectedRoute.reason}
+                </p>
+              ) : null}
+            </div>
+            <div className="dir-selected-actions">
+              {onStart ? (
+                <md-filled-button
+                  type="button"
+                  class="dir-start-btn"
+                  onClick={onStart}
+                >
+                  <span slot="icon" className="steps-start-icon" aria-hidden>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      focusable="false"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12 3.2 5.2 20.1l.65.34L12 17.4l6.15 3.04.65-.34z"
+                      />
+                    </svg>
+                  </span>
+                  Start
+                </md-filled-button>
+              ) : null}
+              <div className="dir-route-more" ref={menuRef}>
+                <ActionTip tip="More">
+                  <md-icon-button
+                    type="button"
+                    aria-label="More route actions"
+                    aria-haspopup="menu"
+                    aria-expanded={menuFor ? "true" : "false"}
+                    onClick={() =>
+                      setMenuFor((v) => (v ? null : "selected"))
+                    }
                   >
-                    <input
-                      className="dir-save-input md-typescale-body-medium"
-                      value={saveName}
-                      onChange={(e) => setSaveName(e.target.value)}
-                      maxLength={80}
-                      placeholder="Route name (optional)"
-                      aria-label="Route name"
-                      autoFocus
-                    />
-                    <div className="dir-save-actions">
-                      <md-text-button
+                    <md-icon>more_vert</md-icon>
+                  </md-icon-button>
+                </ActionTip>
+                {menuFor ? (
+                  <div className="dir-route-menu" role="menu">
+                    {onSaveRoute ? (
+                      <button
                         type="button"
+                        role="menuitem"
                         onClick={() => {
-                          setSaving(false);
-                          setSaveName("");
+                          setMenuFor(null);
+                          const from = stops[0]?.name || "Start";
+                          const to =
+                            stops[stops.length - 1]?.name || "Destination";
+                          setSaveName(`${from} to ${to}`);
+                          setSaving(true);
                         }}
                       >
-                        Cancel
-                      </md-text-button>
-                      <md-filled-tonal-button type="submit">
-                        Save path
-                      </md-filled-tonal-button>
-                    </div>
-                  </form>
+                        <md-icon>bookmark</md-icon>
+                        Save route
+                      </button>
+                    ) : null}
+                    {onOpenRoadRules ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuFor(null);
+                          onOpenRoadRules();
+                        }}
+                      >
+                        <md-icon>rule</md-icon>
+                        Your road rules
+                      </button>
+                    ) : null}
+                    {onOpenAssistant ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuFor(null);
+                          onOpenAssistant();
+                        }}
+                      >
+                        <md-icon>auto_awesome</md-icon>
+                        Ask assistant
+                      </button>
+                    ) : null}
+                    {canUndo ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuFor(null);
+                          onUndo?.();
+                        }}
+                      >
+                        <md-icon>undo</md-icon>
+                        Undo
+                      </button>
+                    ) : null}
+                    {canReset ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuFor(null);
+                          onResetSuggested?.();
+                        }}
+                      >
+                        <md-icon>restart_alt</md-icon>
+                        Reset to original
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {saving ? (
+            <form
+              className="dir-save-inline"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const name = saveName.trim() || "Saved route";
+                onSaveRoute?.(name);
+                setSaving(false);
+                setSaveName("");
+              }}
+            >
+              <input
+                className="dir-save-input md-typescale-body-medium"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                maxLength={80}
+                placeholder="Route name (optional)"
+                aria-label="Route name"
+                autoFocus
+              />
+              <div className="dir-save-actions">
+                <md-text-button
+                  type="button"
+                  onClick={() => {
+                    setSaving(false);
+                    setSaveName("");
+                  }}
+                >
+                  Cancel
+                </md-text-button>
+                <md-filled-tonal-button type="submit">
+                  Save path
+                </md-filled-tonal-button>
+              </div>
+            </form>
+          ) : null}
+
+          {(selectedRoute.steps || []).length > 0 ? (
+            <ol className="dir-inline-steps" aria-label="Turn-by-turn steps">
+              {(selectedRoute.steps || []).map((s, i) => (
+                <li key={`${s.instruction}-${i}`} className="dir-inline-step">
+                  <span className="dir-inline-step-icon" aria-hidden>
+                    <md-icon>{s.icon || "directions"}</md-icon>
+                  </span>
+                  <span className="dir-inline-step-body">
+                    <span className="md-typescale-body-large">
+                      {s.instruction}
+                    </span>
+                    {s.distance > 0 ? (
+                      <span className="md-typescale-body-small dir-inline-step-dist">
+                        {formatDistance(s.distance)}
+                      </span>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
