@@ -101,6 +101,16 @@
   font-weight: 500;
 }
 
+.dir-sticky-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  margin: 0 calc(-1 * var(--panel-pad-x, 16px));
+  padding: 0 var(--panel-pad-x, 16px) 4px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
 .dir-top-bar {
   display: flex;
   align-items: center;
@@ -120,12 +130,13 @@
   gap: 2px;
   overflow-x: auto;
   margin: 0 -4px 4px;
-  padding: 2px 4px 4px;
-  scrollbar-width: none;
+  padding: 2px 4px 6px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dir-travel-modes::-webkit-scrollbar {
-  display: none;
+  height: 3px;
 }
 
 .dir-travel-mode {
@@ -141,7 +152,8 @@
   color: #5f6368;
   cursor: pointer;
   font: inherit;
-  flex: 1 0 auto;
+  flex: 0 0 auto;
+  transition: background 120ms ease, color 120ms ease;
 }
 
 .dir-travel-mode md-icon {
@@ -164,6 +176,11 @@
 
 .dir-travel-mode:hover:not(.is-active) {
   background: #f1f3f4;
+}
+
+.dir-travel-mode:focus-visible {
+  outline: 2px solid #448aff;
+  outline-offset: 2px;
 }
 
 .dir-top-actions {
@@ -243,15 +260,54 @@
   gap: 2px;
   flex-wrap: nowrap;
   min-width: 0;
+  width: 100%;
+}
+
+.dir-stop-field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
 }
 
 .dir-stop-row .suggest-wrap {
   flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
 }
 
 .dir-stop-row .suggest-wrap.is-open {
   flex: 1 1 auto;
+}
+
+.dir-stop-row.has-controls .suggest-wrap md-outlined-text-field {
+  --md-outlined-text-field-trailing-space: 112px;
+}
+
+.dir-stop-reorder {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  translate: 0 -50%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0;
+  z-index: 3;
+  background: linear-gradient(
+    to right,
+    transparent,
+    #fff 28%
+  );
+  padding-left: 8px;
+  border-radius: 0 24px 24px 0;
+}
+
+.dir-stop-reorder md-icon-button {
+  width: 34px;
+  height: 34px;
+  margin: 0;
 }
 
 .dir-swap {
@@ -311,7 +367,7 @@
 
 .dir-route-card.is-active {
   background: #e8f0fe;
-  border-color: #2979ff;
+  border-color: #448aff;
 }
 
 .dir-route-card.is-editing {
@@ -645,16 +701,16 @@
   font-size: 0.875rem;
   font-weight: 700;
   line-height: 1;
-  color: #2979ff;
+  color: #448aff;
   background: #fff;
-  border: 2px solid #2979ff;
+  border: 2px solid #448aff;
   box-sizing: border-box;
 }
 
 .dir-route-num.is-active {
   color: #fff;
-  background: #2979ff;
-  border-color: #2979ff;
+  background: #448aff;
+  border-color: #448aff;
 }
 
 .atlas-route-num {
@@ -669,7 +725,7 @@
   height: 28px;
   border-radius: 50%;
   font: 700 13px/1 system-ui, sans-serif;
-  border: 2px solid #2979ff;
+  border: 2px solid #448aff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
   box-sizing: border-box;
 }
@@ -2709,18 +2765,8 @@ md-text-button {
   color: #70757a;
 }
 
-.dir-stop-reorder {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 0;
-}
-
-.dir-stop-reorder md-icon-button {
-  width: 36px;
-  height: 36px;
-  margin: 0;
+.route-sheet-backdrop {
+  display: none;
 }
 
 .route-sheet {
@@ -2737,6 +2783,33 @@ md-text-button {
   border: 1px solid #e8eaed;
   box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
   overflow: hidden;
+}
+
+/* Mobile / tablet: full-screen modal for route options & road rules */
+@media (max-width: 800px) {
+  .route-sheet-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 1290;
+    border: none;
+    margin: 0;
+    padding: 0;
+    background: rgba(32, 33, 36, 0.45);
+    cursor: pointer;
+  }
+
+  .route-sheet {
+    inset: 0;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    max-height: none;
+    width: auto;
+    border-radius: 0;
+    border: none;
+  }
 }
 
 @media (min-width: 801px) {
@@ -2760,8 +2833,9 @@ md-text-button {
 .route-sheet-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 4px;
-  padding: 10px 8px 10px 8px;
+  padding: 10px 8px 10px 16px;
   border-bottom: 1px solid #e8eaed;
 }
 
@@ -3073,5 +3147,116 @@ md-text-button {
   .nav-footer-actions md-filled-tonal-button,
   .nav-footer-actions md-text-button {
     width: auto;
+  }
+}
+
+/* —— Shared hover / focus for clickable surfaces —— */
+.landing-saved-open {
+  border-radius: 8px;
+  transition: background 120ms ease;
+}
+
+.landing-saved-open:hover,
+.landing-saved-item:hover .landing-saved-open {
+  background: #f1f3f4;
+}
+
+.landing-saved-open:focus-visible {
+  outline: 2px solid #448aff;
+  outline-offset: 2px;
+}
+
+.place-suggest-item {
+  transition: background 120ms ease;
+}
+
+.dir-route-card {
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.dir-route-card:hover {
+  background: #f8f9fa;
+  border-color: #dadce0;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.12);
+}
+
+.dir-route-card.is-active:hover {
+  background: #e8f0fe;
+  border-color: #448aff;
+}
+
+.dir-add-stop {
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.dir-add-stop:hover {
+  background: #f1f3f4;
+}
+
+.route-pref-avatar-btn {
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.route-pref-avatar-btn:hover:not(.is-selected) {
+  background: #f1f3f4;
+  border-color: #c4c7c5;
+}
+
+.route-pref-link:hover {
+  background: #f1f3f4;
+}
+
+.context-menu md-list-item {
+  cursor: pointer;
+}
+
+.context-menu md-list-item:hover {
+  background: #f1f3f4;
+}
+
+.road-rules-list md-list-item:hover,
+.landing-saved-list md-list-item:hover {
+  background: #f8f9fa;
+}
+
+.place-actions md-filled-button:hover,
+.place-actions md-outlined-button:hover {
+  filter: brightness(0.97);
+}
+
+md-icon-button:hover {
+  background: color-mix(in srgb, #3c4043 8%, transparent);
+  border-radius: 999px;
+}
+
+.app.road-pick-mode .map-stage,
+.app.road-pick-mode .leaflet-container {
+  cursor: crosshair !important;
+}
+
+.app.road-pick-mode .map-stage::after {
+  content: "Tap a road to Prefer / Avoid / Never";
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  translate: -50% 0;
+  z-index: 1200;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #202124;
+  color: #fff;
+  font-size: 0.8125rem;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+  .app.road-pick-mode .map-stage::after {
+    top: auto;
+    bottom: 24px;
+    max-width: calc(100% - 24px);
+    white-space: normal;
+    text-align: center;
   }
 }

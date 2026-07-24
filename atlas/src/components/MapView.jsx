@@ -17,7 +17,7 @@ const DEFAULT_ZOOM = 13;
 /** Teardrop map pin — no letter badges (A/B chips). */
 const PIN_ICON_CACHE = new Map();
 /** Bright Google-style route blue for numbered options */
-const ROUTE_BLUE = "#2979FF";
+const ROUTE_BLUE = "#448AFF";
 const ROUTE_BLUE_ALT = "#82B1FF";
 
 function pinIcon(kind = "default") {
@@ -163,7 +163,11 @@ function MapClickHandler({
         longPressFired.current = false;
         return;
       }
-      onMapClick?.(e.latlng);
+      const oe = e.originalEvent;
+      onMapClick?.(e.latlng, {
+        x: oe?.clientX,
+        y: oe?.clientY,
+      });
     },
     contextmenu(e) {
       e.originalEvent.preventDefault();

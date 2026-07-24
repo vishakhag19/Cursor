@@ -137,6 +137,7 @@ export default function App() {
   const [routePrefs, setRoutePrefs] = useState(() => ({ ...DEFAULT_ROUTE_PREFS }));
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [roadRulesOpen, setRoadRulesOpen] = useState(false);
+  const [roadPickMode, setRoadPickMode] = useState(false);
   const [rerouteSuggestion, setRerouteSuggestion] = useState(null);
   const [navOriginalRoute, setNavOriginalRoute] = useState(null);
   const [acceptedReroute, setAcceptedReroute] = useState(false);
@@ -551,7 +552,21 @@ export default function App() {
   );
 
   const handleMapClick = useCallback(
-    async (latlng) => {
+    async (latlng, screenPos = null) => {
+      // Pick-road mode: open Prefer / Avoid / Never instead of dropping a pin.
+      if (roadPickMode) {
+        const x =
+          screenPos?.x ??
+          (typeof window !== "undefined" ? window.innerWidth / 2 : 160);
+        const y =
+          screenPos?.y ??
+          (typeof window !== "undefined" ? window.innerHeight / 2 : 200);
+        setCtx({ latlng, x, y });
+        setRoadPickMode(false);
+        showStatus("Choose Prefer, Avoid, or Never for this road", 3200);
+        return;
+      }
+
       setCtx(null);
 
       // Ignore the click that follows a route-line drag (otherwise it inserts a stop).
@@ -641,6 +656,7 @@ export default function App() {
       clearRoutes,
       rememberPlace,
       runDirections,
+      roadPickMode,
     ],
   );
 
@@ -1786,7 +1802,7 @@ export default function App() {
 
   return (
     <div
-      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""}`}
+      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${roadPickMode ? "road-pick-mode" : ""}`}
     >
       <aside className="panel m3-surface" aria-label="Map tools">
         <header className="panel-header">
@@ -2219,9 +2235,11 @@ export default function App() {
         onClose={() => setRoadRulesOpen(false)}
         onAdd={() => {
           setRoadRulesOpen(false);
+          setPrefsOpen(false);
           setPanelOpen(false);
+          setRoadPickMode(true);
           showStatus(
-            "Long-press a road on the map, then choose Prefer, Avoid, or Never",
+            "Tap a road on the map to Prefer, Avoid, or Never use it",
             5000,
           );
         }}

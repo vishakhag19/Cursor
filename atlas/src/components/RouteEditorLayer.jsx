@@ -872,7 +872,7 @@ export default function RouteEditorLayer({
           positions={geometry}
           pane="routeEdit"
           pathOptions={{
-            color: "#2979FF",
+            color: "#448AFF",
             weight: 4,
             opacity: 0.28,
             lineJoin: "round",
@@ -886,7 +886,7 @@ export default function RouteEditorLayer({
         positions={displayGeometry}
         pane="routeEdit"
         pathOptions={{
-          color: isDragging || isCommitting ? "#F9AB00" : "#2979FF",
+          color: isDragging || isCommitting ? "#F9AB00" : "#448AFF",
           weight: 6,
           opacity: 0.95,
           dashArray: isDragging || isCommitting ? "10 8" : null,
@@ -925,7 +925,7 @@ export default function RouteEditorLayer({
                 ]}
                 pane="routeEdit"
                 pathOptions={{
-                  color: dragState.snapped ? "#1A73E8" : "#9AA0A6",
+                  color: dragState.snapped ? "#448AFF" : "#9AA0A6",
                   weight: 2,
                   dashArray: "4 4",
                   opacity: 0.9,
@@ -937,8 +937,8 @@ export default function RouteEditorLayer({
                 radius={7}
                 pane="routeEdit"
                 pathOptions={{
-                  color: "#2979FF",
-                  fillColor: "#1A73E8",
+                  color: "#448AFF",
+                  fillColor: "#448AFF",
                   fillOpacity: dragState.snapped ? 0.95 : 0.35,
                   weight: 2,
                 }}
@@ -951,7 +951,7 @@ export default function RouteEditorLayer({
             radius={dragState.snapped ? 10 : 14}
             pane="routeEdit"
             pathOptions={{
-              color: dragState.snapped ? "#1A73E8" : "#EA4335",
+              color: dragState.snapped ? "#448AFF" : "#EA4335",
               fillColor: "#fff",
               fillOpacity: 1,
               weight: 3,

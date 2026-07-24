@@ -103,76 +103,91 @@ export default function DirectionsPanel({
   const bothEndsSet = stops.filter(Boolean).length >= 2;
   const hasRouteResults = bothEndsSet && routeOptions.length > 0;
   const modeMeta = travelModeMeta(travelMode);
+  const modesRef = useRef(null);
+
+  useEffect(() => {
+    const root = modesRef.current;
+    if (!root) return;
+    const active = root.querySelector('.dir-travel-mode.is-active');
+    active?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [travelMode]);
 
   return (
     <section
       className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""}`}
     >
-      <div className="dir-top-bar">
-        <md-icon-button
-          type="button"
-          aria-label="Back to search"
-          onClick={onClose}
-        >
-          <md-icon>arrow_back</md-icon>
-        </md-icon-button>
-        <span className="md-typescale-title-medium dir-title">Directions</span>
-        <div className="dir-top-actions">
-          {onOpenPrefs ? (
-            <ActionTip tip="Route preferences">
-              <md-icon-button
-                type="button"
-                class="dir-prefs-btn"
-                aria-label="Route preferences"
-                onClick={onOpenPrefs}
-              >
-                <md-icon>tune</md-icon>
-              </md-icon-button>
-            </ActionTip>
-          ) : null}
-          {hasRouteResults && (
-            <button
-              type="button"
-              className="dir-change-stops"
-              onClick={() => {
-                if (forceShowStops) {
-                  setForceShowStops(false);
-                  clearPlaceList();
-                } else {
-                  setForceShowStops(true);
-                }
-              }}
-            >
-              <md-icon>
-                {forceShowStops ? "check" : "edit_location_alt"}
-              </md-icon>
-              <span className="md-typescale-label-large">
-                {forceShowStops ? "Done" : "Change"}
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div
-        className="dir-travel-modes"
-        role="tablist"
-        aria-label="Travel mode"
-      >
-        {TRAVEL_MODES.map((m) => (
-          <button
-            key={m.id}
+      <div className="dir-sticky-chrome">
+        <div className="dir-top-bar">
+          <md-icon-button
             type="button"
-            role="tab"
-            aria-selected={travelMode === m.id ? "true" : "false"}
-            className={`dir-travel-mode ${travelMode === m.id ? "is-active" : ""}`}
-            title={m.label}
-            onClick={() => onTravelMode?.(m.id)}
+            aria-label="Back to search"
+            onClick={onClose}
           >
-            <md-icon>{m.icon}</md-icon>
-            <span className="dir-travel-mode-label">{m.label}</span>
-          </button>
-        ))}
+            <md-icon>arrow_back</md-icon>
+          </md-icon-button>
+          <span className="md-typescale-title-medium dir-title">Directions</span>
+          <div className="dir-top-actions">
+            {onOpenPrefs ? (
+              <ActionTip tip="Route preferences">
+                <md-icon-button
+                  type="button"
+                  class="dir-prefs-btn"
+                  aria-label="Route preferences"
+                  onClick={onOpenPrefs}
+                >
+                  <md-icon>tune</md-icon>
+                </md-icon-button>
+              </ActionTip>
+            ) : null}
+            {hasRouteResults && (
+              <button
+                type="button"
+                className="dir-change-stops"
+                onClick={() => {
+                  if (forceShowStops) {
+                    setForceShowStops(false);
+                    clearPlaceList();
+                  } else {
+                    setForceShowStops(true);
+                  }
+                }}
+              >
+                <md-icon>
+                  {forceShowStops ? "check" : "edit_location_alt"}
+                </md-icon>
+                <span className="md-typescale-label-large">
+                  {forceShowStops ? "Done" : "Change"}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div
+          className="dir-travel-modes"
+          role="tablist"
+          aria-label="Travel mode"
+          ref={modesRef}
+        >
+          {TRAVEL_MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              role="tab"
+              aria-selected={travelMode === m.id ? "true" : "false"}
+              className={`dir-travel-mode ${travelMode === m.id ? "is-active" : ""}`}
+              title={m.label}
+              onClick={() => onTravelMode?.(m.id)}
+            >
+              <md-icon>{m.icon}</md-icon>
+              <span className="dir-travel-mode-label">{m.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {modeMeta.unsupported ? (
@@ -194,72 +209,80 @@ export default function DirectionsPanel({
           </div>
 
           <div className="dir-stops-fields">
-            {stops.map((stop, i) => (
-              <div className="dir-stop-row" key={`stop-${i}`}>
-                <SuggestInput
-                  id={`dir-stop-${i}`}
-                  label={
-                    i === 0
-                      ? "Starting point"
-                      : i === stops.length - 1
-                        ? "Destination"
-                        : `Stop ${i}`
-                  }
-                  value={stopTexts[i] || ""}
-                  onChange={(v) => onStopText(i, v)}
-                  onSelect={(place) => {
-                    onStopSelect(i, place);
-                    clearPlaceList();
-                  }}
-                  placeholder={
-                    i === 0
-                      ? "Choose starting point"
-                      : i === stops.length - 1
-                        ? "Choose destination"
-                        : "Add stop"
-                  }
-                  currentLocation={currentLocation}
-                  allowCurrentLocation={i === 0 || i === stops.length - 1}
-                  recentPlaces={recentPlaces}
-                  near={near}
-                  onRequestLocation={onRequestLocation}
-                  externalList
-                  onFocusField={() => setActiveStop(i)}
-                  onListChange={(payload) => handleListChange(i, payload)}
-                />
-                {stops.length > 2 && i > 0 && i < stops.length - 1 ? (
-                  <div className="dir-stop-reorder">
-                    {onMoveStop ? (
-                      <>
-                        <md-icon-button
-                          type="button"
-                          aria-label="Move stop up"
-                          disabled={i <= 1 || undefined}
-                          onClick={() => onMoveStop(i, i - 1)}
-                        >
-                          <md-icon>arrow_upward</md-icon>
-                        </md-icon-button>
-                        <md-icon-button
-                          type="button"
-                          aria-label="Move stop down"
-                          disabled={i >= stops.length - 2 || undefined}
-                          onClick={() => onMoveStop(i, i + 1)}
-                        >
-                          <md-icon>arrow_downward</md-icon>
-                        </md-icon-button>
-                      </>
-                    ) : null}
-                    <md-icon-button
-                      type="button"
-                      aria-label="Remove stop"
-                      onClick={() => onRemoveStop(i)}
-                    >
-                      <md-icon>remove_circle_outline</md-icon>
-                    </md-icon-button>
-                  </div>
-                ) : null}
+            {stops.map((stop, i) => {
+              const isMid = stops.length > 2 && i > 0 && i < stops.length - 1;
+              return (
+              <div
+                className={`dir-stop-row ${isMid ? "has-controls" : ""}`}
+                key={`stop-${i}`}
+              >
+                <div className="dir-stop-field">
+                  <SuggestInput
+                    id={`dir-stop-${i}`}
+                    label={
+                      i === 0
+                        ? "Starting point"
+                        : i === stops.length - 1
+                          ? "Destination"
+                          : `Stop ${i}`
+                    }
+                    value={stopTexts[i] || ""}
+                    onChange={(v) => onStopText(i, v)}
+                    onSelect={(place) => {
+                      onStopSelect(i, place);
+                      clearPlaceList();
+                    }}
+                    placeholder={
+                      i === 0
+                        ? "Choose starting point"
+                        : i === stops.length - 1
+                          ? "Choose destination"
+                          : "Add stop"
+                    }
+                    currentLocation={currentLocation}
+                    allowCurrentLocation={i === 0 || i === stops.length - 1}
+                    recentPlaces={recentPlaces}
+                    near={near}
+                    onRequestLocation={onRequestLocation}
+                    externalList
+                    onFocusField={() => setActiveStop(i)}
+                    onListChange={(payload) => handleListChange(i, payload)}
+                  />
+                  {isMid ? (
+                    <div className="dir-stop-reorder">
+                      {onMoveStop ? (
+                        <>
+                          <md-icon-button
+                            type="button"
+                            aria-label="Move stop up"
+                            disabled={i === 0 || undefined}
+                            onClick={() => onMoveStop(i, i - 1)}
+                          >
+                            <md-icon>arrow_upward</md-icon>
+                          </md-icon-button>
+                          <md-icon-button
+                            type="button"
+                            aria-label="Move stop down"
+                            disabled={i === stops.length - 1 || undefined}
+                            onClick={() => onMoveStop(i, i + 1)}
+                          >
+                            <md-icon>arrow_downward</md-icon>
+                          </md-icon-button>
+                        </>
+                      ) : null}
+                      <md-icon-button
+                        type="button"
+                        aria-label="Remove stop"
+                        onClick={() => onRemoveStop(i)}
+                      >
+                        <md-icon>close</md-icon>
+                      </md-icon-button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <ActionTip tip="Swap start and destination">

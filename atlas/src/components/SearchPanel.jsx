@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import SuggestInput from "./SuggestInput";
+import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import { formatDistance, formatDuration } from "../utils/format";
 
@@ -18,18 +19,17 @@ function useIsCompact(query = "(max-width: 800px)") {
 }
 
 /**
- * Landing search — Saved routes under the input; suggestions below.
- * Mobile: search-only until focus, unless Saved routes exist (then show them).
- * Selecting a place drops a map pin only — no place details card.
+ * Landing search — Saved under the input; place card after a selection;
+ * suggestions while typing.
  */
 export default function SearchPanel({
   query,
   onQueryChange,
   onSelectPlace,
-  place: _place,
+  place,
   onClear,
-  onDirectionsTo: _onDirectionsTo,
-  onDirectionsFrom: _onDirectionsFrom,
+  onDirectionsTo,
+  onDirectionsFrom,
   recentPlaces = [],
   near = null,
   savedRoutes = [],
@@ -59,11 +59,13 @@ export default function SearchPanel({
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
   const hasSaved = savedRoutes.length > 0;
-  // On mobile, expand when the user focuses search OR when Saved routes exist
-  // so Saved is reachable without hunting for a hidden section.
   const showBody =
-    !isCompact || mobileExpanded || listVisible || hasSaved;
-  const showSaved = showBody && !listVisible && hasSaved;
+    !isCompact ||
+    mobileExpanded ||
+    listVisible ||
+    Boolean(place) ||
+    hasSaved;
+  const showSaved = showBody && !listVisible && !place && hasSaved;
 
   return (
     <section
@@ -80,7 +82,7 @@ export default function SearchPanel({
               onSelect={(selected) => {
                 onSelectPlace(selected);
                 clearPlaceList();
-                if (isCompact) setMobileExpanded(false);
+                if (isCompact) setMobileExpanded(true);
               }}
               placeholder="Search here"
               allowCurrentLocation={false}
@@ -162,10 +164,19 @@ export default function SearchPanel({
                 onSelectPlace(selected);
                 clearPlaceList();
               }
-              if (isCompact) setMobileExpanded(false);
+              if (isCompact) setMobileExpanded(true);
             }}
           />
         </div>
+      )}
+
+      {place && !listVisible && showBody && (
+        <PlaceDetailsCard
+          place={place}
+          onClose={onClear}
+          onDirectionsTo={onDirectionsTo}
+          onDirectionsFrom={onDirectionsFrom}
+        />
       )}
     </section>
   );
