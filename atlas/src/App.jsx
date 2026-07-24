@@ -6,6 +6,8 @@ import NavigationUI from "./components/NavigationUI";
 import StepsSheet from "./components/StepsSheet";
 import ContextMenu from "./components/ContextMenu";
 import RouteAssistant from "./components/RouteAssistant";
+import RoutePrefsSheet from "./components/RoutePrefsSheet";
+import RoadRulesSheet from "./components/RoadRulesSheet";
 import { reverseGeocode, haversineMeters, searchPlaces } from "./api/geocode";
 import {
   closestPointOnPolyline,
@@ -27,10 +29,18 @@ import {
   roadNamesMatch,
 } from "./utils/routeAssist";
 import {
+  DEFAULT_ROUTE_PREFS,
+  excludesFromPrefs,
+} from "./utils/routePreferences";
+import { enrichAndRankRoutes } from "./utils/routeRecommend";
+import { removeRoadRule, upsertRoadRule } from "./utils/roadRules";
+import {
   loadBlockedStreets,
   loadRecentSearches,
+  loadRoadRules,
   loadSavedRoutes,
   persistBlockedStreets,
+  persistRoadRules,
   persistSavedRoutes,
   pushRecentSearch,
 } from "./utils/storage";
@@ -121,6 +131,13 @@ export default function App() {
   const [dirError, setDirError] = useState(null);
   const [selectedViaId, setSelectedViaId] = useState(null);
   const [blockedStreets, setBlockedStreets] = useState(() => loadBlockedStreets());
+  const [roadRules, setRoadRules] = useState(() => loadRoadRules());
+  const [routePrefs, setRoutePrefs] = useState(() => ({ ...DEFAULT_ROUTE_PREFS }));
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const [roadRulesOpen, setRoadRulesOpen] = useState(false);
+  const [rerouteSuggestion, setRerouteSuggestion] = useState(null);
+  const [navOriginalRoute, setNavOriginalRoute] = useState(null);
+  const [acceptedReroute, setAcceptedReroute] = useState(false);
   const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
   const [savedTab, setSavedTab] = useState("routes");
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -209,6 +226,10 @@ export default function App() {
   useEffect(() => {
     persistBlockedStreets(blockedStreets);
   }, [blockedStreets]);
+
+  useEffect(() => {
+    persistRoadRules(roadRules);
+  }, [roadRules]);
 
   useEffect(() => {
     if (!userLocation) return;
@@ -329,16 +350,18 @@ export default function App() {
     return true;
   }, [pushEditHistory]);
 
-  const selectRoute = useCallback((opt) => {
+  const selectRoute = useCallback((opt, { keepNavigating = false } = {}) => {
     if (!opt) return;
     selectedRouteIdRef.current = opt.id;
     setSelectedRouteId(opt.id);
     routeGeometryRef.current = opt.geometry;
     setRouteGeometry(opt.geometry);
     setRouteLocked(true);
-    setNavigating(false);
-    setNavStepIndex(0);
-    setShowSteps(false);
+    if (!keepNavigating) {
+      setNavigating(false);
+      setNavStepIndex(0);
+      setShowSteps(false);
+    }
     if (!opt.edited) {
       setBaselineRoute(opt);
       editViasRef.current = [];
@@ -349,7 +372,7 @@ export default function App() {
   }, [clearEditHistory]);
 
   const runDirections = useCallback(
-    async (nextStops = stops, mode = travelMode) => {
+    async (nextStops = stops, mode = travelMode, prefs = routePrefs) => {
       const resolved = nextStops.map((s, i) => {
         if (s) return s;
         const text = (stopTexts[i] || "").trim().toLowerCase();
@@ -372,16 +395,27 @@ export default function App() {
       clearEditState();
       clearStatus();
       try {
+        const excludes = excludesFromPrefs(prefs);
         let options;
         try {
-          options = await fetchShortestRoutes(filled, mode, { limit: 5 });
+          options = await fetchShortestRoutes(filled, mode, {
+            limit: 5,
+            excludes,
+          });
         } catch {
           await new Promise((r) => setTimeout(r, 600));
-          options = await fetchShortestRoutes(filled, mode, { limit: 5 });
+          options = await fetchShortestRoutes(filled, mode, {
+            limit: 5,
+            excludes,
+          });
         }
-        setRouteOptions(options);
-        setBaselineRoute(options[0]);
-        selectRoute(options[0]);
+        // Feature 1/2/7: enrich with traffic + reasons, re-rank by prefs / road rules.
+        const ranked = enrichAndRankRoutes(options, prefs, roadRules, {
+          limit: 5,
+        });
+        setRouteOptions(ranked);
+        setBaselineRoute(ranked[0]);
+        selectRoute(ranked[0]);
         setFitKey((k) => k + 1);
         clearStatus();
       } catch (err) {
@@ -396,6 +430,8 @@ export default function App() {
       stops,
       stopTexts,
       travelMode,
+      routePrefs,
+      roadRules,
       userLocation,
       showStatus,
       clearStatus,
@@ -404,6 +440,27 @@ export default function App() {
       clearEditState,
     ],
   );
+
+  const applyPrefsToRoutes = useCallback(() => {
+    // Re-rank existing options without a full network round-trip when possible.
+    if (routeOptions.length >= 2) {
+      const ranked = enrichAndRankRoutes(routeOptions, routePrefs, roadRules, {
+        limit: 5,
+      });
+      setRouteOptions(ranked);
+      selectRoute(ranked[0]);
+      return;
+    }
+    runDirections(stops, travelMode, routePrefs);
+  }, [
+    routeOptions,
+    routePrefs,
+    roadRules,
+    selectRoute,
+    runDirections,
+    stops,
+    travelMode,
+  ]);
 
   const openDirections = useCallback(
     async ({ from = null, to = null } = {}) => {
@@ -457,15 +514,28 @@ export default function App() {
     async (latlng) => {
       setCtx(null);
 
-      // Directions with both ends set: route drag owns the map gesture.
+      // Directions: fill empty stop, or insert a mid-waypoint when A/B are set
+      // (Feature 3 — tap map to add pins). Route-line drag still owns reshape.
       if (view === "directions") {
         const emptyIdx = stops.findIndex((s) => !s);
-        if (emptyIdx === -1) {
-          return;
-        }
         try {
           const place = await reverseGeocode(latlng.lat, latlng.lng);
           rememberPlace(place);
+          if (emptyIdx === -1) {
+            // Insert before destination so start/end stay anchors.
+            const nextStops = [...stops];
+            const dest = nextStops.pop();
+            nextStops.push(place, dest);
+            const nextTexts = [...stopTexts];
+            const destText = nextTexts.pop();
+            nextTexts.push(place.name, destText);
+            setStops(nextStops);
+            setStopTexts(nextTexts);
+            clearRoutes();
+            runDirections(nextStops, travelMode);
+            showStatus(`Added stop: ${place.name}`);
+            return;
+          }
           const nextStops = [...stops];
           nextStops[emptyIdx] = place;
           setStops(nextStops);
@@ -506,6 +576,7 @@ export default function App() {
     [
       view,
       stops,
+      stopTexts,
       travelMode,
       showStatus,
       clearRoutes,
@@ -561,6 +632,26 @@ export default function App() {
       }
     },
     [stops, clearRoutes, runDirections, travelMode],
+  );
+
+  /** Feature 3: reorder waypoints in the stop list (and on-map pins follow). */
+  const moveStop = useCallback(
+    (from, to) => {
+      if (to < 0 || to >= stops.length || from === to) return;
+      const nextStops = [...stops];
+      const nextTexts = [...stopTexts];
+      const [s] = nextStops.splice(from, 1);
+      const [t] = nextTexts.splice(from, 1);
+      nextStops.splice(to, 0, s);
+      nextTexts.splice(to, 0, t);
+      setStops(nextStops);
+      setStopTexts(nextTexts);
+      clearRoutes();
+      if (nextStops.filter(Boolean).length >= 2) {
+        runDirections(nextStops, travelMode);
+      }
+    },
+    [stops, stopTexts, clearRoutes, runDirections, travelMode],
   );
 
   const swapStops = useCallback(() => {
@@ -1295,27 +1386,108 @@ export default function App() {
     clearFollowHighlight,
   ]);
 
+  const resolveRoadAt = useCallback(async (latlng) => {
+    let focus = { lat: latlng.lat, lng: latlng.lng };
+    let name = null;
+    try {
+      const snapped = await nearestRoadPoint(
+        latlng.lat,
+        latlng.lng,
+        travelMode,
+      );
+      focus = { lat: snapped.lat, lng: snapped.lng };
+      name = snapped.name || null;
+    } catch {
+      /* fall through */
+    }
+    if (!name) {
+      try {
+        const place = await reverseGeocode(focus.lat, focus.lng);
+        name = place.address?.road || place.name || "This road";
+      } catch {
+        name = "This road";
+      }
+    }
+    return { name, ...focus };
+  }, [travelMode]);
+
+  const applyRoadRuleAt = useCallback(
+    async (latlng, mode) => {
+      const road = await resolveRoadAt(latlng);
+      setRoadRules((prev) =>
+        upsertRoadRule(prev, {
+          name: road.name,
+          lat: road.lat,
+          lng: road.lng,
+          mode,
+        }),
+      );
+      // Soft trip avoid still reshapes when "avoid" / "never" and a route is live.
+      if (
+        (mode === "avoid" || mode === "never") &&
+        routeGeometryRef.current?.length
+      ) {
+        await avoidStreetAt(latlng, {
+          roadName: road.name,
+          reshapeRoute: true,
+        });
+      } else if (mode === "prefer" && routeGeometryRef.current?.length) {
+        try {
+          await preferStreetNamed(road.name);
+        } catch {
+          /* keep list update even if prefer snap fails */
+        }
+      }
+      // Re-rank cards so Prefer/Avoid/Never change recommendation order.
+      setRouteOptions((prev) => {
+        if (prev.length < 2) return prev;
+        return enrichAndRankRoutes(prev, routePrefs, [
+          ...roadRules.filter(
+            (r) => r.name.toLowerCase() !== road.name.toLowerCase(),
+          ),
+          { name: road.name, mode, lat: road.lat, lng: road.lng, id: "tmp" },
+        ]);
+      });
+      return road.name;
+    },
+    [resolveRoadAt, avoidStreetAt, preferStreetNamed, routePrefs, roadRules],
+  );
+
   const ctxActions = ctx
     ? [
         {
-          id: "avoid-street",
-          label: routeGeometry
-            ? "Avoid this road"
-            : "Add to Avoided roads",
+          id: "prefer-road",
+          label: "Prefer this road",
           onClick: async () => {
             try {
-              const name = await avoidStreetAt(ctx.latlng, {
-                reshapeRoute: Boolean(routeGeometry),
-              });
-              if (name) {
-                showStatus(
-                  routeGeometry
-                    ? `Avoiding ${name}`
-                    : `Added ${name} to Avoided`,
-                );
-              }
+              const name = await applyRoadRuleAt(ctx.latlng, "prefer");
+              showStatus(`Preferring ${name}`);
             } catch (err) {
-              showStatus(err.message || "Could not avoid that road");
+              showStatus(err.message || "Could not set road rule");
+            }
+          },
+        },
+        {
+          id: "avoid-road",
+          label: "Avoid this road",
+          onClick: async () => {
+            try {
+              const name = await applyRoadRuleAt(ctx.latlng, "avoid");
+              showStatus(`Avoiding ${name}`);
+            } catch (err) {
+              showStatus(err.message || "Could not set road rule");
+            }
+          },
+        },
+        {
+          id: "never-road",
+          label: "Never use this road",
+          onClick: async () => {
+            try {
+              const name = await applyRoadRuleAt(ctx.latlng, "never");
+              showStatus(`Never use ${name}`);
+            } catch (err) {
+              showStatus(err.message || "Could not set road rule");
             }
           },
         },
@@ -1351,27 +1523,14 @@ export default function App() {
             openDirections({ from: place });
           },
         },
-        ...(routeGeometry
-          ? [
-              {
-                id: "ask-assistant",
-                label: "Ask route assistant…",
-                onClick: () => setAssistantOpen(true),
-              },
-            ]
-          : [
-              {
-                id: "open-avoided",
-                label: "View Avoided list",
-                onClick: () => {
-                  setView("search");
-                  setPanelOpen(true);
-                  setSelectedPlace(null);
-                  setSearchQuery("");
-                  setSavedTab("avoided");
-                },
-              },
-            ]),
+        {
+          id: "road-rules",
+          label: "Your road rules",
+          onClick: () => {
+            setRoadRulesOpen(true);
+            setPanelOpen(true);
+          },
+        },
       ]
     : [];
 
@@ -1387,6 +1546,16 @@ export default function App() {
     setShowSteps(false);
     setNavigating(true);
     setPanelOpen(false);
+    setRerouteSuggestion(null);
+    setAcceptedReroute(false);
+    // Snapshot the path we started with so "Return to original" can restore it.
+    setNavOriginalRoute({
+      ...selectedRoute,
+      geometry: cloneGeometry(selectedRoute.geometry),
+      steps: selectedRoute.steps
+        ? selectedRoute.steps.map((s) => ({ ...s }))
+        : [],
+    });
     try {
       const loc = userLocation || (await refreshLocation().catch(() => null));
       if (loc) {
@@ -1405,7 +1574,80 @@ export default function App() {
     setNavStepIndex(0);
     setShowSteps(false);
     setPanelOpen(true);
+    setRerouteSuggestion(null);
+    setAcceptedReroute(false);
+    setNavOriginalRoute(null);
   }, []);
+
+  /**
+   * Feature 6 demo: after ~12s of navigation, surface a reroute prompt.
+   * ASSUMPTION: no live incident feed — mock reason for prototype testing.
+   * DESIGN GUESS: timing + copy — review with user testing.
+   */
+  useEffect(() => {
+    if (!navigating || !selectedRoute || rerouteSuggestion || acceptedReroute) {
+      return undefined;
+    }
+    const t = setTimeout(() => {
+      const alt =
+        routeOptions.find((r) => r.id !== selectedRoute.id && !r.edited) ||
+        null;
+      const saveMin = alt
+        ? Math.max(
+            3,
+            Math.round(((selectedRoute.duration || 0) - (alt.duration || 0)) / 60) +
+              8,
+          )
+        : 8;
+      setRerouteSuggestion({
+        reason: `Accident reported ahead — this saves ~${saveMin} min`,
+        detail: alt?.reason
+          ? `Suggested: ${alt.label}. ${alt.reason}`
+          : "Takes a parallel corridor around the blockage.",
+        // If we have an alternate option, accept switches to it; else bend mid-route.
+        altRoute: alt,
+        saveMin,
+      });
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [
+    navigating,
+    selectedRoute,
+    rerouteSuggestion,
+    acceptedReroute,
+    routeOptions,
+  ]);
+
+  const acceptReroute = useCallback(async () => {
+    const suggestion = rerouteSuggestion;
+    setRerouteSuggestion(null);
+    if (!suggestion) return;
+    if (suggestion.altRoute) {
+      selectRoute(suggestion.altRoute, { keepNavigating: true });
+      setAcceptedReroute(true);
+      setNavStepIndex(0);
+      return;
+    }
+    try {
+      await rerouteAroundCorridor();
+      setAcceptedReroute(true);
+      setNavStepIndex(0);
+    } catch (err) {
+      showStatus(err.message || "Could not reroute");
+    }
+  }, [rerouteSuggestion, selectRoute, rerouteAroundCorridor, showStatus]);
+
+  const rejectReroute = useCallback(() => {
+    setRerouteSuggestion(null);
+  }, []);
+
+  const returnToOriginalRoute = useCallback(() => {
+    if (!navOriginalRoute) return;
+    selectRoute(navOriginalRoute, { keepNavigating: true });
+    setAcceptedReroute(false);
+    setNavStepIndex(0);
+    setRerouteSuggestion(null);
+  }, [navOriginalRoute, selectRoute]);
 
   // Advance turn-by-turn step when the user approaches the next maneuver.
   useEffect(() => {
@@ -1493,7 +1735,7 @@ export default function App() {
               width="32"
               height="32"
             />
-            <span className="brand-name">Atlas</span>
+            <span className="brand-name">Maps</span>
           </div>
           <ActionTip tip="Collapse panel">
             <md-icon-button
@@ -1559,6 +1801,7 @@ export default function App() {
             }}
             onAddStop={addStop}
             onRemoveStop={removeStop}
+            onMoveStop={moveStop}
             onSwap={swapStops}
             onClose={() => {
               setView("search");
@@ -1598,6 +1841,8 @@ export default function App() {
             onShowSteps={() => setShowSteps(true)}
             onSaveRoute={saveCurrentRoute}
             onOpenAssistant={() => setAssistantOpen(true)}
+            onOpenPrefs={() => setPrefsOpen(true)}
+            onOpenRoadRules={() => setRoadRulesOpen(true)}
             hasCustomEdits={hasCustomEdits}
           />
         )}
@@ -1837,6 +2082,11 @@ export default function App() {
                 route={selectedRoute}
                 currentStepIndex={navStepIndex}
                 onExit={exitNavigation}
+                rerouteSuggestion={rerouteSuggestion}
+                onAcceptReroute={acceptReroute}
+                onRejectReroute={rejectReroute}
+                canReturnToOriginal={acceptedReroute && Boolean(navOriginalRoute)}
+                onReturnToOriginal={returnToOriginalRoute}
               />
             )}
             {!navigating && !showSteps && selectedRoute.steps?.length > 0 && (
@@ -1884,9 +2134,31 @@ export default function App() {
         onSend={handleAssistantMessage}
       />
 
+      <RoutePrefsSheet
+        open={prefsOpen}
+        prefs={routePrefs}
+        onChange={setRoutePrefs}
+        onClose={() => setPrefsOpen(false)}
+        onApply={applyPrefsToRoutes}
+      />
+
+      <RoadRulesSheet
+        open={roadRulesOpen}
+        rules={roadRules}
+        onClose={() => setRoadRulesOpen(false)}
+        onRemove={(id) => setRoadRules((prev) => removeRoadRule(prev, id))}
+        onSetMode={(id, mode) =>
+          setRoadRules((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, mode, updatedAt: Date.now() } : r)),
+          )
+        }
+      />
+
       {view === "directions" &&
         selectedRoute &&
         !assistantOpen &&
+        !prefsOpen &&
+        !roadRulesOpen &&
         !showEditBar &&
         !navigating && (
         <ActionTip tip="Ask route assistant" className="assistant-fab-tip">

@@ -5,8 +5,8 @@ import ActionTip from "./ActionTip";
 import { formatDistance, formatDuration } from "../utils/format";
 
 /**
- * Directions panel — Google Maps–style inputs with a shared place list below.
- * Active route actions stay lean: Save + overflow menu.
+ * Directions panel — recommendations with traffic + reasons (Features 1, 7),
+ * prefs entry (2), multi-stop reorder (3), save exact path (5).
  */
 export default function DirectionsPanel({
   stops,
@@ -15,6 +15,7 @@ export default function DirectionsPanel({
   onStopSelect,
   onAddStop,
   onRemoveStop,
+  onMoveStop = null,
   onSwap,
   onClose,
   routeOptions,
@@ -35,6 +36,8 @@ export default function DirectionsPanel({
   onShowSteps = null,
   onSaveRoute = null,
   onOpenAssistant = null,
+  onOpenPrefs = null,
+  onOpenRoadRules = null,
   hasCustomEdits = false,
 }) {
   const [activeStop, setActiveStop] = useState(null);
@@ -103,6 +106,17 @@ export default function DirectionsPanel({
       <div className="dir-top-bar">
         <span className="md-typescale-title-medium dir-title">Directions</span>
         <div className="dir-top-actions">
+          {onOpenPrefs ? (
+            <ActionTip tip="Route preferences">
+              <md-icon-button
+                type="button"
+                aria-label="Route preferences"
+                onClick={onOpenPrefs}
+              >
+                <md-icon>tune</md-icon>
+              </md-icon-button>
+            </ActionTip>
+          ) : null}
           {hasRouteResults && (
             <button
               type="button"
@@ -180,13 +194,35 @@ export default function DirectionsPanel({
                   onListChange={(payload) => handleListChange(i, payload)}
                 />
                 {stops.length > 2 && (
-                  <md-icon-button
-                    type="button"
-                    aria-label="Remove stop"
-                    onClick={() => onRemoveStop(i)}
-                  >
-                    <md-icon>close</md-icon>
-                  </md-icon-button>
+                  <div className="dir-stop-reorder">
+                    {onMoveStop ? (
+                      <>
+                        <md-icon-button
+                          type="button"
+                          aria-label="Move stop up"
+                          disabled={i === 0 || undefined}
+                          onClick={() => onMoveStop(i, i - 1)}
+                        >
+                          <md-icon>arrow_upward</md-icon>
+                        </md-icon-button>
+                        <md-icon-button
+                          type="button"
+                          aria-label="Move stop down"
+                          disabled={i === stops.length - 1 || undefined}
+                          onClick={() => onMoveStop(i, i + 1)}
+                        >
+                          <md-icon>arrow_downward</md-icon>
+                        </md-icon-button>
+                      </>
+                    ) : null}
+                    <md-icon-button
+                      type="button"
+                      aria-label="Remove stop"
+                      onClick={() => onRemoveStop(i)}
+                    >
+                      <md-icon>close</md-icon>
+                    </md-icon-button>
+                  </div>
                 )}
               </div>
             ))}
@@ -221,7 +257,7 @@ export default function DirectionsPanel({
 
         <button type="button" className="dir-add-stop" onClick={onAddStop}>
           <md-icon>add</md-icon>
-          <span className="md-typescale-body-medium">Add Stops</span>
+          <span className="md-typescale-body-medium">Add stop</span>
         </button>
       </div>
 
@@ -239,17 +275,19 @@ export default function DirectionsPanel({
 
       {hasRouteResults && (
         <p className="dir-drag-hint md-typescale-body-small">
-          Drag the blue route on the map to create a custom path.
+          Drag the blue route to reshape · tap a card to preview · long-press a
+          road for Prefer / Avoid / Never
         </p>
       )}
 
       {routeOptions.length > 0 && (
-        <div className="dir-route-list">
+        <div className="dir-route-list" role="list" aria-label="Recommended routes">
           {routeOptions.map((opt, index) => {
             const active = opt.id === selectedRouteId;
             return (
               <div
                 key={opt.id}
+                role="listitem"
                 className={`dir-route-card ${active ? "is-active" : ""} ${active && opt.edited ? "is-editing" : ""}`}
               >
                 <button
@@ -283,6 +321,18 @@ export default function DirectionsPanel({
                       <span className="md-typescale-body-medium dir-route-dist">
                         {formatDistance(opt.distance)}
                       </span>
+                      {opt.traffic ? (
+                        <span
+                          className="dir-route-traffic"
+                          style={{ color: opt.traffic.color }}
+                          title={opt.traffic.label}
+                        >
+                          <md-icon>{opt.traffic.icon}</md-icon>
+                          <span className="md-typescale-body-small">
+                            {opt.traffic.label}
+                          </span>
+                        </span>
+                      ) : null}
                       {active && opt.edited && comparison?.label ? (
                         <span
                           className={`dir-route-delta tone-${comparison.tone} md-typescale-body-small`}
@@ -295,12 +345,31 @@ export default function DirectionsPanel({
                         </span>
                       ) : null}
                     </div>
+                    {opt.reason ? (
+                      <p className="dir-route-reason md-typescale-body-small">
+                        {opt.reason}
+                      </p>
+                    ) : null}
+                    {opt.tradeOff && !active ? (
+                      <p className="dir-route-tradeoff md-typescale-body-small">
+                        vs recommended: {opt.tradeOff}
+                      </p>
+                    ) : null}
+                    {opt.metrics?.turns != null ? (
+                      <p className="dir-route-meta md-typescale-body-small">
+                        {opt.metrics.turns} turn
+                        {opt.metrics.turns === 1 ? "" : "s"}
+                        {opt.metrics.highwayShare > 0.2
+                          ? ` · ${Math.round(opt.metrics.highwayShare * 100)}% highway`
+                          : " · mostly surface streets"}
+                      </p>
+                    ) : null}
                   </div>
                 </button>
                 {active ? (
                   <div className="dir-route-actions">
                     {onSaveRoute && !saving ? (
-                      <ActionTip tip="Save route">
+                      <ActionTip tip="Save this exact path">
                         <md-icon-button
                           type="button"
                           class="dir-route-save-btn"
@@ -320,79 +389,99 @@ export default function DirectionsPanel({
                       </ActionTip>
                     ) : null}
                     {!saving ? (
-                    <div className="dir-route-more" ref={menuFor === opt.id ? menuRef : null}>
-                      <ActionTip tip="More">
-                        <md-icon-button
-                          type="button"
-                          class="dir-route-more-btn"
-                          aria-label="More route actions"
-                          aria-haspopup="menu"
-                          aria-expanded={menuFor === opt.id ? "true" : "false"}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuFor((id) => (id === opt.id ? null : opt.id));
-                          }}
-                        >
-                          <md-icon>more_vert</md-icon>
-                        </md-icon-button>
-                      </ActionTip>
-                      {menuFor === opt.id ? (
-                        <div className="dir-route-menu" role="menu">
-                          {onShowSteps ? (
-                            <button
-                              type="button"
-                              role="menuitem"
-                              onClick={() => {
-                                setMenuFor(null);
-                                onShowSteps();
-                              }}
-                            >
-                              <md-icon>list</md-icon>
-                              Steps
-                            </button>
-                          ) : null}
-                          {onOpenAssistant ? (
-                            <button
-                              type="button"
-                              role="menuitem"
-                              onClick={() => {
-                                setMenuFor(null);
-                                onOpenAssistant();
-                              }}
-                            >
-                              <md-icon>auto_awesome</md-icon>
-                              Ask assistant
-                            </button>
-                          ) : null}
-                          {canUndo ? (
-                            <button
-                              type="button"
-                              role="menuitem"
-                              onClick={() => {
-                                setMenuFor(null);
-                                onUndo?.();
-                              }}
-                            >
-                              <md-icon>undo</md-icon>
-                              Undo
-                            </button>
-                          ) : null}
-                          {canReset ? (
-                            <button
-                              type="button"
-                              role="menuitem"
-                              onClick={() => {
-                                setMenuFor(null);
-                                onResetSuggested?.();
-                              }}
-                            >
-                              <md-icon>restart_alt</md-icon>
-                              Reset to original
-                            </button>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </div>
+                      <div
+                        className="dir-route-more"
+                        ref={menuFor === opt.id ? menuRef : null}
+                      >
+                        <ActionTip tip="More">
+                          <md-icon-button
+                            type="button"
+                            class="dir-route-more-btn"
+                            aria-label="More route actions"
+                            aria-haspopup="menu"
+                            aria-expanded={
+                              menuFor === opt.id ? "true" : "false"
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMenuFor((id) =>
+                                id === opt.id ? null : opt.id,
+                              );
+                            }}
+                          >
+                            <md-icon>more_vert</md-icon>
+                          </md-icon-button>
+                        </ActionTip>
+                        {menuFor === opt.id ? (
+                          <div className="dir-route-menu" role="menu">
+                            {onShowSteps ? (
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuFor(null);
+                                  onShowSteps();
+                                }}
+                              >
+                                <md-icon>list</md-icon>
+                                Steps
+                              </button>
+                            ) : null}
+                            {onOpenRoadRules ? (
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuFor(null);
+                                  onOpenRoadRules();
+                                }}
+                              >
+                                <md-icon>rule</md-icon>
+                                Your road rules
+                              </button>
+                            ) : null}
+                            {onOpenAssistant ? (
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuFor(null);
+                                  onOpenAssistant();
+                                }}
+                              >
+                                <md-icon>auto_awesome</md-icon>
+                                Ask assistant
+                              </button>
+                            ) : null}
+                            {canUndo ? (
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuFor(null);
+                                  onUndo?.();
+                                }}
+                              >
+                                <md-icon>undo</md-icon>
+                                Undo
+                              </button>
+                            ) : null}
+                            {canReset ? (
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setMenuFor(null);
+                                  onResetSuggested?.();
+                                }}
+                              >
+                                <md-icon>restart_alt</md-icon>
+                                Reset to original
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 ) : null}
@@ -413,7 +502,7 @@ export default function DirectionsPanel({
                       value={saveName}
                       onChange={(e) => setSaveName(e.target.value)}
                       maxLength={80}
-                      placeholder="Route name"
+                      placeholder="Route name (optional)"
                       aria-label="Route name"
                       autoFocus
                     />
@@ -428,7 +517,7 @@ export default function DirectionsPanel({
                         Cancel
                       </md-text-button>
                       <md-filled-tonal-button type="submit">
-                        Save
+                        Save path
                       </md-filled-tonal-button>
                     </div>
                   </form>

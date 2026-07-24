@@ -1,14 +1,21 @@
 import { formatDistance, formatDuration } from "../utils/format";
+import ReroutePrompt from "./ReroutePrompt";
 
 /**
- * Active turn-by-turn navigation chrome (maneuver banner + Exit).
- * Pre-start Steps lives beside Edit (desktop) or as a floating button (mobile).
+ * Active turn-by-turn navigation (Feature 6 + 7).
+ * Reroute suggestions interrupt here; Return to original stays available
+ * after an accepted reroute.
  */
 export default function NavigationUI({
   active = false,
   route,
   currentStepIndex = 0,
   onExit,
+  rerouteSuggestion = null,
+  onAcceptReroute = null,
+  onRejectReroute = null,
+  canReturnToOriginal = false,
+  onReturnToOriginal = null,
 }) {
   if (!route || !active) return null;
 
@@ -47,6 +54,13 @@ export default function NavigationUI({
         </md-icon-button>
       </div>
 
+      <ReroutePrompt
+        open={Boolean(rerouteSuggestion)}
+        suggestion={rerouteSuggestion}
+        onAccept={onAcceptReroute}
+        onReject={onRejectReroute}
+      />
+
       <div className="nav-footer">
         <div className="nav-footer-stats">
           <div className="nav-footer-eta md-typescale-headline-small">
@@ -56,9 +70,16 @@ export default function NavigationUI({
             {formatDistance(route.distance)} remaining
           </div>
         </div>
-        <md-filled-tonal-button type="button" onClick={onExit}>
-          Exit
-        </md-filled-tonal-button>
+        <div className="nav-footer-actions">
+          {canReturnToOriginal ? (
+            <md-text-button type="button" onClick={onReturnToOriginal}>
+              Return to original
+            </md-text-button>
+          ) : null}
+          <md-filled-tonal-button type="button" onClick={onExit}>
+            Exit
+          </md-filled-tonal-button>
+        </div>
       </div>
     </div>
   );

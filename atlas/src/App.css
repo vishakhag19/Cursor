@@ -2552,3 +2552,235 @@ md-text-button {
     visibility: hidden;
   }
 }
+
+/* —— Route control suite (prefs / road rules / recommendations / reroute) —— */
+.dir-route-traffic {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dir-route-traffic md-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  --md-icon-size: 16px;
+  color: inherit;
+}
+
+.dir-route-reason {
+  margin: 6px 0 0;
+  color: #3c4043;
+  line-height: 1.35;
+}
+
+.dir-route-tradeoff {
+  margin: 4px 0 0;
+  color: #1a73e8;
+  line-height: 1.35;
+}
+
+.dir-route-meta {
+  margin: 4px 0 0;
+  color: #70757a;
+}
+
+.dir-stop-reorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.route-sheet {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1300;
+  max-height: min(72vh, 560px);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8eaed;
+  box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
+  overflow: hidden;
+}
+
+@media (min-width: 801px) {
+  .route-sheet {
+    left: auto;
+    right: 16px;
+    bottom: 24px;
+    width: min(360px, calc(100% - 32px));
+  }
+
+  .app:not(.panel-collapsed) .route-sheet {
+    left: calc(var(--atlas-panel-width, 400px) + 16px);
+    right: auto;
+    width: min(360px, calc(100% - var(--atlas-panel-width, 400px) - 32px));
+  }
+}
+
+.route-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 8px 10px 16px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.route-sheet-sub {
+  color: #70757a;
+}
+
+.route-sheet-body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}
+
+.route-sheet-footer {
+  padding: 12px 16px 16px;
+  border-top: 1px solid #e8eaed;
+}
+
+.route-sheet-footer md-filled-button {
+  width: 100%;
+}
+
+.route-pref-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.route-pref-row:hover {
+  background: #f8f9fa;
+}
+
+.route-pref-icon {
+  display: grid;
+  place-items: center;
+  color: #5f6368;
+}
+
+.route-pref-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.route-pref-toggle {
+  width: 18px;
+  height: 18px;
+  accent-color: #1a73e8;
+}
+
+.road-rules-list {
+  background: transparent;
+  --md-list-container-color: transparent;
+}
+
+.road-rules-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.road-rules-select {
+  max-width: 140px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  background: #fff;
+  color: #3c4043;
+}
+
+.reroute-prompt {
+  margin: 0 12px;
+  padding: 12px 16px 14px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8eaed;
+  box-shadow: var(--atlas-elevation-2);
+  z-index: 1210;
+}
+
+.reroute-prompt-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #dadce0;
+  margin: 0 auto 10px;
+}
+
+.reroute-prompt-kicker {
+  color: #c5221f;
+  margin-bottom: 4px;
+}
+
+.reroute-prompt-reason {
+  margin: 0 0 4px;
+  color: #202124;
+}
+
+.reroute-prompt-detail {
+  margin: 0 0 12px;
+  color: #5f6368;
+}
+
+.reroute-prompt-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.reroute-prompt-actions md-outlined-button,
+.reroute-prompt-actions md-filled-button {
+  width: 100%;
+}
+
+.nav-footer-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.nav-footer-actions md-filled-tonal-button,
+.nav-footer-actions md-text-button {
+  width: 100%;
+}
+
+@media (min-width: 801px) {
+  .nav-footer {
+    flex-wrap: wrap;
+  }
+
+  .nav-footer-actions {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+  }
+
+  .nav-footer-actions md-filled-tonal-button,
+  .nav-footer-actions md-text-button {
+    width: auto;
+  }
+}
+
+.app.nav-mode .reroute-prompt {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 110px;
+}

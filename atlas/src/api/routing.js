@@ -250,7 +250,7 @@ export async function rebuildEditedRoute(
 export async function fetchShortestRoutes(
   coords,
   travelMode = "driving",
-  { limit = 5 } = {},
+  { limit = 5, excludes = [] } = {},
 ) {
   if (!coords || coords.length < 2) {
     throw new Error("Need at least two stops");
@@ -261,7 +261,11 @@ export async function fetchShortestRoutes(
   const altCount = coords.length === 2 ? Math.min(limit - 1, 3) : false;
   const altParam = altCount === false ? "false" : String(Math.max(altCount, 1));
 
-  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${altParam}&continue_straight=false`;
+  // Pref-driven class excludes (Feature 2) — e.g. motorway / toll.
+  const preferExclude =
+    excludes?.length > 0 ? `&exclude=${excludes.join(",")}` : "";
+
+  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${altParam}&continue_straight=false${preferExclude}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(
@@ -276,7 +280,10 @@ export async function fetchShortestRoutes(
   let routes = data.routes.map((r, i) => normalizeRoute(r, i));
 
   if (coords.length === 2) {
-    for (const exclude of ["motorway", "toll", "ferry"]) {
+    const enrichExcludes = ["motorway", "toll", "ferry"].filter(
+      (x) => !excludes?.includes(x),
+    );
+    for (const exclude of enrichExcludes) {
       if (uniqueRouteCount(routes) >= limit) break;
       try {
         const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&continue_straight=false&exclude=${exclude}`;
