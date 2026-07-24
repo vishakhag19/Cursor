@@ -463,10 +463,13 @@ export default function DirectionsPanel({
           />
         )}
 
-        <button type="button" className="dir-add-stop" onClick={onAddStop}>
-          <md-icon>add</md-icon>
-          <span className="md-typescale-body-medium">Add stop</span>
-        </button>
+        {/* Hide while suggestions are open — avoids a second Add stop under the list */}
+        {!(placeList.open && (placeList.items.length > 0 || placeList.loading)) ? (
+          <button type="button" className="dir-add-stop" onClick={onAddStop}>
+            <md-icon>add</md-icon>
+            <span className="md-typescale-body-medium">Add stop</span>
+          </button>
+        ) : null}
       </div>
 
       {loading && (
