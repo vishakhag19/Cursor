@@ -1793,7 +1793,12 @@ export default function App() {
             <md-icon-button
               type="button"
               class="collapse-panel-btn"
-              onClick={() => setPanelOpen(false)}
+              onClick={() => {
+                setPanelOpen(false);
+                setPrefsOpen(false);
+                setRoadRulesOpen(false);
+                setAssistantOpen(false);
+              }}
               aria-label="Collapse panel"
             >
               <md-icon>{isCompact ? "expand_less" : "chevron_left"}</md-icon>
@@ -1879,7 +1884,8 @@ export default function App() {
             onSaveRoute={saveCurrentRoute}
             onStart={startNavigation}
             onOpenAssistant={() => setAssistantOpen(true)}
-            onOpenPrefs={() => setPrefsOpen(true)}
+            onOpenPrefs={() => setPrefsOpen((open) => !open)}
+            prefsOpen={prefsOpen}
             onOpenRoadRules={() => setPrefsOpen(true)}
             hasCustomEdits={hasCustomEdits}
             travelMode={travelMode}

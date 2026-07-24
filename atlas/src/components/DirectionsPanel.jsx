@@ -47,6 +47,7 @@ export default function DirectionsPanel({
   onSaveRoute = null,
   onOpenAssistant = null,
   onOpenPrefs = null,
+  prefsOpen = false,
   onOpenRoadRules = null,
   hasCustomEdits = false,
   travelMode = "driving",
@@ -149,11 +150,12 @@ export default function DirectionsPanel({
           </span>
           <div className="dir-top-actions">
             {onOpenPrefs ? (
-              <ActionTip tip="Route preferences">
+              <ActionTip tip={prefsOpen ? "Close route options" : "Route options"}>
                 <md-icon-button
                   type="button"
-                  class="dir-prefs-btn"
-                  aria-label="Route preferences"
+                  class={`dir-prefs-btn ${prefsOpen ? "is-active" : ""}`}
+                  aria-label={prefsOpen ? "Close route options" : "Route options"}
+                  aria-pressed={prefsOpen ? "true" : "false"}
                   onClick={onOpenPrefs}
                 >
                   <md-icon>tune</md-icon>

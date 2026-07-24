@@ -205,6 +205,16 @@
   justify-self: end;
 }
 
+.dir-prefs-btn.is-active {
+  background: #e8f0fe;
+  border-radius: 999px;
+  --md-icon-button-icon-color: #174ea6;
+  --md-icon-button-hover-icon-color: #174ea6;
+  --md-icon-button-pressed-icon-color: #174ea6;
+  --md-icon-button-focus-icon-color: #174ea6;
+  --md-icon-button-hover-state-layer-color: #174ea6;
+}
+
 .dir-top-bar > md-icon-button {
   justify-self: start;
   margin: 0;
