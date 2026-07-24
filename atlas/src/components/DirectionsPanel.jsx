@@ -181,13 +181,6 @@ export default function DirectionsPanel({
                 </span>
               </button>
             )}
-            <md-icon-button
-              type="button"
-              aria-label="Close directions"
-              onClick={onClose}
-            >
-              <md-icon>close</md-icon>
-            </md-icon-button>
           </div>
         </div>
 
