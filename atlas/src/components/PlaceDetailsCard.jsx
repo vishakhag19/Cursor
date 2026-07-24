@@ -50,13 +50,14 @@ export default function PlaceDetailsCard({
       )}
 
       <div className="place-actions">
-        <md-filled-button type="button" onClick={onDirectionsTo}>
+        <md-filled-button type="button" class="place-action-pill" onClick={onDirectionsTo}>
           <md-icon slot="icon">directions</md-icon>
           Directions
         </md-filled-button>
-        <md-outlined-button type="button" onClick={onDirectionsFrom}>
+        <md-filled-tonal-button type="button" class="place-action-pill" onClick={onDirectionsFrom}>
+          <md-icon slot="icon">near_me</md-icon>
           From here
-        </md-outlined-button>
+        </md-filled-tonal-button>
       </div>
     </div>
   );

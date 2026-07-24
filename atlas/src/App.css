@@ -1089,6 +1089,185 @@ md-filled-tonal-button.is-edit-active {
   padding-bottom: 12px;
 }
 
+.explore-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 calc(-1 * var(--panel-pad-x, 16px));
+  padding: 2px var(--panel-pad-x, 16px) 4px;
+}
+
+.explore-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.explore-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid #dadce0;
+  border-radius: 999px;
+  background: #fff;
+  color: #202124;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.explore-chip md-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: #5f6368;
+  --md-icon-size: 18px;
+}
+
+.explore-chip:hover {
+  background: #f8f9fa;
+}
+
+.search-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  margin: 4px calc(-1 * var(--panel-pad-x, 16px)) 0;
+  padding: 4px 0;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.search-shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 8px;
+  border: none;
+  border-right: 1px solid #e8eaed;
+  background: transparent;
+  color: #202124;
+  font: inherit;
+  cursor: default;
+  text-align: center;
+  opacity: 0.72;
+}
+
+.search-shortcut:last-child {
+  border-right: none;
+}
+
+.search-shortcut-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: #f1f3f4;
+  color: #5f6368;
+}
+
+.search-shortcut-icon md-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  --md-icon-size: 22px;
+}
+
+.search-shortcut-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.search-shortcut-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.search-shortcut-sub {
+  font-size: 0.6875rem;
+  color: #70757a;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 96px;
+}
+
+.landing-suggest-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px var(--panel-pad-x, 16px) 4px;
+}
+
+.landing-suggest-head h2 {
+  margin: 0;
+  color: #202124;
+}
+
+.search-back-btn {
+  flex-shrink: 0;
+  margin-left: -6px;
+}
+
+.dir-avoid-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 calc(-1 * var(--panel-pad-x, 16px)) 2px;
+  padding: 2px var(--panel-pad-x, 16px) 8px;
+}
+
+.dir-avoid-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.dir-avoid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 999px;
+  background: #f1f3f4;
+  color: #202124;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dir-avoid-chip md-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  --md-icon-size: 16px;
+}
+
+.dir-avoid-chip.is-on {
+  background: #e8f0fe;
+  color: #174ea6;
+}
+
+.dir-bottom-actions {
+  display: none;
+}
+
 .landing-section-divider {
   margin: 12px 0;
   --md-divider-color: #e8eaed;
@@ -1522,9 +1701,23 @@ md-filled-tonal-button.is-edit-active {
 
 .place-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 4px calc(-1 * 4px) 0;
+  padding: 0 4px 2px;
+}
+
+.place-actions::-webkit-scrollbar {
+  display: none;
+}
+
+.place-action-pill {
+  flex-shrink: 0;
+  border-radius: 999px;
 }
 
 .stop-row {
@@ -2381,9 +2574,35 @@ md-text-button {
     width: auto;
     max-width: none;
     max-height: min(72dvh, 640px);
-    border-radius: 0 0 20px 20px;
+    border-radius: 0 0 28px 28px;
     --panel-pad-x: 14px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .panel::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: 999px;
+    background: #dadce0;
+  }
+
+  .app:has(.search-panel.is-searching) .panel,
+  .app:has(.search-panel.has-suggest) .panel {
+    max-height: min(92dvh, 860px);
+    border-radius: 0;
+  }
+
+  .app:has(.search-panel.is-searching) .panel-header,
+  .app:has(.search-panel.has-suggest) .panel-header {
+    display: none;
+  }
+
+  .app:has(.search-panel.is-searching) .panel::before,
+  .app:has(.search-panel.has-suggest) .panel::before {
+    display: none;
   }
 
   .app.panel-collapsed .panel {
@@ -2391,7 +2610,7 @@ md-text-button {
   }
 
   .panel-header {
-    padding: 8px var(--panel-pad-x) 4px;
+    padding: 4px var(--panel-pad-x) 0;
   }
 
   .mode-panel {
@@ -2399,8 +2618,26 @@ md-text-button {
     gap: 8px;
   }
 
+  .search-panel {
+    padding-top: 8px;
+  }
+
   .search-panel.is-expanded {
     padding-bottom: 8px;
+  }
+
+  .search-panel.is-searching,
+  .search-panel.has-suggest {
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+  }
+
+  .place-card.place-details,
+  .place-details.m3-card {
+    border: none;
+    border-radius: 0;
+    margin-top: 4px;
+    padding: 8px 0 12px;
+    box-shadow: none;
   }
 
   .landing-saved {
@@ -2434,8 +2671,28 @@ md-text-button {
     padding: 0 var(--panel-pad-x, 14px) 4px;
   }
 
-  .panel-header {
-    padding: 8px var(--panel-pad-x) 0;
+  .dir-start-btn-inline {
+    display: none;
+  }
+
+  .dir-bottom-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 8px calc(-1 * var(--panel-pad-x, 14px)) 0;
+    padding: 10px var(--panel-pad-x, 14px) calc(10px + env(safe-area-inset-bottom, 0px));
+    background: #fff;
+    border-top: 1px solid #e8eaed;
+  }
+
+  .dir-bottom-actions md-filled-button,
+  .dir-bottom-actions md-outlined-button {
+    flex: 1;
+    --md-filled-button-container-shape: 999px;
+    --md-outlined-button-container-shape: 999px;
   }
 
   /* Compact route option rows on phones */
@@ -2628,20 +2885,35 @@ md-text-button {
   pointer-events: auto;
 }
 
-/* Edge-anchored navigation chrome (not floating cards) */
-.nav-banner {
+/* Google Maps–style: dark teal maneuver banner + bottom close/ETA/alts */
+.nav-banner-stack {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1200;
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
+  gap: 8px;
+  padding: max(10px, env(safe-area-inset-top, 0px)) 12px 0;
+  pointer-events: none;
+}
+
+.nav-banner-stack > * {
+  pointer-events: auto;
+}
+
+.nav-banner {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 14px 8px 16px 14px;
-  background: #1a73e8;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  background: #004d40;
   color: #fff;
-  border-radius: 0 0 16px 16px;
+  border-radius: 16px;
   box-shadow: var(--atlas-elevation-2);
 }
 
@@ -2676,13 +2948,28 @@ md-text-button {
 }
 
 .nav-banner-then {
-  margin-top: 6px;
-  opacity: 0.9;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  background: #004d40;
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: var(--atlas-elevation-1);
 }
 
-.nav-exit-btn {
-  --md-icon-button-icon-color: #fff;
-  --md-icon-button-hover-state-layer-color: #fff;
+.nav-banner-then-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.nav-banner-then md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: #fff;
+  --md-icon-size: 20px;
 }
 
 .nav-footer {
@@ -2691,25 +2978,83 @@ md-text-button {
   right: 0;
   bottom: 0;
   z-index: 1200;
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
   background: #ffffff;
-  border-radius: 16px 16px 0 0;
+  border-radius: 20px 20px 0 0;
   box-shadow: var(--atlas-elevation-2);
 }
 
+.nav-footer-close,
+.nav-footer-alts {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #dadce0;
+  border-radius: 999px;
+  background: #fff;
+  color: #3c4043;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.2);
+}
+
+.nav-footer-close md-icon,
+.nav-footer-alts md-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  --md-icon-size: 24px;
+}
+
+.nav-footer-alts-spacer {
+  width: 48px;
+  height: 48px;
+}
+
+.nav-footer-stats {
+  text-align: center;
+  min-width: 0;
+}
+
 .nav-footer-eta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   color: #188038;
   margin: 0;
   line-height: 1.15;
 }
 
+.nav-footer-eco {
+  color: #188038;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  --md-icon-size: 18px;
+}
+
 .nav-footer-meta {
   color: #5f6368;
   margin-top: 2px;
+}
+
+.nav-footer-return {
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1a73e8;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 /* Hide menu FAB during nav — Exit covers leaving; avoids floating chrome clash */
@@ -2876,10 +3221,6 @@ md-text-button {
 
 /* Keep map chrome under the nav footer (above zoom / layers / recenter) */
 @media (max-width: 800px) {
-  .nav-banner {
-    padding-top: max(14px, env(safe-area-inset-top, 0px));
-  }
-
   .app.nav-mode .map-controls {
     top: auto;
     bottom: 84px;
@@ -3286,32 +3627,13 @@ md-text-button {
   }
 }
 
-.nav-footer-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-
-.nav-footer-actions md-filled-tonal-button,
-.nav-footer-actions md-text-button {
-  width: 100%;
-}
-
 @media (min-width: 801px) {
-  .nav-footer {
-    flex-wrap: wrap;
+  .dir-bottom-actions {
+    display: none;
   }
 
-  .nav-footer-actions {
-    flex-direction: row;
-    align-items: center;
-    width: auto;
-  }
-
-  .nav-footer-actions md-filled-tonal-button,
-  .nav-footer-actions md-text-button {
-    width: auto;
+  .search-back-btn {
+    display: none;
   }
 }
 

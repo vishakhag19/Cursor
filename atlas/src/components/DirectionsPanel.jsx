@@ -3,7 +3,15 @@ import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
 import { formatDistance, formatDuration } from "../utils/format";
-import { TRAVEL_MODES, travelModeMeta } from "../utils/routePreferences";
+import {
+  TRAVEL_MODES,
+  travelModeMeta,
+  ROUTE_OPTION_FIELDS,
+} from "../utils/routePreferences";
+
+const AVOID_CHIP_FIELDS = ROUTE_OPTION_FIELDS.filter((f) =>
+  ["avoidTolls", "avoidHighways", "avoidFerries"].includes(f.id),
+);
 
 /**
  * Directions panel — recommendations with traffic + reasons (Features 1, 7),
@@ -44,6 +52,8 @@ export default function DirectionsPanel({
   travelMode = "driving",
   onTravelMode = null,
   showTollPassPrices = false,
+  routePrefs = null,
+  onRoutePrefsChange = null,
 }) {
   const [activeStop, setActiveStop] = useState(null);
   const [forceShowStops, setForceShowStops] = useState(false);
@@ -134,7 +144,9 @@ export default function DirectionsPanel({
           >
             <md-icon>arrow_back</md-icon>
           </md-icon-button>
-          <span className="md-typescale-title-medium dir-title">Directions</span>
+          <span className="md-typescale-title-medium dir-title">
+            {hasRouteResults ? modeMeta.label || "Directions" : "Directions"}
+          </span>
           <div className="dir-top-actions">
             {onOpenPrefs ? (
               <ActionTip tip="Route preferences">
@@ -169,6 +181,13 @@ export default function DirectionsPanel({
                 </span>
               </button>
             )}
+            <md-icon-button
+              type="button"
+              aria-label="Close directions"
+              onClick={onClose}
+            >
+              <md-icon>close</md-icon>
+            </md-icon-button>
           </div>
         </div>
 
@@ -193,6 +212,28 @@ export default function DirectionsPanel({
             </button>
           ))}
         </div>
+
+        {routePrefs && onRoutePrefsChange ? (
+          <div className="dir-avoid-chips" role="group" aria-label="Avoid">
+            {AVOID_CHIP_FIELDS.map((f) => {
+              const on = Boolean(routePrefs[f.id]);
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={`dir-avoid-chip ${on ? "is-on" : ""}`}
+                  aria-pressed={on ? "true" : "false"}
+                  onClick={() =>
+                    onRoutePrefsChange({ ...routePrefs, [f.id]: !on })
+                  }
+                >
+                  {on ? <md-icon>check</md-icon> : null}
+                  <span>{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       {modeMeta.unsupported ? (
@@ -389,7 +430,7 @@ export default function DirectionsPanel({
               {onStart ? (
                 <md-filled-button
                   type="button"
-                  class="dir-start-btn"
+                  class="dir-start-btn dir-start-btn-inline"
                   onClick={onStart}
                 >
                   <span slot="icon" className="steps-start-icon" aria-hidden>
@@ -557,6 +598,35 @@ export default function DirectionsPanel({
               ))}
             </ol>
           ) : null}
+        </div>
+      ) : null}
+
+      {selectedRoute && onStart ? (
+        <div className="dir-bottom-actions" role="toolbar" aria-label="Route actions">
+          <md-filled-button
+            type="button"
+            class="dir-start-btn"
+            onClick={onStart}
+          >
+            <span slot="icon" className="steps-start-icon" aria-hidden>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                focusable="false"
+              >
+                <path
+                  fill="currentColor"
+                  d="M12 3.2 5.2 20.1l.65.34L12 17.4l6.15 3.04.65-.34z"
+                />
+              </svg>
+            </span>
+            Start
+          </md-filled-button>
+          <md-outlined-button type="button" onClick={onAddStop}>
+            <md-icon slot="icon">add</md-icon>
+            Add stops
+          </md-outlined-button>
         </div>
       ) : null}
     </section>

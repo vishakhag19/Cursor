@@ -4,6 +4,13 @@ import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import { formatDistance, formatDuration } from "../utils/format";
 
+const EXPLORE_CHIPS = [
+  { id: "restaurants", label: "Restaurants", icon: "restaurant", query: "restaurants" },
+  { id: "coffee", label: "Coffee", icon: "local_cafe", query: "coffee" },
+  { id: "petrol", label: "Petrol", icon: "local_gas_station", query: "petrol" },
+  { id: "grocery", label: "Grocery", icon: "local_grocery_store", query: "grocery" },
+];
+
 function useIsCompact(query = "(max-width: 800px)") {
   const [compact, setCompact] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia(query).matches : false,
@@ -19,8 +26,8 @@ function useIsCompact(query = "(max-width: 800px)") {
 }
 
 /**
- * Landing search — place card after a selection (Directions);
- * Saved underneath when no place is selected.
+ * Landing search — Google Maps mobile reference:
+ * chips under search, Home/Work/More when focused, Recent list, Saved.
  */
 export default function SearchPanel({
   query,
@@ -71,6 +78,12 @@ export default function SearchPanel({
     if (isCompact) setMobileExpanded(true);
   }
 
+  function collapseSearch() {
+    clearPlaceList();
+    onClear();
+    setMobileExpanded(false);
+  }
+
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
   const hasSaved = savedRoutes.length > 0;
@@ -82,13 +95,29 @@ export default function SearchPanel({
     hasSaved;
   const showSaved = showBody && !listVisible && !place && hasSaved;
   const showPlaceCard = Boolean(place) && !listVisible && showBody;
+  const showShortcuts = listVisible || (isCompact && mobileExpanded && !place);
+  const showChips = !listVisible && !place && !query.trim();
+  const showingRecents =
+    listVisible &&
+    !(placeList.query || "").trim() &&
+    placeList.items.some((p) => p?.isRecent || p?.fromRecent);
 
   return (
     <section
-      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""}`}
+      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""} ${showShortcuts ? "is-searching" : ""}`}
     >
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
         <div className={`search-bar ${query ? "has-query" : ""}`}>
+          {listVisible || (isCompact && mobileExpanded) ? (
+            <md-icon-button
+              type="button"
+              class="search-back-btn"
+              aria-label="Back"
+              onClick={collapseSearch}
+            >
+              <md-icon>arrow_back</md-icon>
+            </md-icon-button>
+          ) : null}
           <div className="search-bar-field">
             <SuggestInput
               id="main-search"
@@ -129,8 +158,65 @@ export default function SearchPanel({
         </div>
       </div>
 
+      {showShortcuts ? (
+        <div className="search-shortcuts" role="group" aria-label="Shortcuts">
+          <button type="button" className="search-shortcut" disabled>
+            <span className="search-shortcut-icon" aria-hidden>
+              <md-icon>home</md-icon>
+            </span>
+            <span className="search-shortcut-text">
+              <span className="search-shortcut-title">Home</span>
+              <span className="search-shortcut-sub">Set location</span>
+            </span>
+          </button>
+          <button type="button" className="search-shortcut" disabled>
+            <span className="search-shortcut-icon" aria-hidden>
+              <md-icon>work</md-icon>
+            </span>
+            <span className="search-shortcut-text">
+              <span className="search-shortcut-title">Work</span>
+              <span className="search-shortcut-sub">Set location</span>
+            </span>
+          </button>
+          <button type="button" className="search-shortcut" disabled>
+            <span className="search-shortcut-icon" aria-hidden>
+              <md-icon>more_horiz</md-icon>
+            </span>
+            <span className="search-shortcut-text">
+              <span className="search-shortcut-title">More</span>
+              <span className="search-shortcut-sub">Labels</span>
+            </span>
+          </button>
+        </div>
+      ) : null}
+
+      {showChips ? (
+        <div className="explore-chips" role="list" aria-label="Explore nearby">
+          {EXPLORE_CHIPS.map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              className="explore-chip"
+              role="listitem"
+              onClick={() => {
+                handleQueryChange(chip.query);
+                if (isCompact) setMobileExpanded(true);
+              }}
+            >
+              <md-icon>{chip.icon}</md-icon>
+              <span>{chip.label}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {listVisible && (
         <div className="landing-suggest">
+          {(showingRecents || !(placeList.query || "").trim()) && (
+            <div className="landing-suggest-head">
+              <h2 className="md-typescale-title-small">Recent</h2>
+            </div>
+          )}
           <PlaceSuggestionList
             items={placeList.items}
             query={placeList.query}

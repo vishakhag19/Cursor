@@ -2,9 +2,8 @@ import { formatDistance, formatDuration } from "../utils/format";
 import ReroutePrompt from "./ReroutePrompt";
 
 /**
- * Active turn-by-turn navigation (Feature 6 + 7).
- * Reroute suggestions interrupt here; Return to original stays available
- * after an accepted reroute.
+ * Active turn-by-turn navigation — Google Maps mobile layout:
+ * dark teal maneuver banner + bottom bar with close, ETA, alt routes.
  */
 export default function NavigationUI({
   active = false,
@@ -16,6 +15,7 @@ export default function NavigationUI({
   onRejectReroute = null,
   canReturnToOriginal = false,
   onReturnToOriginal = null,
+  onShowAlternatives = null,
 }) {
   if (!route || !active) return null;
 
@@ -26,33 +26,28 @@ export default function NavigationUI({
 
   return (
     <div className="nav-active" role="region" aria-label="Navigation">
-      <div className="nav-banner">
-        <div className="nav-banner-icon" aria-hidden>
-          <md-icon>{step?.icon || "navigation"}</md-icon>
-        </div>
-        <div className="nav-banner-body">
-          {step?.distance > 0 && (
-            <div className="nav-banner-distance md-typescale-title-medium">
-              {formatDistance(step.distance)}
-            </div>
-          )}
-          <div className="nav-banner-instruction md-typescale-title-large">
-            {step?.instruction || "Continue on the route"}
+      <div className="nav-banner-stack">
+        <div className="nav-banner">
+          <div className="nav-banner-icon" aria-hidden>
+            <md-icon>{step?.icon || "navigation"}</md-icon>
           </div>
-          {nextStep && (
-            <div className="nav-banner-then md-typescale-body-medium">
-              Then: {nextStep.instruction}
+          <div className="nav-banner-body">
+            {step?.distance > 0 && (
+              <div className="nav-banner-distance md-typescale-title-medium">
+                {formatDistance(step.distance)}
+              </div>
+            )}
+            <div className="nav-banner-instruction md-typescale-title-large">
+              {step?.instruction || "Continue on the route"}
             </div>
-          )}
+          </div>
         </div>
-        <md-icon-button
-          type="button"
-          class="nav-exit-btn"
-          aria-label="Exit navigation"
-          onClick={onExit}
-        >
-          <md-icon>close</md-icon>
-        </md-icon-button>
+        {nextStep ? (
+          <div className="nav-banner-then" aria-label="Then">
+            <span className="nav-banner-then-label">Then</span>
+            <md-icon>{nextStep.icon || "arrow_upward"}</md-icon>
+          </div>
+        ) : null}
       </div>
 
       {showPrompt ? (
@@ -65,24 +60,49 @@ export default function NavigationUI({
       ) : null}
 
       <div className="nav-footer">
+        <button
+          type="button"
+          className="nav-footer-close"
+          aria-label="Exit navigation"
+          onClick={onExit}
+        >
+          <md-icon>close</md-icon>
+        </button>
+
         <div className="nav-footer-stats">
           <div className="nav-footer-eta md-typescale-headline-small">
             {formatDuration(route.duration)}
+            <md-icon class="nav-footer-eco" aria-hidden>
+              eco
+            </md-icon>
           </div>
           <div className="nav-footer-meta md-typescale-body-medium">
-            {formatDistance(route.distance)} remaining
+            {formatDistance(route.distance)}
+            {canReturnToOriginal ? " · Rerouted" : ""}
           </div>
-        </div>
-        <div className="nav-footer-actions">
           {canReturnToOriginal ? (
-            <md-text-button type="button" onClick={onReturnToOriginal}>
+            <button
+              type="button"
+              className="nav-footer-return"
+              onClick={onReturnToOriginal}
+            >
               Return to original
-            </md-text-button>
+            </button>
           ) : null}
-          <md-filled-tonal-button type="button" onClick={onExit}>
-            Exit
-          </md-filled-tonal-button>
         </div>
+
+        {onShowAlternatives ? (
+          <button
+            type="button"
+            className="nav-footer-alts"
+            aria-label="Show alternate routes"
+            onClick={onShowAlternatives}
+          >
+            <md-icon>alt_route</md-icon>
+          </button>
+        ) : (
+          <span className="nav-footer-alts-spacer" aria-hidden />
+        )}
       </div>
     </div>
   );

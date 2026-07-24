@@ -1911,6 +1911,8 @@ export default function App() {
             travelMode={travelMode}
             onTravelMode={handleTravelModeChange}
             showTollPassPrices={Boolean(routePrefs.showTollPassPrices)}
+            routePrefs={routePrefs}
+            onRoutePrefsChange={handleRoutePrefsChange}
           />
         )}
       </aside>
@@ -2160,6 +2162,18 @@ export default function App() {
                 onRejectReroute={rejectReroute}
                 canReturnToOriginal={acceptedReroute && Boolean(navOriginalRoute)}
                 onReturnToOriginal={returnToOriginalRoute}
+                onShowAlternatives={() => {
+                  const alt = routeOptions.find(
+                    (r) => r.id !== selectedRoute.id && !r.edited,
+                  );
+                  if (alt) {
+                    setSelectedRouteId(alt.id);
+                    setRerouteSuggestion(null);
+                    showStatus(`Switched to ${alt.label || "alternate route"}`);
+                  } else {
+                    showStatus("No alternate routes available");
+                  }
+                }}
               />
             )}
           </>
