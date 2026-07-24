@@ -3633,9 +3633,7 @@ md-text-button {
   animation: reroute-in 200ms ease-out;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "handle handle"
-    "copy actions";
+  grid-template-areas: "copy actions";
   align-items: center;
   column-gap: 12px;
   row-gap: 4px;
@@ -3650,15 +3648,6 @@ md-text-button {
     opacity: 1;
     translate: 0 0;
   }
-}
-
-.reroute-prompt-handle {
-  grid-area: handle;
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: #dadce0;
-  margin: 0 auto 2px;
 }
 
 .reroute-prompt-copy {
@@ -3705,10 +3694,6 @@ md-text-button {
     right: 64px;
     bottom: calc(80px + env(safe-area-inset-bottom, 0px));
     padding: 14px 16px 16px;
-  }
-
-  .reroute-prompt-handle {
-    margin: 0 auto 6px;
   }
 
   .reroute-prompt-detail {
