@@ -90,10 +90,6 @@ export default function RoutePrefsSheet({
             </select>
           </div>
 
-          <div className="route-pref-section-label md-typescale-title-small">
-            In your vehicle
-          </div>
-
           <label className="route-pref-row">
             <span className="route-pref-icon" aria-hidden>
               <md-icon>sell</md-icon>
