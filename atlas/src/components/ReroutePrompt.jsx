@@ -18,7 +18,6 @@ export default function ReroutePrompt({
       aria-label="Reroute suggested"
       aria-describedby="reroute-reason"
     >
-      <div className="reroute-prompt-handle" aria-hidden />
       <div className="reroute-prompt-copy">
         <div className="reroute-prompt-kicker md-typescale-label-large">
           Reroute suggested
