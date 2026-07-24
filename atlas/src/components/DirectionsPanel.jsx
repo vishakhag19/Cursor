@@ -93,7 +93,9 @@ export default function DirectionsPanel({
     clearDragGhost();
     const ghost = document.createElement("div");
     ghost.className = "dir-stop-drag-ghost";
-    ghost.innerHTML = `<span class="dir-stop-drag-ghost-label">${label}</span><span class="dir-stop-drag-ghost-value"></span>`;
+    ghost.innerHTML =
+      '<span class="dir-stop-drag-ghost-label"></span><span class="dir-stop-drag-ghost-value"></span>';
+    ghost.querySelector(".dir-stop-drag-ghost-label").textContent = label;
     ghost.querySelector(".dir-stop-drag-ghost-value").textContent = value;
     const width = field?.offsetWidth || 260;
     ghost.style.width = `${width}px`;
