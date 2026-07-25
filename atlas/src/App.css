@@ -2786,10 +2786,33 @@ md-text-button {
     overflow: hidden;
   }
 
-  .app:has(.search-panel.has-suggest) .panel.is-search-chrome .search-panel,
-  .app:has(.search-panel.has-place) .panel.is-search-chrome .search-panel {
+  /*
+   * Focused / suggestions / place card: edge-to-edge — no left/right/top
+   * inset so the search field can use the full panel width.
+   */
+  .panel.is-search-chrome .search-panel.is-searching,
+  .panel.is-search-chrome .search-panel.has-suggest,
+  .panel.is-search-chrome .search-panel.has-place {
+    --search-card-inset: 0px;
+    width: 100%;
+    max-width: none;
     max-height: min(70dvh, 560px);
-    border-radius: 28px;
+    margin: 0;
+    padding: max(8px, env(safe-area-inset-top, 0px)) 12px 12px;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid rgba(60, 64, 67, 0.12);
+    border-radius: 0 0 16px 16px;
+    box-shadow:
+      0 1px 2px rgba(60, 64, 67, 0.12),
+      0 4px 16px rgba(60, 64, 67, 0.16);
+    overflow: hidden;
+  }
+
+  .panel.is-search-chrome .search-panel.is-searching .search-bar,
+  .panel.is-search-chrome .search-panel.has-suggest .search-bar,
+  .panel.is-search-chrome .search-panel.has-place .search-bar {
+    box-shadow: none;
   }
 
   .app.panel-collapsed .panel {
