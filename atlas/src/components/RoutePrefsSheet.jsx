@@ -295,7 +295,7 @@ export default function RoutePrefsSheet({
               </span>
               <span className="route-pref-copy">
                 <span className="md-typescale-body-large">{f.label}</span>
-                {f.id === "preferFuelEfficient" ? (
+                {f.hint ? (
                   <span className="md-typescale-body-small route-sheet-sub">
                     {f.hint}
                   </span>

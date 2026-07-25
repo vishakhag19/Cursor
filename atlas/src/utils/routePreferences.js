@@ -9,6 +9,10 @@ export const DEFAULT_ROUTE_PREFS = {
   avoidTolls: false,
   avoidHighways: false,
   avoidFerries: false,
+  preferScenic: false,
+  fewestTurns: false,
+  preferMajorRoads: false,
+  preferRoadQuality: false,
   preferFuelEfficient: false,
   /** Driving avatar for navigation chrome */
   drivingAvatar: "arrow",
@@ -51,6 +55,30 @@ export const ROUTE_OPTION_FIELDS = [
     label: "Avoid ferries",
     hint: "Stay on land routes when possible",
     icon: "directions_boat",
+  },
+  {
+    id: "preferScenic",
+    label: "Scenic roads",
+    hint: "Favor parkways and scenic named corridors",
+    icon: "landscape",
+  },
+  {
+    id: "fewestTurns",
+    label: "Fewest turns",
+    hint: "Prefer simpler routes with fewer maneuvers",
+    icon: "turn_right",
+  },
+  {
+    id: "preferMajorRoads",
+    label: "Major roads",
+    hint: "Stay on highways and arterials when possible",
+    icon: "highway",
+  },
+  {
+    id: "preferRoadQuality",
+    label: "Road quality",
+    hint: "Prefer named, well-maintained corridors",
+    icon: "verified",
   },
   {
     id: "preferFuelEfficient",

@@ -5,7 +5,7 @@ Flagged guesses from the route-control suite implementation (not product-final):
 1. **Brand label** — product name is **Maps** (document title and user-facing copy).
 2. **Traffic** — mock light/moderate/heavy from duration + turn density + route id hash. No live traffic API.
 3. **Highway / road-quality metrics** — inferred from OSRM step names & maneuver types (not OSM `highway=*` tags).
-4. **Route options** — Avoid tolls / highways / ferries + Prefer fuel-efficient, with In your vehicle (avatar, toll pass prices, engine type). Instant toggles; no Apply button.
+4. **Route options** — Avoid tolls / highways / ferries + Scenic roads / Fewest turns / Major roads / Road quality / Prefer fuel-efficient, with In your vehicle (avatar, toll pass prices, engine type). Instant toggles; no Apply button. Scenic & road quality use step-name heuristics (no OSM tourism tags).
 5. **Travel modes** — Drive, Two-wheeler, Transit, Walk, Bicycle, Ride. Transit is UI-only (unsupported by public OSRM). Two-wheeler and Ride use the driving profile.
 6. **Reroute demo** — fires ~5–12s after Start with copy “Accident reported ahead…”. Timing and incident story are placeholders for usability testing.
 7. **Road rules home** — Avoided roads live under Route preferences → Your road rules (not Saved). Saved is custom routes only.

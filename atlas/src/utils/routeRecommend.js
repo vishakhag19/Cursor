@@ -91,6 +91,29 @@ export function estimateNamedRoadShare(steps = []) {
   return total > 0 ? named / total : 0.5;
 }
 
+/**
+ * Soft scenic score (0–1): keyword corridors + named surface roads.
+ * ASSUMPTION: no scenic/OSM tourism tags from public OSRM — name heuristics only.
+ */
+export function estimateScenicShare(steps = []) {
+  if (!steps.length) return 0;
+  let scenicDist = 0;
+  let total = 0;
+  const scenicRe =
+    /\b(scenic|parkway|coast|ocean|lake|river|mountain|canyon|vista|overlook|byway|park|forest|beach|shore|ridge|valley|falls|bluff|harbor|bay|cliff|waterfall|preserve|trail)\b/i;
+  for (const s of steps) {
+    const d = s.distance || 0;
+    total += d;
+    const blob = `${s.name || ""} ${s.instruction || ""}`;
+    if (scenicRe.test(blob)) scenicDist += d;
+  }
+  const keywordShare = total > 0 ? scenicDist / total : 0;
+  const hwy = estimateHighwayShare(steps);
+  const named = estimateNamedRoadShare(steps);
+  // Scenic picks usually leave freeways for named surface corridors.
+  return Math.min(1, keywordShare * 0.75 + (1 - hwy) * named * 0.35);
+}
+
 function pickTraffic(route) {
   // Deterministic mock: longer + more turny corridors skew heavier.
   const turns = countTurns(route.steps);
@@ -119,6 +142,10 @@ function routeUsesRoad(route, roadName) {
 export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
   const turns = route.metrics?.turns ?? countTurns(route.steps);
   const hwy = route.metrics?.highwayShare ?? estimateHighwayShare(route.steps);
+  const named =
+    route.metrics?.namedShare ?? estimateNamedRoadShare(route.steps);
+  const scenic =
+    route.metrics?.scenicShare ?? estimateScenicShare(route.steps);
   const traffic = route.traffic?.id || "moderate";
 
   // Base: blend duration (sec) with a light distance term.
@@ -130,6 +157,16 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
   if (prefs.avoidHighways) cost += hwy * 4200;
   if (prefs.avoidTolls && route.metrics?.mayHaveTolls) cost += 2800;
   if (prefs.avoidFerries && route.metrics?.mayHaveFerry) cost += 5000;
+
+  // Soft prefer bias — toggles in Route options must change rank order.
+  if (prefs.fewestTurns) cost += turns * 45;
+  if (prefs.preferMajorRoads) cost += (1 - hwy) * 900;
+  if (prefs.preferRoadQuality) cost += (1 - named) * 800;
+  if (prefs.preferScenic) {
+    cost += (1 - scenic) * 1100;
+    cost += hwy * 400;
+  }
+
   if (prefs.preferFuelEfficient) {
     // Soft eco bias: prefer less highway for hybrid/EV; diesel ok on hwy.
     const engine = prefs.engineType || "gas";
@@ -162,7 +199,7 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
   return cost;
 }
 
-function buildReason(route, prefs, rank, fastestId, shortestId, _fewestTurnsId) {
+function buildReason(route, prefs, rank, fastestId, shortestId, fewestTurnsId) {
   const hwy = route.metrics?.highwayShare ?? 0;
   const turns = route.metrics?.turns ?? 0;
   const traffic = route.traffic;
@@ -170,6 +207,18 @@ function buildReason(route, prefs, rank, fastestId, shortestId, _fewestTurnsId) 
   // Preference-aware reasons first so toggles feel real.
   if (prefs.avoidHighways && hwy < 0.08 && rank === 0) {
     return "Avoids highways · stays on surface streets";
+  }
+  if (prefs.fewestTurns && route.id === fewestTurnsId && rank === 0) {
+    return "Fewest turns · simpler drive";
+  }
+  if (prefs.preferScenic && rank === 0) {
+    return "More scenic corridors · matches your preference";
+  }
+  if (prefs.preferMajorRoads && rank === 0) {
+    return "Stays on major roads · matches your preference";
+  }
+  if (prefs.preferRoadQuality && rank === 0) {
+    return "Higher road quality · named, maintained corridors";
   }
   if (prefs.preferFuelEfficient && rank === 0) {
     return "Fuel-efficient pick · similar ETA, lower estimated use";
@@ -256,6 +305,7 @@ export function enrichAndRankRoutes(
     const turns = countTurns(r.steps);
     const highwayShare = estimateHighwayShare(r.steps);
     const namedShare = estimateNamedRoadShare(r.steps);
+    const scenicShare = estimateScenicShare(r.steps);
     const traffic = pickTraffic(r);
     const stepBlob = (r.steps || [])
       .map((s) => `${s.name || ""} ${s.instruction || ""}`)
@@ -268,7 +318,14 @@ export function enrichAndRankRoutes(
     const mayHaveFerry = /ferry|boat/i.test(stepBlob);
     return {
       ...r,
-      metrics: { turns, highwayShare, namedShare, mayHaveTolls, mayHaveFerry },
+      metrics: {
+        turns,
+        highwayShare,
+        namedShare,
+        scenicShare,
+        mayHaveTolls,
+        mayHaveFerry,
+      },
       traffic,
     };
   });
@@ -312,6 +369,7 @@ export function enrichAndRankRoutes(
     if (i === 0) badge = badge || "Recommended";
     else if (r.id === fastest?.id) badge = "Fastest";
     else if (r.id === shortest?.id) badge = "Shortest";
+    else if (prefs.fewestTurns && r.id === fewest?.id) badge = "Fewest turns";
     return {
       ...r,
       rank: i + 1,
