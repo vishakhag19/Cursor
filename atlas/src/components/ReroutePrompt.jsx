@@ -70,12 +70,12 @@ export default function ReroutePrompt({
         ) : null}
       </div>
       <div className="reroute-prompt-actions">
-        <md-outlined-button type="button" onClick={onReject}>
-          Reject
-        </md-outlined-button>
         <md-filled-button type="button" onClick={onAccept}>
           Accept
         </md-filled-button>
+        <md-outlined-button type="button" onClick={onReject}>
+          Reject
+        </md-outlined-button>
       </div>
     </div>
   );

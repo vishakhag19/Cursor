@@ -494,6 +494,9 @@ export default function RoutePrefsSheet({
                   </select>
                 </label>
                 <div className="road-rule-add-actions">
+                  <md-filled-button type="submit" class="road-rule-add-action">
+                    Add road
+                  </md-filled-button>
                   {onPickRoadOnMap ? (
                     <md-outlined-button
                       type="button"
@@ -503,9 +506,6 @@ export default function RoutePrefsSheet({
                       Pick on map
                     </md-outlined-button>
                   ) : null}
-                  <md-filled-button type="submit" class="road-rule-add-action">
-                    Add road
-                  </md-filled-button>
                 </div>
               </form>
             ) : null}

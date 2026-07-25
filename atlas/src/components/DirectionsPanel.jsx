@@ -1072,12 +1072,6 @@ export default function DirectionsPanel({
                 </p>
               ) : null}
               <div className="dir-save-actions btn-row">
-                <md-outlined-button
-                  type="button"
-                  onClick={closeSaveForm}
-                >
-                  Cancel
-                </md-outlined-button>
                 <md-filled-button
                   type="button"
                   disabled={Boolean(saveNameError) || undefined}
@@ -1085,6 +1079,12 @@ export default function DirectionsPanel({
                 >
                   Save route
                 </md-filled-button>
+                <md-outlined-button
+                  type="button"
+                  onClick={closeSaveForm}
+                >
+                  Cancel
+                </md-outlined-button>
               </div>
             </form>
           ) : null}
