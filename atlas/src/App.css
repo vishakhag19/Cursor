@@ -4389,7 +4389,8 @@ md-text-button {
   right: auto;
   /* Clear the nav footer so Accept/Reject never cover Exit */
   bottom: calc(128px + env(safe-area-inset-bottom, 0px));
-  z-index: 1320;
+  /* Below nav footer (z-index 4) inside the portaled layer */
+  z-index: 2;
   box-sizing: border-box;
   width: min(
     var(--reroute-card-max),
