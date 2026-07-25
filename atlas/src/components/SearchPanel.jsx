@@ -2,7 +2,7 @@ import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
-import { formatDistance, formatDuration } from "../utils/format";
+import RouteOptionsList from "./RouteOptionsList";
 
 function useIsCompact(query = "(max-width: 800px)") {
   const [compact, setCompact] = useState(() =>
@@ -238,37 +238,22 @@ export default function SearchPanel({
               </md-icon>
               <h2 className="md-typescale-title-small">Saved routes</h2>
             </div>
-            <ul className="landing-saved-list">
-              {savedRoutes.map((r) => (
-                <li
-                  key={`saved-${r.id}`}
-                  className="landing-saved-item is-saved"
-                >
-                  <button
-                    type="button"
-                    className="landing-saved-open"
-                    onClick={() => onLoadSaved?.(r)}
-                  >
-                    <span className="landing-saved-open-text">
-                      <span className="landing-saved-open-title">{r.name}</span>
-                      <span className="landing-saved-open-meta">
-                        {formatDistance(r.route?.distance || 0)} ·{" "}
-                        {formatDuration(r.route?.duration || 0)}
-                      </span>
-                    </span>
-                  </button>
-                  <div className="landing-saved-actions">
-                    <md-icon-button
-                      type="button"
-                      aria-label={`Delete ${r.name}`}
-                      onClick={() => onDeleteSaved?.(r.id)}
-                    >
-                      <md-icon>delete</md-icon>
-                    </md-icon-button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <RouteOptionsList
+              embedded
+              options={savedRoutes.map((r) => ({
+                id: r.id,
+                label: r.name,
+                duration: r.route?.duration || 0,
+                distance: r.route?.distance || 0,
+                saved: r,
+              }))}
+              onSelect={(opt) => onLoadSaved?.(opt.saved)}
+              onDelete={
+                onDeleteSaved
+                  ? (opt) => onDeleteSaved(opt.id)
+                  : null
+              }
+            />
           </div>
         )}
       </section>

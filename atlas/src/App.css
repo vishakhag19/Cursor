@@ -1773,9 +1773,9 @@ md-filled-tonal-button.is-edit-active {
 
 .panel.is-search-chrome .landing-saved {
   margin: 0;
-  padding: 4px 12px 4px;
-  /* 8px shorter than previous calc(3 * 52px + 36px) */
-  max-height: calc(3 * 52px + 28px);
+  padding: 4px 12px 8px;
+  /* ~2 route-option cards + heading; scroll for more */
+  max-height: calc(2 * 72px + 8px + 40px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1794,6 +1794,27 @@ md-filled-tonal-button.is-edit-active {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+.panel.is-search-chrome .landing-saved .route-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel.is-search-chrome .landing-saved .route-option-cards {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.panel.is-search-chrome .landing-saved .route-option-card {
+  padding: 10px 12px;
+  border-radius: 14px;
 }
 
 .panel.is-search-chrome .landing-saved-list {
@@ -2222,6 +2243,11 @@ md-outlined-text-field {
   gap: 8px;
 }
 
+.route-options.is-embedded {
+  gap: 0;
+  min-height: 0;
+}
+
 .route-options-header {
   display: flex;
   align-items: center;
@@ -2237,6 +2263,18 @@ md-outlined-text-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.route-option-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+}
+
+.route-option-row .route-option-card {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .route-option-card {
@@ -2256,7 +2294,8 @@ md-outlined-text-field {
   border-color: var(--atlas-control-outline);
 }
 
-.route-option-card.is-active {
+.route-option-card.is-active,
+.route-option-row.is-active .route-option-card {
   border-color: var(--atlas-control-outline);
   background: var(--atlas-accent-container);
   color: inherit;
@@ -2268,6 +2307,41 @@ md-outlined-text-field {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 4px;
+}
+
+.route-option-top strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-option-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 2px 0 0;
+}
+
+.route-option-actions md-icon-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  margin: 0;
+  --md-icon-button-state-layer-width: 28px;
+  --md-icon-button-state-layer-height: 28px;
+  --md-icon-button-state-layer-size: 28px;
+  --md-icon-button-icon-size: 18px;
+  --md-icon-button-icon-color: #70757a;
+  --md-icon-button-hover-icon-color: #70757a;
+  --md-icon-button-pressed-icon-color: #70757a;
+  --md-icon-button-focus-icon-color: #70757a;
+}
+
+.route-option-actions md-icon-button md-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 
 .route-check {
