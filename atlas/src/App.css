@@ -1078,12 +1078,35 @@ md-icon-button.dir-add-stop:hover {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   min-height: 52px;
   margin: 0;
-  padding: 6px 16px;
+  padding: 6px 8px;
   box-sizing: border-box;
+}
+
+.landing-saved-rename md-icon-button.landing-saved-rename-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
+  --md-icon-button-state-layer-width: 40px;
+  --md-icon-button-state-layer-height: 40px;
+  --md-icon-button-state-layer-size: 40px;
+  --md-icon-button-icon-size: 24px;
+  --md-icon-button-icon-color: #5f6368;
+  --md-icon-button-hover-icon-color: #202124;
+  --md-icon-button-pressed-icon-color: #202124;
+  --md-icon-button-focus-icon-color: #202124;
+}
+
+.landing-saved-rename md-icon-button.landing-saved-rename-btn md-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 .landing-saved-rename-input {
@@ -1091,7 +1114,7 @@ md-icon-button.dir-add-stop:hover {
   min-width: 0;
   height: 40px;
   margin: 0;
-  padding: 0 18px;
+  padding: 0 16px;
   border: 1px solid var(--atlas-control-outline, rgba(60, 64, 67, 0.18));
   border-radius: 999px;
   background: #fff;
