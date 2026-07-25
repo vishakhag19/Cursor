@@ -3,10 +3,16 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden;
+  /* Keep document scrollable enough for browser overscroll / PTR attempts.
+     The app shell (#root) stays fixed so the map layout does not shift. */
+  overflow: auto;
+  overscroll-behavior-y: auto;
 }
 
 #root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
   height: 100%;
   overflow: hidden;
 }

@@ -2241,8 +2241,7 @@ export default function App() {
     return { top: 48, right: 72, bottom: 48, left: 420 };
   }, [panelOpen, view, sheetHeightFrac]);
 
-  const pullToRefreshEnabled =
-    isCompact && !navigating && view === "search" && !roadPickMode;
+  const pullToRefreshEnabled = isCompact && !navigating && !roadPickMode;
 
   const reloadApp = useCallback(() => {
     window.location.reload();

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
-const DEFAULT_THRESHOLD_PX = 72;
-const MAX_PULL_PX = 120;
-const TOP_EDGE_PX = 96;
+const DEFAULT_THRESHOLD_PX = 64;
+const MAX_PULL_PX = 128;
 
 function isScrollableOverflow(el) {
   if (!el || el === document.body || el === document.documentElement) {
@@ -27,9 +26,18 @@ function touchFromEvent(e) {
   return e.touches?.[0] || e.changedTouches?.[0] || null;
 }
 
+function topPullZonePx() {
+  const h =
+    window.visualViewport?.height ||
+    window.innerHeight ||
+    document.documentElement?.clientHeight ||
+    640;
+  return Math.max(120, Math.round(h * 0.4));
+}
+
 /**
- * Mobile pull-to-refresh for overflow:hidden SPAs (native PTR is disabled).
- * Skips map pans (except a top chrome strip) and scrolled inner lists.
+ * Mobile pull-to-refresh for overflow:hidden map SPAs.
+ * Native browser PTR is usually blocked; this reloads the page instead.
  */
 export default function usePullToRefresh({
   enabled,
@@ -41,33 +49,45 @@ export default function usePullToRefresh({
   const tracking = useRef(null);
   const pullPxRef = useRef(0);
   const refreshingRef = useRef(false);
+  const onRefreshRef = useRef(onRefresh);
+
+  useEffect(() => {
+    onRefreshRef.current = onRefresh;
+  }, [onRefresh]);
 
   useEffect(() => {
     refreshingRef.current = refreshing;
   }, [refreshing]);
 
   useEffect(() => {
-    if (!enabled || typeof window === "undefined") return undefined;
+    if (!enabled || typeof window === "undefined") {
+      pullPxRef.current = 0;
+      setPullPx(0);
+      return undefined;
+    }
 
     function setPull(next) {
       pullPxRef.current = next;
       setPullPx(next);
     }
 
+    function canStartFromTarget(target, clientY) {
+      if (findScrolledAncestor(target)) return false;
+
+      const onMap = Boolean(target?.closest?.(".leaflet-container"));
+      if (!onMap) return true;
+
+      /* Map: only start a refresh pull from the upper portion of the screen. */
+      const top =
+        (window.visualViewport?.offsetTop || 0) + topPullZonePx();
+      return clientY <= top;
+    }
+
     function onTouchStart(e) {
       if (refreshingRef.current) return;
       const t = touchFromEvent(e);
       if (!t || e.touches.length !== 1) return;
-
-      const target = e.target;
-      if (target?.closest?.(".leaflet-container")) {
-        /* Only allow PTR from the top chrome strip over the map. */
-        if (t.clientY > TOP_EDGE_PX + (window.visualViewport?.offsetTop || 0)) {
-          tracking.current = null;
-          return;
-        }
-      }
-      if (findScrolledAncestor(target)) {
+      if (!canStartFromTarget(e.target, t.clientY)) {
         tracking.current = null;
         return;
       }
@@ -76,6 +96,7 @@ export default function usePullToRefresh({
         startY: t.clientY,
         startX: t.clientX,
         active: false,
+        onMap: Boolean(e.target?.closest?.(".leaflet-container")),
       };
     }
 
@@ -89,8 +110,9 @@ export default function usePullToRefresh({
       const dx = t.clientX - track.startX;
 
       if (!track.active) {
-        if (dy < 10) return;
-        if (Math.abs(dx) > Math.abs(dy) * 0.7) {
+        if (dy < 8) return;
+        /* Horizontal / map pan wins over refresh. */
+        if (Math.abs(dx) > Math.abs(dy) * 0.65) {
           tracking.current = null;
           return;
         }
@@ -102,12 +124,10 @@ export default function usePullToRefresh({
         return;
       }
 
-      const resisted = Math.min(MAX_PULL_PX, dy * 0.45);
+      const resisted = Math.min(MAX_PULL_PX, dy * 0.5);
       setPull(resisted);
 
-      if (e.cancelable && track.active) {
-        e.preventDefault();
-      }
+      if (e.cancelable) e.preventDefault();
     }
 
     function finish() {
@@ -119,37 +139,44 @@ export default function usePullToRefresh({
       }
 
       const resisted = pullPxRef.current;
-      setPull(0);
+      if (resisted < threshold) {
+        setPull(0);
+        return;
+      }
 
-      if (resisted >= threshold) {
-        refreshingRef.current = true;
-        setRefreshing(true);
+      refreshingRef.current = true;
+      setRefreshing(true);
+      setPull(Math.max(resisted, threshold));
+
+      /* Defer so the spinner can paint before unload. */
+      window.setTimeout(() => {
         try {
-          onRefresh?.();
+          onRefreshRef.current?.();
         } catch {
           refreshingRef.current = false;
           setRefreshing(false);
+          setPull(0);
         }
-      }
+      }, 40);
     }
 
     const moveOpts = { passive: false, capture: true };
-    const bubbleOpts = { passive: true, capture: true };
-    window.addEventListener("touchstart", onTouchStart, bubbleOpts);
+    const startOpts = { passive: true, capture: true };
+    window.addEventListener("touchstart", onTouchStart, startOpts);
     window.addEventListener("touchmove", onTouchMove, moveOpts);
-    window.addEventListener("touchend", finish, bubbleOpts);
-    window.addEventListener("touchcancel", finish, bubbleOpts);
+    window.addEventListener("touchend", finish, startOpts);
+    window.addEventListener("touchcancel", finish, startOpts);
 
     return () => {
-      window.removeEventListener("touchstart", onTouchStart, bubbleOpts);
+      window.removeEventListener("touchstart", onTouchStart, startOpts);
       window.removeEventListener("touchmove", onTouchMove, moveOpts);
-      window.removeEventListener("touchend", finish, bubbleOpts);
-      window.removeEventListener("touchcancel", finish, bubbleOpts);
+      window.removeEventListener("touchend", finish, startOpts);
+      window.removeEventListener("touchcancel", finish, startOpts);
     };
-  }, [enabled, onRefresh, threshold]);
+  }, [enabled, threshold]);
 
   return {
-    pullPx: refreshing ? Math.max(pullPx, threshold * 0.75) : pullPx,
+    pullPx: refreshing ? Math.max(pullPx, threshold * 0.8) : pullPx,
     refreshing,
     armed: pullPx >= threshold || refreshing,
   };
