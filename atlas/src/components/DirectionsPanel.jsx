@@ -849,7 +849,8 @@ export default function DirectionsPanel({
                     class={`dir-save-btn${routeIsSaved ? " is-saved" : ""}`}
                     aria-label={routeIsSaved ? "Unsave route" : "Save route"}
                     aria-pressed={routeIsSaved ? "true" : "false"}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (routeIsSaved && savedMatch?.id) {
                         onUnsaveRoute?.(savedMatch.id);
                         setSaving(false);
@@ -857,12 +858,8 @@ export default function DirectionsPanel({
                         setSaveNameError("");
                         return;
                       }
-                      if (saving) {
-                        setSaving(false);
-                        setSaveName("");
-                        setSaveNameError("");
-                        return;
-                      }
+                      // Form already open — ignore (avoids touch ghost-click toggle-off).
+                      if (saving) return;
                       const from = stops[0]?.name || "Start";
                       const to =
                         stops[stops.length - 1]?.name || "Destination";
