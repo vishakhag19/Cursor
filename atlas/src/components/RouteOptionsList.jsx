@@ -167,17 +167,6 @@ export default function RouteOptionsList({
                         commitRename(opt);
                       }}
                     >
-                      <md-icon-button
-                        type="button"
-                        class="landing-saved-rename-btn"
-                        aria-label="Cancel rename"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          cancelRename();
-                        }}
-                      >
-                        <md-icon>close</md-icon>
-                      </md-icon-button>
                       <input
                         ref={renameInputRef}
                         className="landing-saved-rename-input"
@@ -203,6 +192,17 @@ export default function RouteOptionsList({
                         }}
                       >
                         <md-icon>check</md-icon>
+                      </md-icon-button>
+                      <md-icon-button
+                        type="button"
+                        class="landing-saved-rename-btn"
+                        aria-label="Cancel rename"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          cancelRename();
+                        }}
+                      >
+                        <md-icon>close</md-icon>
                       </md-icon-button>
                     </form>
                   ) : (
