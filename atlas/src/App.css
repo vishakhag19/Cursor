@@ -3799,8 +3799,8 @@ md-text-button {
 }
 
 /*
- * Same compact mobile card on phone / tablet / desktop:
- * stacked Accept·Reject, width capped (~360), horizontally centered.
+ * Tablet / desktop: compact centered card (~360).
+ * Phone-only full-bleed override is in the max-width: 480px block below.
  */
 .reroute-prompt {
   --reroute-card-max: 360px;
@@ -3837,6 +3837,34 @@ md-text-button {
   to {
     opacity: 1;
     translate: -50% 0;
+  }
+}
+
+/* Phone only — span the screen edge-to-edge (not tablet / desktop) */
+@media (max-width: 480px) {
+  .reroute-prompt {
+    --reroute-card-inset: 0px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    border-radius: 16px 16px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    translate: none;
+    animation-name: reroute-in-phone;
+  }
+
+  @keyframes reroute-in-phone {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
   }
 }
 
