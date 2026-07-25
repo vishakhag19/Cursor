@@ -54,12 +54,12 @@ function routeTimeIcon(label, active = false) {
   const key = `${label}-${active ? 1 : 0}`;
   const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
-  // Sized box + anchor so the chip sits beside (not on) the polyline.
+  // Sized box + anchor so the chip sits just beside the polyline.
   const icon = L.divIcon({
     className: "atlas-route-time",
     html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${label}</div>`,
-    iconSize: [88, 32],
-    iconAnchor: [-10, 40],
+    iconSize: [72, 28],
+    iconAnchor: [36, 34],
   });
   ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
