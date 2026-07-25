@@ -951,6 +951,7 @@ md-icon.is-filled {
 .atlas-route-time {
   background: transparent !important;
   border: none !important;
+  pointer-events: none !important;
 }
 
 .map-route-time {
@@ -966,8 +967,10 @@ md-icon.is-filled {
   font: 600 12px/1.2 Roboto, system-ui, sans-serif;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(60, 64, 67, 0.15);
-  transform: translate(-50%, -100%);
-  cursor: pointer;
+  /* Float clear of the polyline so reshape hits the route, not the chip */
+  transform: translate(12px, -36px);
+  pointer-events: none !important;
+  cursor: default;
   box-sizing: border-box;
 }
 

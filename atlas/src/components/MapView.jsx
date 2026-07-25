@@ -598,29 +598,24 @@ export default function MapView({
           );
         })}
 
-      {/* Travel-time chips — hidden while editing so they don't block reshape */}
-      {!showRouteEditor &&
-        routeOptions.map((opt, index) => {
-          const fraction = 0.38 + (index % 3) * 0.12;
-          const mid = geometryLabelPoint(opt?.geometry, fraction);
-          if (!mid) return null;
-          const active = opt.id === selectedRouteId;
-          const label = formatDuration(opt.duration);
-          return (
-            <Marker
-              key={`time-${opt.id}`}
-              position={[mid.lat, mid.lng]}
-              icon={routeTimeIcon(label, active)}
-              zIndexOffset={active ? 1600 : 1400}
-              eventHandlers={{
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  onSelectRoute?.(opt);
-                },
-              }}
-            />
-          );
-        })}
+      {/* Travel-time chips sit off the line and never capture pointer events */}
+      {routeOptions.map((opt, index) => {
+        const fraction = 0.38 + (index % 3) * 0.12;
+        const mid = geometryLabelPoint(opt?.geometry, fraction);
+        if (!mid) return null;
+        const active = opt.id === selectedRouteId;
+        const label = formatDuration(opt.duration);
+        return (
+          <Marker
+            key={`time-${opt.id}`}
+            position={[mid.lat, mid.lng]}
+            icon={routeTimeIcon(label, active)}
+            interactive={false}
+            keyboard={false}
+            zIndexOffset={active ? 1600 : 1400}
+          />
+        );
+      })}
 
       {showRouteEditor && (
         <RouteEditorLayer
