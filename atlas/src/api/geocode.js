@@ -73,21 +73,42 @@ function dedupePlaces(places) {
   });
 }
 
-function rankByDistance(places, near, limit) {
-  if (!near?.lat || !near?.lng) return places.slice(0, limit);
-  const NEARBY_M = 80000;
-  return places
-    .map((p) => ({
-      ...p,
-      distanceMeters: haversineMeters(near, p),
-    }))
-    .sort((a, b) => {
+function nameMatchRank(place, query) {
+  const q = (query || "").trim().toLowerCase();
+  if (!q) return 3;
+  const name = (place?.name || "").toLowerCase();
+  if (name === q) return 0;
+  if (name.startsWith(q)) return 1;
+  if (name.includes(q)) return 2;
+  const display = (place?.display_name || "").toLowerCase();
+  if (display.startsWith(q) || display.includes(`, ${q},`)) return 2;
+  return 3;
+}
+
+function rankSearchResults(places, query, near, limit) {
+  const withMeta = places.map((p) => ({
+    ...p,
+    distanceMeters:
+      near?.lat != null && near?.lng != null
+        ? haversineMeters(near, p)
+        : null,
+    _match: nameMatchRank(p, query),
+  }));
+
+  withMeta.sort((a, b) => {
+    // Exact / prefix name matches beat "nearby road that contains the letters".
+    if (a._match !== b._match) return a._match - b._match;
+    if (near?.lat != null && near?.lng != null) {
+      const NEARBY_M = 80000;
       const aNear = a.distanceMeters <= NEARBY_M ? 0 : 1;
       const bNear = b.distanceMeters <= NEARBY_M ? 0 : 1;
       if (aNear !== bNear) return aNear - bNear;
       return a.distanceMeters - b.distanceMeters;
-    })
-    .slice(0, limit);
+    }
+    return 0;
+  });
+
+  return withMeta.slice(0, limit).map(({ _match, ...rest }) => rest);
 }
 
 async function nominatimSearch(
@@ -110,10 +131,11 @@ async function nominatimSearch(
     );
     url.searchParams.set("bounded", bounded ? "1" : "0");
   }
+  // Do not set User-Agent — browsers forbid it and a custom value can force a
+  // CORS preflight that Nominatim rejects (fetch then fails with a blank UI).
   const res = await fetch(url.toString(), {
     headers: {
       Accept: "application/json",
-      "User-Agent": "Maps/1.0 (route editor)",
     },
     signal: AbortSignal.timeout(8000),
   });
@@ -124,8 +146,9 @@ async function nominatimSearch(
 }
 
 /**
- * Search places, preferring nearby matches when `near` is available.
- * Local (bounded) results first, then a wider fallback so rare names still work.
+ * Search places. Uses a single Nominatim request (usage-policy friendly).
+ * When `near` is set, bias with an unbounded viewbox, then fall back to a
+ * global query if that returns nothing — never swallow both into [].
  */
 export async function searchPlaces(query, { limit = 8, near = null } = {}) {
   const q = query.trim();
@@ -134,27 +157,28 @@ export async function searchPlaces(query, { limit = 8, near = null } = {}) {
   const fetchLimit = Math.max(limit * 2, 16);
 
   if (near?.lat != null && near?.lng != null) {
-    // Local + wider in parallel so typeahead feels live while typing.
-    const [local, wider] = await Promise.all([
-      nominatimSearch(q, {
-        near,
-        bounded: true,
-        viewboxDelta: 0.22,
-        limit: fetchLimit,
-      }).catch(() => []),
-      nominatimSearch(q, {
-        near,
-        bounded: false,
-        viewboxDelta: 0.55,
-        limit: fetchLimit,
-      }).catch(() => []),
-    ]);
+    // One biased request first (not 2–3 in parallel — Nominatim rate-limits).
+    let biased = await nominatimSearch(q, {
+      near,
+      bounded: false,
+      viewboxDelta: 0.55,
+      limit: fetchLimit,
+    }).catch(() => []);
 
-    return rankByDistance(dedupePlaces([...local, ...wider]), near, limit);
+    if (!biased.length) {
+      biased = await nominatimSearch(q, { limit: fetchLimit });
+    } else if (biased.length < limit) {
+      const global = await nominatimSearch(q, { limit: fetchLimit }).catch(
+        () => [],
+      );
+      biased = dedupePlaces([...biased, ...global]);
+    }
+
+    return rankSearchResults(biased, q, near, limit);
   }
 
   const places = await nominatimSearch(q, { limit: fetchLimit });
-  return places.slice(0, limit);
+  return rankSearchResults(places, q, null, limit);
 }
 
 const ROAD_HIGHWAY_TYPES = new Set([
@@ -227,7 +251,6 @@ async function nominatimStreetSearch(
   const res = await fetch(url.toString(), {
     headers: {
       Accept: "application/json",
-      "User-Agent": "Maps/1.0 (route editor)",
     },
     signal: AbortSignal.timeout(8000),
   });
@@ -332,7 +355,7 @@ export async function searchRoads(query, { limit = 5, near = null } = {}) {
   });
   const pool = matched.length ? matched : candidates;
 
-  const ranked = rankByDistance(pool, near, fetchLimit);
+  const ranked = rankSearchResults(pool, q, near, fetchLimit);
   const seen = new Set();
   const out = [];
   for (const place of ranked) {
