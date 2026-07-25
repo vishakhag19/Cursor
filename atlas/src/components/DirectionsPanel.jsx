@@ -124,10 +124,18 @@ export default function DirectionsPanel({
   useEffect(() => () => clearDragGhost(), []);
 
   function handleListChange(index, payload) {
-    if (activeStop !== index && !payload.open) return;
-    if (payload.open || activeStop === index) {
+    // Opening always wins for that field (activeStop setState can lag focus).
+    if (payload.open) {
+      setActiveStop(index);
       setPlaceList(payload);
+      return;
     }
+    // Ignore close events from fields that no longer own the list.
+    setActiveStop((current) => {
+      if (current != null && current !== index) return current;
+      setPlaceList(payload);
+      return current === index ? null : current;
+    });
   }
 
   function clearPlaceList() {
@@ -384,7 +392,7 @@ export default function DirectionsPanel({
                           : "Add stop"
                     }
                     currentLocation={currentLocation}
-                    allowCurrentLocation={i === 0 || i === stops.length - 1}
+                    allowCurrentLocation
                     recentPlaces={recentPlaces}
                     near={near}
                     onRequestLocation={onRequestLocation}

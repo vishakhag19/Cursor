@@ -44,6 +44,20 @@ export default function MdTextField({
     return () => el.removeEventListener("keydown", handler);
   }, [onKeyDown]);
 
+  // focus/blur don't bubble from the inner <input>; listen on the host.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const onFocusIn = (e) => onFocus?.(e);
+    const onFocusOut = (e) => onBlur?.(e);
+    el.addEventListener("focusin", onFocusIn);
+    el.addEventListener("focusout", onFocusOut);
+    return () => {
+      el.removeEventListener("focusin", onFocusIn);
+      el.removeEventListener("focusout", onFocusOut);
+    };
+  }, [onFocus, onBlur]);
+
   return (
     <md-outlined-text-field
       ref={ref}
@@ -56,8 +70,6 @@ export default function MdTextField({
       error={error || undefined}
       supporting-text={supportingText}
       maxlength={maxLength}
-      onFocus={onFocus}
-      onBlur={onBlur}
     />
   );
 }

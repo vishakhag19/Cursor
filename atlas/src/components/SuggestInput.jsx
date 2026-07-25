@@ -354,6 +354,13 @@ export default function SuggestInput({
 
   function handleFocus() {
     onFocusField?.();
+    const q = (value || "").trim();
+    // Filled stop fields: search immediately so the place list opens on click.
+    if (q && q.toLowerCase() !== "your location") {
+      committedRef.current = null;
+      void runSearch(q, { forceOpen: true });
+      return;
+    }
     showDefaultList();
   }
 
