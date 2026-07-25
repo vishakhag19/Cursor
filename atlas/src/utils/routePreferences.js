@@ -11,7 +11,6 @@ export const DEFAULT_ROUTE_PREFS = {
   avoidFerries: false,
   preferScenic: false,
   fewestTurns: false,
-  preferMajorRoads: false,
   preferRoadQuality: false,
   preferFuelEfficient: false,
   /** Driving avatar for navigation chrome */
@@ -69,14 +68,8 @@ export const ROUTE_OPTION_FIELDS = [
     icon: "turn_right",
   },
   {
-    id: "preferMajorRoads",
-    label: "Major roads",
-    hint: "Stay on highways and arterials when possible",
-    icon: "highway",
-  },
-  {
     id: "preferRoadQuality",
-    label: "Road quality",
+    label: "Good roads",
     hint: "Prefer named, well-maintained corridors",
     icon: "verified",
   },

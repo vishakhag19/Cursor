@@ -136,7 +136,7 @@ function routeUsesRoad(route, roadName) {
 
 /**
  * Preference + road-rule score. Lower is better (like a cost).
- * Wired so avoidHighways, fewestTurns, preferMajorRoads (and scenic / quality)
+ * Wired so avoidHighways, fewestTurns, scenic, and good-road quality
  * actually change order — not cosmetic.
  */
 export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
@@ -160,7 +160,6 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
 
   // Soft prefer bias — toggles in Route options must change rank order.
   if (prefs.fewestTurns) cost += turns * 45;
-  if (prefs.preferMajorRoads) cost += (1 - hwy) * 900;
   if (prefs.preferRoadQuality) cost += (1 - named) * 800;
   if (prefs.preferScenic) {
     cost += (1 - scenic) * 1100;
@@ -214,11 +213,8 @@ function buildReason(route, prefs, rank, fastestId, shortestId, fewestTurnsId) {
   if (prefs.preferScenic && rank === 0) {
     return "More scenic corridors · matches your preference";
   }
-  if (prefs.preferMajorRoads && rank === 0) {
-    return "Stays on major roads · matches your preference";
-  }
   if (prefs.preferRoadQuality && rank === 0) {
-    return "Higher road quality · named, maintained corridors";
+    return "Good roads · named, maintained corridors";
   }
   if (prefs.preferFuelEfficient && rank === 0) {
     return "Fuel-efficient pick · similar ETA, lower estimated use";
