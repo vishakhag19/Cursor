@@ -60,13 +60,19 @@
 .panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 4px;
   padding: 8px 8px 6px 16px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--atlas-surface-pressed);
   background: #fff;
   flex-shrink: 0;
+}
+
+.panel-header-compact {
+  padding: 6px 8px 4px;
+  border-bottom: none;
+  min-height: 0;
 }
 
 /* Same hit target / glyph weight as Open panel; no chip fill until hover */
@@ -88,31 +94,6 @@
 md-icon-button.collapse-panel-btn:hover,
 .collapse-panel-btn:hover {
   background: var(--atlas-surface-hover);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
-  color: var(--atlas-accent);
-}
-
-.brand-logo {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  display: block;
-  border-radius: 50%;
-}
-
-.brand-name {
-  color: #202124;
-  letter-spacing: 0;
-  font-size: 1.125rem;
-  line-height: 1.25;
-  font-weight: 500;
 }
 
 .dir-sticky-chrome {
@@ -1464,13 +1445,13 @@ md-filled-tonal-button.is-edit-active {
   background: transparent;
 }
 
-/* Search chrome replaces the Maps logo header on the landing view */
+/* Landing search is the panel chrome (no brand header) */
 .panel.is-search-chrome {
   padding-top: 10px;
 }
 
 .search-bar {
-  --search-pad-l: 10px;
+  --search-pad-l: 12px;
   --search-pad-r: 4px;
   --search-action-w: 40px;
   position: relative;
@@ -1487,13 +1468,20 @@ md-filled-tonal-button.is-edit-active {
   box-sizing: border-box;
 }
 
-.search-bar-brand {
-  width: 28px;
-  height: 28px;
+.search-bar-leading {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
-  display: block;
-  border-radius: 50%;
-  margin-left: 2px;
+  color: #5f6368;
+}
+
+.search-bar-leading md-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  --md-icon-size: 22px;
 }
 
 .search-bar-field {
@@ -2933,10 +2921,6 @@ md-text-button {
 }
 
 @media (max-width: 480px) {
-  .brand-name {
-    font-size: 1.15rem;
-  }
-
   .dir-stops {
     grid-template-columns: 36px 1fr 36px;
   }

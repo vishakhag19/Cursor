@@ -1925,17 +1925,7 @@ export default function App() {
         aria-label="Map tools"
       >
         {view !== "search" ? (
-          <header className="panel-header">
-            <div className="brand">
-              <img
-                className="brand-logo"
-                src={`${import.meta.env.BASE_URL}favicon.svg`}
-                alt=""
-                width="32"
-                height="32"
-              />
-              <span className="brand-name">Maps</span>
-            </div>
+          <header className="panel-header panel-header-compact">
             <ActionTip tip="Collapse panel">
               <md-icon-button
                 type="button"
