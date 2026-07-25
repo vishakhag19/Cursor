@@ -1463,14 +1463,19 @@ md-filled-tonal-button.is-edit-active {
   background: transparent;
 }
 
+/* Search chrome replaces the Maps logo header on the landing view */
+.panel.is-search-chrome {
+  padding-top: 10px;
+}
+
 .search-bar {
-  --search-pad-l: 16px;
-  --search-pad-r: 8px;
+  --search-pad-l: 10px;
+  --search-pad-r: 4px;
   --search-action-w: 40px;
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 8px;
   padding: 4px var(--search-pad-r) 4px var(--search-pad-l);
   background: #fff;
   border: 1px solid var(--atlas-surface-pressed);
@@ -1479,6 +1484,15 @@ md-filled-tonal-button.is-edit-active {
   overflow: visible;
   min-height: 48px;
   box-sizing: border-box;
+}
+
+.search-bar-brand {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: block;
+  border-radius: 50%;
+  margin-left: 2px;
 }
 
 .search-bar-field {
@@ -1490,25 +1504,29 @@ md-filled-tonal-button.is-edit-active {
 .search-bar-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   flex-shrink: 0;
-  width: var(--search-action-w);
-  justify-content: center;
+  justify-content: flex-end;
+  min-width: 0;
   padding-right: 0;
 }
 
-.search-bar-glyph {
-  display: grid;
-  place-items: center;
-  width: var(--search-action-w);
-  height: 40px;
-  color: #5f6368;
+.search-bar-actions:empty {
+  display: none;
 }
 
-.search-bar-glyph md-icon {
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
+.search-bar .search-bar-collapse {
+  width: var(--search-action-w);
+  height: var(--search-action-w);
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 999px;
+  --md-icon-button-icon-size: 24px;
+  --md-icon-button-icon-color: #3c4043;
+}
+
+.search-bar .search-bar-collapse:hover {
+  background: var(--atlas-surface-hover);
 }
 
 .search-bar .suggest-wrap {
@@ -2691,9 +2709,9 @@ md-text-button {
     border-radius: 0;
   }
 
-  .app:has(.search-panel.is-searching) .panel-header,
-  .app:has(.search-panel.has-suggest) .panel-header {
-    display: none;
+  /* Brand header already omitted on search; keep safe-area padding on the bar */
+  .panel.is-search-chrome {
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
   }
 
   .app.panel-collapsed .panel {

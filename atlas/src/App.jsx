@@ -1920,34 +1920,39 @@ export default function App() {
     <div
       className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${roadPickMode ? "road-pick-mode" : ""}`}
     >
-      <aside className="panel m3-surface" aria-label="Map tools">
-        <header className="panel-header">
-          <div className="brand">
-            <img
-              className="brand-logo"
-              src={`${import.meta.env.BASE_URL}favicon.svg`}
-              alt=""
-              width="32"
-              height="32"
-            />
-            <span className="brand-name">Maps</span>
-          </div>
-          <ActionTip tip="Collapse panel">
-            <md-icon-button
-              type="button"
-              class="collapse-panel-btn"
-              onClick={() => {
-                setPanelOpen(false);
-                setPrefsOpen(false);
-                setRoadRulesOpen(false);
-                setAssistantOpen(false);
-              }}
-              aria-label="Collapse panel"
-            >
-              <md-icon>{isCompact ? "expand_less" : "chevron_left"}</md-icon>
-            </md-icon-button>
-          </ActionTip>
-        </header>
+      <aside
+        className={`panel m3-surface ${view === "search" ? "is-search-chrome" : ""}`}
+        aria-label="Map tools"
+      >
+        {view !== "search" ? (
+          <header className="panel-header">
+            <div className="brand">
+              <img
+                className="brand-logo"
+                src={`${import.meta.env.BASE_URL}favicon.svg`}
+                alt=""
+                width="32"
+                height="32"
+              />
+              <span className="brand-name">Maps</span>
+            </div>
+            <ActionTip tip="Collapse panel">
+              <md-icon-button
+                type="button"
+                class="collapse-panel-btn"
+                onClick={() => {
+                  setPanelOpen(false);
+                  setPrefsOpen(false);
+                  setRoadRulesOpen(false);
+                  setAssistantOpen(false);
+                }}
+                aria-label="Collapse panel"
+              >
+                <md-icon>{isCompact ? "expand_less" : "chevron_left"}</md-icon>
+              </md-icon-button>
+            </ActionTip>
+          </header>
+        ) : null}
 
         {view === "search" && (
           <SearchPanel
@@ -1972,6 +1977,13 @@ export default function App() {
             onDirectionsFrom={() => {
               if (!selectedPlace) return;
               openDirections({ from: selectedPlace });
+            }}
+            collapseIcon={isCompact ? "expand_less" : "chevron_left"}
+            onCollapsePanel={() => {
+              setPanelOpen(false);
+              setPrefsOpen(false);
+              setRoadRulesOpen(false);
+              setAssistantOpen(false);
             }}
           />
         )}

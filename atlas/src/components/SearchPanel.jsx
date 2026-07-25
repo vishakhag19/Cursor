@@ -35,6 +35,8 @@ export default function SearchPanel({
   savedRoutes = [],
   onLoadSaved = null,
   onDeleteSaved = null,
+  onCollapsePanel = null,
+  collapseIcon = "chevron_left",
 }) {
   const isCompact = useIsCompact();
   const [mobileExpanded, setMobileExpanded] = useState(false);
@@ -98,6 +100,14 @@ export default function SearchPanel({
     >
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
         <div className={`search-bar ${query ? "has-query" : ""}`}>
+          <img
+            className="search-bar-brand"
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            alt=""
+            width="28"
+            height="28"
+            aria-hidden
+          />
           <div className="search-bar-field">
             <SuggestInput
               id="main-search"
@@ -127,11 +137,17 @@ export default function SearchPanel({
               >
                 <md-icon>close</md-icon>
               </md-icon-button>
-            ) : (
-              <span className="search-bar-glyph" aria-hidden>
-                <md-icon>search</md-icon>
-              </span>
-            )}
+            ) : null}
+            {onCollapsePanel ? (
+              <md-icon-button
+                type="button"
+                class="search-bar-collapse"
+                aria-label="Collapse panel"
+                onClick={onCollapsePanel}
+              >
+                <md-icon>{collapseIcon}</md-icon>
+              </md-icon-button>
+            ) : null}
           </div>
         </div>
       </div>
