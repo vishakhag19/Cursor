@@ -2868,7 +2868,8 @@ md-text-button {
     top: max(12px, env(safe-area-inset-top, 0px));
     left: 12px;
     right: 12px;
-    z-index: 3;
+    /* Below the Drive sheet so a raised drawer never sits under the stops card */
+    z-index: 2;
     display: flex;
     flex-direction: column;
     max-height: min(42dvh, 360px);
@@ -2883,6 +2884,7 @@ md-text-button {
     overflow: hidden;
     pointer-events: auto;
     isolation: isolate;
+    transition: opacity 0.18s ease;
   }
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
@@ -2943,7 +2945,8 @@ md-text-button {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 2;
+    /* Above the stops card so drag-up covers it instead of stacking under it */
+    z-index: 3;
     display: flex;
     flex-direction: column;
     height: min(52dvh, 480px);
@@ -2951,13 +2954,14 @@ md-text-button {
     padding: 0;
     background: #fff;
     border: none;
+    /* Same top radius at peek, mid, and full */
     border-radius: 28px 28px 0 0;
     box-shadow:
       0 -1px 2px rgba(60, 64, 67, 0.08),
       0 -8px 28px rgba(60, 64, 67, 0.18);
     overflow: hidden;
     pointer-events: auto;
-    transition: height 0.22s ease, max-height 0.22s ease, border-radius 0.22s ease;
+    transition: height 0.22s ease, max-height 0.22s ease;
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-mid {
@@ -2968,7 +2972,6 @@ md-text-button {
   .panel.is-directions-chrome .dir-drive-sheet.is-full {
     height: calc(100dvh - 12px);
     max-height: calc(100dvh - 12px);
-    border-radius: 16px 16px 0 0;
   }
 
   /* Title row only — Drive / options / close */
@@ -2989,11 +2992,28 @@ md-text-button {
     transition: none;
   }
 
+  /* Mid/full (and drag) — tuck stops so they don’t compete with the drawer */
   .panel.is-directions-chrome
-    .directions-panel.is-sheet-full
+    .directions-panel.has-route-results.is-sheet-mid
+    .dir-mobile-stop-card,
+  .panel.is-directions-chrome
+    .directions-panel.has-route-results.is-sheet-full
+    .dir-mobile-stop-card,
+  .panel.is-directions-chrome
+    .directions-panel.has-route-results.is-sheet-dragging
     .dir-mobile-stop-card {
     opacity: 0;
     pointer-events: none;
+  }
+
+  .panel.is-directions-chrome
+    .directions-panel.has-route-results.is-sheet-peek:not(.is-sheet-dragging)
+    .dir-mobile-stop-card,
+  .panel.is-directions-chrome
+    .directions-panel.show-stops:not(.is-sheet-dragging)
+    .dir-mobile-stop-card {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .panel.is-directions-chrome .dir-sheet-handle {
@@ -3071,10 +3091,12 @@ md-text-button {
     flex-shrink: 0;
   }
 
+  /* Steps stay in the default (mid) sheet — not only when fully expanded */
   .panel.is-directions-chrome .dir-inline-steps {
     display: none;
   }
 
+  .panel.is-directions-chrome .dir-drive-sheet.is-mid .dir-inline-steps,
   .panel.is-directions-chrome .dir-drive-sheet.is-full .dir-inline-steps {
     display: block;
     max-height: none;
