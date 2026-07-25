@@ -3673,10 +3673,6 @@ md-text-button {
     display: contents;
   }
 
-  .dir-mobile-reshape-bar {
-    display: none !important;
-  }
-
   .dir-sheet-grabber,
   .dir-sheet-grabber-hit {
     display: none !important;
