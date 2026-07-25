@@ -3028,6 +3028,11 @@ md-text-button {
     display: none;
   }
 
+  .panel.is-directions-chrome .dir-drive-sheet.is-full .dir-inline-steps {
+    display: block;
+    max-height: none;
+  }
+
   .panel.is-directions-chrome .dir-drag-hint {
     display: none;
   }
