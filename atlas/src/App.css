@@ -985,50 +985,6 @@ md-icon-button.dir-add-stop:hover {
   margin: 0;
 }
 
-.landing-saved-rename {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  min-height: 52px;
-  margin: 0;
-  padding: 6px 16px;
-  box-sizing: border-box;
-}
-
-.landing-saved-rename-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 40px;
-  margin: 0;
-  padding: 0 18px;
-  border: 1px solid var(--atlas-control-outline, rgba(60, 64, 67, 0.18));
-  border-radius: 999px;
-  background: #fff;
-  color: #202124;
-  font: inherit;
-  font-size: 1rem;
-  line-height: 1.35;
-  box-sizing: border-box;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.landing-saved-rename-input:focus {
-  outline: none;
-  border-color: var(--atlas-accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--atlas-accent) 28%, transparent);
-}
-
-.landing-saved-item.is-renaming {
-  background: transparent;
-}
-
-.landing-saved-item.is-renaming .landing-saved-actions {
-  padding-right: 0;
-}
-
 /* Same compact bin as before — 18px glyph, 28px tap target */
 .landing-saved-actions md-icon-button {
   width: 28px;
@@ -1050,11 +1006,6 @@ md-icon-button.dir-add-stop:hover {
   font-size: 18px;
   width: 18px;
   height: 18px;
-}
-
-/* Material 3 outlined pencil — optical size tuned for compact list actions */
-.landing-saved-actions .landing-saved-edit-icon {
-  font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 20;
 }
 
 .landing-saved-open-title {
