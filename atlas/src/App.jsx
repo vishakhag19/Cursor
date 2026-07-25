@@ -34,7 +34,7 @@ import {
   travelModeMeta,
 } from "./utils/routePreferences";
 import { enrichAndRankRoutes } from "./utils/routeRecommend";
-import { removeRoadRule, upsertRoadRule } from "./utils/roadRules";
+import { removeRoadRule, upsertRoadRule, findRoadRule } from "./utils/roadRules";
 import {
   loadBlockedStreets,
   loadRecentSearches,
@@ -438,7 +438,12 @@ export default function App() {
   }, [clearEditHistory]);
 
   const runDirections = useCallback(
-    async (nextStops = stops, mode = travelMode, prefs = routePrefs) => {
+    async (
+      nextStops = stops,
+      mode = travelMode,
+      prefs = routePrefs,
+      rules = roadRules,
+    ) => {
       const resolved = nextStops.map((s, i) => {
         if (s) return s;
         const text = (stopTexts[i] || "").trim().toLowerCase();
@@ -488,7 +493,7 @@ export default function App() {
           });
         }
         // Feature 1/2/7: enrich with traffic + reasons, re-rank by prefs / road rules.
-        const ranked = enrichAndRankRoutes(options, prefs, roadRules, {
+        const ranked = enrichAndRankRoutes(options, prefs, rules, {
           limit: 5,
         });
         setRouteOptions(ranked);
@@ -1607,128 +1612,107 @@ export default function App() {
   const applyRoadRuleAt = useCallback(
     async (latlng, mode, roadOrPromise = null) => {
       const road = await (roadOrPromise || resolveRoadAt(latlng));
-      // Compute id synchronously — setState updaters aren't sync after await.
-      const addedId =
-        roadRules.find(
-          (r) => r.name.toLowerCase() === String(road.name).toLowerCase(),
-        )?.id ||
-        `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      setRoadRules((prev) =>
-        upsertRoadRule(prev, {
-          name: road.name,
-          lat: road.lat,
-          lng: road.lng,
-          mode,
-          id: addedId,
-        }),
-      );
-      // Highlight as soon as the rule is written so Route options can scroll to it.
+      const existing = findRoadRule(roadRules, road.name);
+      if (existing) {
+        openPrefsWithRoadRules(existing.id);
+        return {
+          name: existing.name,
+          id: existing.id,
+          duplicate: true,
+        };
+      }
+
+      const addedId = `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const nextRules = upsertRoadRule(roadRules, {
+        name: road.name,
+        lat: road.lat,
+        lng: road.lng,
+        mode,
+        id: addedId,
+      });
+      setRoadRules(nextRules);
       setHighlightedRoadRuleId(addedId);
       clearTimeout(highlightTimerRef.current);
       highlightTimerRef.current = setTimeout(() => {
         setHighlightedRoadRuleId(null);
-      }, 4500);
+      }, 2500);
 
-      // Re-rank cards so Prefer/Avoid/Never change recommendation order.
-      setRouteOptions((prev) => {
-        if (prev.length < 2) return prev;
-        return enrichAndRankRoutes(prev, routePrefs, [
-          ...roadRules.filter(
-            (r) => r.name.toLowerCase() !== road.name.toLowerCase(),
-          ),
-          {
-            name: road.name,
-            mode,
-            lat: road.lat,
-            lng: road.lng,
-            id: addedId,
-          },
-        ]);
-      });
-
-      // Reshape in the background — never block returning to Route options.
-      if (
-        (mode === "avoid" || mode === "never") &&
-        routeGeometryRef.current?.length
-      ) {
-        void avoidStreetAt(latlng, {
-          roadName: road.name,
-          focus: { lat: road.lat, lng: road.lng },
-          reshapeRoute: true,
-        }).catch(() => {});
-      } else if (mode === "prefer" && routeGeometryRef.current?.length) {
-        void (async () => {
-          try {
-            ensureEditSession();
-            const via = {
-              id: uid(),
-              lat: road.lat,
-              lng: road.lng,
-              name: road.name,
-            };
-            await enqueueEdit(async () => {
-              const next = [...editViasRef.current, via];
-              await rebuildFromVias(next, {
-                pushHistory: true,
-                preserveOrder: false,
-              });
-            });
-          } catch {
-            /* keep list update even if prefer snap fails */
-          }
-        })();
+      // Automatic routing only — never inject reshape vias for road rules.
+      if (stops.filter(Boolean).length >= 2) {
+        void runDirections(stops, travelMode, routePrefs, nextRules);
+      } else {
+        setRouteOptions((prev) => {
+          if (prev.length < 2) return prev;
+          return enrichAndRankRoutes(prev, routePrefs, nextRules);
+        });
       }
 
-      return { name: road.name, id: addedId };
+      return { name: road.name, id: addedId, duplicate: false };
     },
     [
       resolveRoadAt,
-      avoidStreetAt,
-      ensureEditSession,
-      enqueueEdit,
-      rebuildFromVias,
-      routePrefs,
       roadRules,
+      openPrefsWithRoadRules,
+      runDirections,
+      stops,
+      travelMode,
+      routePrefs,
     ],
   );
 
   const applyTypedRoadRule = useCallback(
     async ({ name, mode, lat = null, lng = null }) => {
       const trimmed = (name || "").trim();
-      if (!trimmed || !mode) return;
-      const addedId =
-        roadRules.find((r) => r.name.toLowerCase() === trimmed.toLowerCase())
-          ?.id ||
-        `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      setRoadRules((prev) =>
-        upsertRoadRule(prev, { name: trimmed, mode, lat, lng, id: addedId }),
-      );
+      if (!trimmed || !mode) return { duplicate: false };
+      const existing = findRoadRule(roadRules, trimmed);
+      if (existing) {
+        openPrefsWithRoadRules(existing.id);
+        showStatus(`${existing.name} is already in your road rules`);
+        return { name: existing.name, id: existing.id, duplicate: true };
+      }
+
+      const addedId = `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const nextRules = upsertRoadRule(roadRules, {
+        name: trimmed,
+        mode,
+        lat,
+        lng,
+        id: addedId,
+      });
+      setRoadRules(nextRules);
       setHighlightedRoadRuleId(addedId);
       clearTimeout(highlightTimerRef.current);
       highlightTimerRef.current = setTimeout(() => {
         setHighlightedRoadRuleId(null);
-      }, 4500);
-      if (mode === "prefer" && routeGeometryRef.current?.length) {
-        try {
-          await preferStreetNamed(trimmed);
-        } catch {
-          /* list update still stands */
-        }
+      }, 2500);
+
+      if (stops.filter(Boolean).length >= 2) {
+        void runDirections(stops, travelMode, routePrefs, nextRules);
+      } else {
+        setRouteOptions((prev) => {
+          if (prev.length < 2) return prev;
+          return enrichAndRankRoutes(prev, routePrefs, nextRules);
+        });
       }
-      setRouteOptions((prev) => {
-        if (prev.length < 2) return prev;
-        return enrichAndRankRoutes(prev, routePrefs, [
-          ...roadRules.filter(
-            (r) => r.name.toLowerCase() !== trimmed.toLowerCase(),
-          ),
-          { name: trimmed, mode, lat, lng, id: addedId },
-        ]);
-      });
+
       const verb =
-        mode === "prefer" ? "Preferring" : mode === "never" ? "Never use" : "Avoiding";
+        mode === "prefer"
+          ? "Preferring"
+          : mode === "never"
+            ? "Never use"
+            : "Avoiding";
       showStatus(`${verb} ${trimmed}`);
+      return { name: trimmed, id: addedId, duplicate: false };
     },
-    [preferStreetNamed, routePrefs, roadRules, showStatus],
+    [
+      roadRules,
+      openPrefsWithRoadRules,
+      runDirections,
+      stops,
+      travelMode,
+      routePrefs,
+      showStatus,
+    ],
   );
 
   const ctxActions = ctx
@@ -1739,16 +1723,22 @@ export default function App() {
           icon: "thumb_up",
           onClick: () => {
             const { latlng, roadPromise } = ctx;
-            // Return to Route options immediately; finish save/reshape in background.
+            // Return to Route options immediately; finish save in background.
             openPrefsWithRoadRules(null);
             void (async () => {
               try {
-                const { name } = await applyRoadRuleAt(
+                const result = await applyRoadRuleAt(
                   latlng,
                   "prefer",
                   roadPromise,
                 );
-                showStatus(`Preferring ${name}`);
+                if (result?.duplicate) {
+                  showStatus(
+                    `${result.name} is already in your road rules`,
+                  );
+                } else {
+                  showStatus(`Preferring ${result.name}`);
+                }
               } catch (err) {
                 showStatus(err.message || "Could not set road rule");
               }
@@ -1764,12 +1754,18 @@ export default function App() {
             openPrefsWithRoadRules(null);
             void (async () => {
               try {
-                const { name } = await applyRoadRuleAt(
+                const result = await applyRoadRuleAt(
                   latlng,
                   "avoid",
                   roadPromise,
                 );
-                showStatus(`Avoiding ${name}`);
+                if (result?.duplicate) {
+                  showStatus(
+                    `${result.name} is already in your road rules`,
+                  );
+                } else {
+                  showStatus(`Avoiding ${result.name}`);
+                }
               } catch (err) {
                 showStatus(err.message || "Could not set road rule");
               }
@@ -1785,12 +1781,18 @@ export default function App() {
             openPrefsWithRoadRules(null);
             void (async () => {
               try {
-                const { name } = await applyRoadRuleAt(
+                const result = await applyRoadRuleAt(
                   latlng,
                   "never",
                   roadPromise,
                 );
-                showStatus(`Never use ${name}`);
+                if (result?.duplicate) {
+                  showStatus(
+                    `${result.name} is already in your road rules`,
+                  );
+                } else {
+                  showStatus(`Never use ${result.name}`);
+                }
               } catch (err) {
                 showStatus(err.message || "Could not set road rule");
               }
@@ -2679,21 +2681,32 @@ export default function App() {
         onPickRoadOnMap={() => enterRoadPickMode("prefs")}
         onRemoveRoadRule={(id) => {
           const rule = roadRules.find((r) => r.id === id);
-          setRoadRules((prev) => removeRoadRule(prev, id));
+          const nextRules = removeRoadRule(roadRules, id);
+          setRoadRules(nextRules);
           if (rule?.name) {
             const name = rule.name;
             setBlockedStreets((prev) =>
               prev.filter((b) => !roadNamesMatch(b.name, name)),
             );
           }
+          if (stops.filter(Boolean).length >= 2) {
+            void runDirections(stops, travelMode, routePrefs, nextRules);
+          }
         }}
-        onSetRoadRuleMode={(id, mode) =>
-          setRoadRules((prev) =>
-            prev.map((r) =>
-              r.id === id ? { ...r, mode, updatedAt: Date.now() } : r,
-            ),
-          )
-        }
+        onSetRoadRuleMode={(id, mode) => {
+          const nextRules = roadRules.map((r) =>
+            r.id === id ? { ...r, mode, updatedAt: Date.now() } : r,
+          );
+          setRoadRules(nextRules);
+          if (stops.filter(Boolean).length >= 2) {
+            void runDirections(stops, travelMode, routePrefs, nextRules);
+          } else {
+            setRouteOptions((prev) => {
+              if (prev.length < 2) return prev;
+              return enrichAndRankRoutes(prev, routePrefs, nextRules);
+            });
+          }
+        }}
       />
 
       {roadRulesOpen ? (
@@ -2704,20 +2717,27 @@ export default function App() {
           onAdd={() => enterRoadPickMode("roadRules")}
           onRemove={(id) => {
             const rule = roadRules.find((r) => r.id === id);
-            setRoadRules((prev) => removeRoadRule(prev, id));
+            const nextRules = removeRoadRule(roadRules, id);
+            setRoadRules(nextRules);
             if (rule?.name) {
+              const name = rule.name;
               setBlockedStreets((prev) =>
-                prev.filter((b) => !roadNamesMatch(b.name, rule.name)),
+                prev.filter((b) => !roadNamesMatch(b.name, name)),
               );
             }
+            if (stops.filter(Boolean).length >= 2) {
+              void runDirections(stops, travelMode, routePrefs, nextRules);
+            }
           }}
-          onSetMode={(id, mode) =>
-            setRoadRules((prev) =>
-              prev.map((r) =>
-                r.id === id ? { ...r, mode, updatedAt: Date.now() } : r,
-              ),
-            )
-          }
+          onSetMode={(id, mode) => {
+            const nextRules = roadRules.map((r) =>
+              r.id === id ? { ...r, mode, updatedAt: Date.now() } : r,
+            );
+            setRoadRules(nextRules);
+            if (stops.filter(Boolean).length >= 2) {
+              void runDirections(stops, travelMode, routePrefs, nextRules);
+            }
+          }}
         />
       ) : null}
 

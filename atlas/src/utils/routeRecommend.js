@@ -149,9 +149,10 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
   for (const rule of roadRules) {
     const uses = routeUsesRoad(route, rule.name);
     if (!uses) continue;
-    if (rule.mode === "prefer") cost -= 500;
-    if (rule.mode === "avoid") cost += 700;
-    if (rule.mode === "never") cost += 5000; // soft hard-exclude in ranking
+    if (rule.mode === "prefer") cost -= 900;
+    if (rule.mode === "avoid") cost += 1400;
+    // Soft hard-exclude: public OSRM can't drop named roads, so bury them.
+    if (rule.mode === "never") cost += 20000;
   }
 
   return cost;
@@ -262,18 +263,28 @@ export function enrichAndRankRoutes(
     };
   });
 
-  const fastest = [...enriched].sort(
+  const neverRules = (roadRules || []).filter((r) => r.mode === "never");
+  const withoutNever =
+    neverRules.length > 0
+      ? enriched.filter(
+          (r) => !neverRules.some((rule) => routeUsesRoad(r, rule.name)),
+        )
+      : enriched;
+  // Prefer alternatives that obey Never rules; fall back if every option uses one.
+  const pool = withoutNever.length > 0 ? withoutNever : enriched;
+
+  const fastest = [...pool].sort(
     (a, b) => a.duration - b.duration || a.distance - b.distance,
   )[0];
-  const shortest = [...enriched].sort(
+  const shortest = [...pool].sort(
     (a, b) => a.distance - b.distance || a.duration - b.duration,
   )[0];
-  const fewest = [...enriched].sort(
+  const fewest = [...pool].sort(
     (a, b) =>
       (a.metrics.turns - b.metrics.turns) || a.duration - b.duration,
   )[0];
 
-  const ranked = [...enriched].sort(
+  const ranked = [...pool].sort(
     (a, b) =>
       scoreRoute(a, prefs, roadRules) - scoreRoute(b, prefs, roadRules),
   );

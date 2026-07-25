@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { searchRoads } from "../api/geocode";
 import { ENGINE_TYPES, ROUTE_OPTION_FIELDS } from "../utils/routePreferences";
-import { modeLabel, ROAD_RULE_MODES } from "../utils/roadRules";
+import { findRoadRule, ROAD_RULE_MODES } from "../utils/roadRules";
 import MdSwitch from "./MdSwitch";
 import { highlightMatch } from "./PlaceSuggestionList";
 
 const SUGGEST_LIMIT = 5;
 
-function filterRouteRoads(hints, query, limit) {
+function filterRouteRoads(hints, query, limit, existingRules = []) {
   const q = query.trim().toLowerCase();
   if (!q || !hints?.length) return [];
   const seen = new Set();
@@ -15,6 +15,7 @@ function filterRouteRoads(hints, query, limit) {
   for (const name of hints) {
     const trimmed = String(name || "").trim();
     if (!trimmed) continue;
+    if (findRoadRule(existingRules, trimmed)) continue;
     const key = trimmed.toLowerCase();
     if (seen.has(key)) continue;
     if (!key.includes(q) && !q.split(/\s+/).every((p) => key.includes(p))) {
@@ -65,8 +66,10 @@ export default function RoutePrefsSheet({
   const requestSeq = useRef(0);
   const nearRef = useRef(near);
   const hintsRef = useRef(routeRoadHints);
+  const rulesRef = useRef(roadRules);
   nearRef.current = near;
   hintsRef.current = routeRoadHints;
+  rulesRef.current = roadRules;
 
   useEffect(() => {
     if (!open) {
@@ -166,7 +169,12 @@ export default function RoutePrefsSheet({
       return;
     }
 
-    const fromRoute = filterRouteRoads(hintsRef.current, q, SUGGEST_LIMIT);
+    const fromRoute = filterRouteRoads(
+      hintsRef.current,
+      q,
+      SUGGEST_LIMIT,
+      rulesRef.current,
+    );
     setSuggestions(fromRoute);
     setSuggestOpen(true);
     setSuggestLoading(true);
@@ -180,6 +188,7 @@ export default function RoutePrefsSheet({
       const seen = new Set(fromRoute.map((r) => r.name.toLowerCase()));
       const merged = [...fromRoute];
       for (const road of found) {
+        if (findRoadRule(rulesRef.current, road.name)) continue;
         const key = (road.name || "").toLowerCase();
         if (!key || seen.has(key)) continue;
         seen.add(key);
@@ -215,6 +224,10 @@ export default function RoutePrefsSheet({
   function chooseRoad(road) {
     const name = (road?.name || "").trim();
     if (!name) return;
+    if (findRoadRule(roadRules, name)) {
+      cancelAddRoad();
+      return;
+    }
     clearTimeout(debounceRef.current);
     requestSeq.current += 1;
     setRoadName(name);
@@ -229,6 +242,11 @@ export default function RoutePrefsSheet({
     const name = roadName.trim();
     if (!name) {
       nameInputRef.current?.focus();
+      return;
+    }
+    if (findRoadRule(roadRules, name)) {
+      cancelAddRoad();
+      onAddTypedRoadRule?.({ name, mode: roadMode });
       return;
     }
     const match = suggestions.find(
@@ -344,9 +362,6 @@ export default function RoutePrefsSheet({
                 <h3 className="route-pref-section-label md-typescale-title-small">
                   Your road rules
                 </h3>
-                <p className="md-typescale-body-small route-sheet-sub">
-                  Prefer, avoid, or never use named roads when routing
-                </p>
               </div>
               {onAddTypedRoadRule || onPickRoadOnMap ? (
                 <md-icon-button
@@ -529,11 +544,6 @@ export default function RoutePrefsSheet({
                       aria-current={isHighlighted ? "true" : undefined}
                     >
                       <div slot="headline">{r.name}</div>
-                      <div slot="supporting-text">
-                        {isHighlighted
-                          ? `Just added · ${modeLabel(r.mode)}`
-                          : modeLabel(r.mode)}
-                      </div>
                       <div slot="end" className="road-rules-actions">
                         <select
                           className="road-rules-select"

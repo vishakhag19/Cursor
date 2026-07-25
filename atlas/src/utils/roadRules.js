@@ -1,7 +1,10 @@
 /**
  * Per-road rules: prefer / avoid / never (Feature 4).
  * Persisted separately from trip-level "Avoided" chips.
+ * Applied on every Directions fetch via scoreRoute — never as reshape vias.
  */
+
+import { roadNamesMatch } from "./routeAssist";
 
 export const ROAD_RULE_MODES = [
   {
@@ -24,16 +27,29 @@ export const ROAD_RULE_MODES = [
   },
 ];
 
+/** Find an existing rule for this road (fuzzy name match). */
+export function findRoadRule(rules, name) {
+  if (!name) return null;
+  return (rules || []).find((r) => roadNamesMatch(r.name, name)) || null;
+}
+
 export function upsertRoadRule(rules, { name, lat, lng, mode, id: idIn } = {}) {
   if (!name || !mode) return rules || [];
-  const id =
-    idIn ||
-    rules?.find((r) => r.name.toLowerCase() === name.toLowerCase())?.id ||
-    `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  const next = (rules || []).filter(
-    (r) => r.name.toLowerCase() !== name.toLowerCase(),
-  );
-  return [{ id, name, lat, lng, mode, updatedAt: Date.now() }, ...next];
+  const existing = findRoadRule(rules, name);
+  const id = idIn || existing?.id || `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const next = (rules || []).filter((r) => !roadNamesMatch(r.name, name));
+  return [
+    {
+      id,
+      // Keep the first-seen spelling as the canonical label.
+      name: existing?.name || name,
+      lat: lat ?? existing?.lat ?? null,
+      lng: lng ?? existing?.lng ?? null,
+      mode,
+      updatedAt: Date.now(),
+    },
+    ...next,
+  ];
 }
 
 export function removeRoadRule(rules, id) {

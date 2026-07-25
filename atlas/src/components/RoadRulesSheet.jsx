@@ -1,4 +1,4 @@
-import { modeLabel, ROAD_RULE_MODES } from "../utils/roadRules";
+import { ROAD_RULE_MODES } from "../utils/roadRules";
 
 /**
  * "Your Road Rules" list (Feature 4).
@@ -26,9 +26,6 @@ export default function RoadRulesSheet({
         <div className="route-sheet-header">
           <div className="route-sheet-heading">
             <div className="md-typescale-title-small">Your road rules</div>
-            <div className="md-typescale-body-small route-sheet-sub">
-              Prefer, avoid, or never use a named road when routing
-            </div>
           </div>
           <div className="route-sheet-header-actions">
             {onAdd ? (
@@ -57,7 +54,6 @@ export default function RoadRulesSheet({
               {rules.map((r) => (
                 <md-list-item key={r.id}>
                   <div slot="headline">{r.name}</div>
-                  <div slot="supporting-text">{modeLabel(r.mode)}</div>
                   <div slot="end" className="road-rules-actions">
                     <select
                       className="road-rules-select"
