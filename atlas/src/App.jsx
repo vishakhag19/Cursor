@@ -2335,7 +2335,10 @@ export default function App() {
           editVias={editVias}
           editTravelMode={routingModeFor(travelMode)}
           selectedViaId={selectedViaId}
-          onSelectVia={setSelectedViaId}
+          onSelectVia={(id) => {
+            suppressMapClickUntil.current = Date.now() + 900;
+            setSelectedViaId(id);
+          }}
           onEditPreview={setEditPreview}
           onSuppressMapClick={() => {
             suppressMapClickUntil.current = Date.now() + 900;
@@ -2348,7 +2351,10 @@ export default function App() {
             suppressMapClickUntil.current = Date.now() + 900;
             return moveVia(viaId, snapped);
           }}
-          onDeleteVia={deleteVia}
+          onDeleteVia={(viaId) => {
+            suppressMapClickUntil.current = Date.now() + 900;
+            return deleteVia(viaId);
+          }}
           onEditError={(msg) => showStatus(msg)}
           flyTarget={flyTarget}
           fitKey={fitKey}
