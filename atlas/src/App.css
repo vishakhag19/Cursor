@@ -3327,8 +3327,10 @@ md-text-button {
     width: calc(100% - (2 * var(--search-card-inset)));
     max-width: calc(100% - (2 * var(--search-card-inset)));
     max-height: min(52dvh, 440px);
+    overflow: visible;
     pointer-events: none;
     box-sizing: border-box;
+    min-height: 0;
   }
 
   .panel.is-directions-chrome .dir-mobile-stop-card {
