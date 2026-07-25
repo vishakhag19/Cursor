@@ -322,13 +322,18 @@ md-icon-button.collapse-panel-btn:hover,
 
 .dir-stops {
   display: grid;
-  grid-template-columns: 20px 1fr;
+  grid-template-columns: 20px minmax(0, 1fr);
   gap: 4px;
   align-items: stretch;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .dir-stops.has-mid-stops {
-  grid-template-columns: 20px 1fr;
+  grid-template-columns: 20px minmax(0, 1fr);
 }
 
 .dir-stops-rail {
@@ -374,6 +379,8 @@ md-icon-button.collapse-panel-btn:hover,
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  max-width: 100%;
+  overflow: visible;
 }
 
 /* Place suggestions always sit below every stop field (after destination). */
@@ -481,20 +488,21 @@ md-icon-button.collapse-panel-btn:hover,
   top: auto;
   translate: none;
   display: grid;
-  grid-template-columns: 36px 32px;
+  grid-template-columns: 40px 32px;
   align-items: center;
   justify-items: center;
   flex-shrink: 0;
   gap: 0;
   z-index: 50;
   background: transparent;
-  padding: 0 4px 0 0;
+  padding: 0 2px 0 0;
   border-radius: 0;
+  overflow: visible;
 }
 
 .dir-stop-drag-spacer {
   display: block;
-  width: 36px;
+  width: 40px;
   height: 40px;
 }
 
@@ -540,18 +548,20 @@ md-icon-button.dir-add-stop {
   height: 20px;
 }
 
-/* Grabber beside the clear/close control */
+/* Grabber beside the clear/close control — square hit target = perfect circle */
 .dir-stop-drag {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 36px;
-  min-width: 36px;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
   height: 40px;
+  min-height: 40px;
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 999px;
+  border-radius: 50%;
   background: transparent;
   color: #70757a;
   cursor: grab;
@@ -560,6 +570,8 @@ md-icon-button.dir-add-stop {
   -webkit-user-drag: none;
   touch-action: none;
   -webkit-touch-callout: none;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .dir-stop-drag:active {
@@ -637,7 +649,6 @@ body.is-stop-reordering .dir-mobile-stop-card,
 body.is-stop-reordering .dir-stops,
 body.is-stop-reordering .dir-stops-fields {
   touch-action: none;
-  overflow: hidden;
 }
 
 .dir-stop-drag-ghost-label {
@@ -3765,10 +3776,9 @@ md-text-button {
     box-shadow:
       0 1px 2px rgba(60, 64, 67, 0.12),
       0 4px 16px rgba(60, 64, 67, 0.18);
-    /* Clip anything that would paint past the rounded card. */
-    overflow: hidden;
+    /* Don’t clip stop pills / circular drag targets; scroll lives on the block. */
+    overflow: visible;
     pointer-events: auto;
-    isolation: isolate;
     transition: opacity 0.18s ease;
     box-sizing: border-box;
     min-height: 0;
@@ -3786,18 +3796,23 @@ md-text-button {
     margin: 0;
     padding: 0;
     flex: 1 1 auto;
+    min-width: 0;
     min-height: 0;
     max-height: calc(var(--dir-stop-card-max-h) - 24px);
-    overflow-x: hidden;
+    /* Vertical scroll only — avoid clipping the circular drag / pill edges. */
+    overflow-x: visible;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
+    border-radius: 12px;
   }
 
   .panel.is-directions-chrome .dir-stops-block > .dir-stops {
     flex: 0 0 auto;
+    min-width: 0;
+    max-width: 100%;
     overflow: visible;
   }
 
@@ -3826,7 +3841,8 @@ md-text-button {
   .panel.is-directions-chrome
     .directions-panel.has-stop-suggest
     .dir-stops-block {
-    overflow: hidden;
+    overflow-x: visible;
+    overflow-y: hidden;
     display: flex;
     flex-direction: column;
   }
@@ -4474,7 +4490,7 @@ md-text-button {
 
 @media (max-width: 480px) {
   .dir-stops {
-    grid-template-columns: 18px 1fr;
+    grid-template-columns: 18px minmax(0, 1fr);
   }
 
   .dir-stop-row-action {
