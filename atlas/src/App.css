@@ -38,7 +38,7 @@
   --panel-control-size: 40px;
 }
 
-/* Mobile home: pull-down gesture reloads (native PTR is blocked by overflow:hidden). */
+/* Mobile: pull-down gesture reloads (native PTR is blocked by overflow:hidden). */
 .pull-to-refresh {
   position: absolute;
   top: 0;
@@ -50,12 +50,7 @@
   justify-content: center;
   pointer-events: none;
   overflow: hidden;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 255, 255, 0.55) 70%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: transparent;
   transition: none;
 }
 
