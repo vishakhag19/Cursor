@@ -214,7 +214,7 @@ function buildReason(route, prefs, rank, fastestId, shortestId, fewestTurnsId) {
     return "More scenic corridors · matches your preference";
   }
   if (prefs.preferRoadQuality && rank === 0) {
-    return "Good roads · named, maintained corridors";
+    return "Good quality roads · better-maintained corridors";
   }
   if (prefs.preferFuelEfficient && rank === 0) {
     return "Fuel-efficient pick · similar ETA, lower estimated use";

@@ -69,8 +69,8 @@ export const ROUTE_OPTION_FIELDS = [
   },
   {
     id: "preferRoadQuality",
-    label: "Good roads",
-    hint: "Prefer named, well-maintained corridors",
+    label: "Good quality roads",
+    hint: "Favor better-maintained corridors over rough or unnamed ones",
     icon: "verified",
   },
   {
