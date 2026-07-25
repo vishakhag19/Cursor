@@ -44,6 +44,7 @@ export default function RoutePrefsSheet({
   onChange,
   onClose,
   roadRules = [],
+  highlightedRoadRuleId = null,
   onAddTypedRoadRule = null,
   onPickRoadOnMap = null,
   onRemoveRoadRule = null,
@@ -59,6 +60,7 @@ export default function RoutePrefsSheet({
   const [suggestLoading, setSuggestLoading] = useState(false);
   const nameInputRef = useRef(null);
   const suggestWrapRef = useRef(null);
+  const roadRulesSectionRef = useRef(null);
   const debounceRef = useRef(null);
   const requestSeq = useRef(0);
   const nearRef = useRef(near);
@@ -78,6 +80,20 @@ export default function RoutePrefsSheet({
       requestSeq.current += 1;
     }
   }, [open]);
+
+  // Scroll the newly added road into view when Route options opens.
+  useEffect(() => {
+    if (!open || !highlightedRoadRuleId) return undefined;
+    const id = requestAnimationFrame(() => {
+      const root = roadRulesSectionRef.current;
+      const el =
+        root?.querySelector(
+          `[data-road-rule-id="${CSS.escape(String(highlightedRoadRuleId))}"]`,
+        ) || root;
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open, highlightedRoadRuleId, roadRules.length]);
 
   useEffect(() => {
     if (!addingRoad) return;
@@ -306,7 +322,11 @@ export default function RoutePrefsSheet({
             />
           </label>
 
-          <section className="route-pref-section" aria-label="Your road rules">
+          <section
+            className="route-pref-section"
+            aria-label="Your road rules"
+            ref={roadRulesSectionRef}
+          >
             <div className="route-pref-section-head">
               <div className="route-pref-section-copy">
                 <h3 className="route-pref-section-label md-typescale-title-small">
@@ -484,35 +504,47 @@ export default function RoutePrefsSheet({
 
             {roadRules.length > 0 ? (
               <md-list class="road-rules-list">
-                {roadRules.map((r) => (
-                  <md-list-item key={r.id}>
-                    <div slot="headline">{r.name}</div>
-                    <div slot="supporting-text">{modeLabel(r.mode)}</div>
-                    <div slot="end" className="road-rules-actions">
-                      <select
-                        className="road-rules-select"
-                        aria-label={`Rule for ${r.name}`}
-                        value={r.mode}
-                        onChange={(e) =>
-                          onSetRoadRuleMode?.(r.id, e.target.value)
-                        }
-                      >
-                        {ROAD_RULE_MODES.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.label}
-                          </option>
-                        ))}
-                      </select>
-                      <md-icon-button
-                        type="button"
-                        aria-label={`Remove ${r.name}`}
-                        onClick={() => onRemoveRoadRule?.(r.id)}
-                      >
-                        <md-icon>delete</md-icon>
-                      </md-icon-button>
-                    </div>
-                  </md-list-item>
-                ))}
+                {roadRules.map((r) => {
+                  const isHighlighted = r.id === highlightedRoadRuleId;
+                  return (
+                    <md-list-item
+                      key={r.id}
+                      class={`road-rule-item ${isHighlighted ? "is-highlighted" : ""}`}
+                      data-road-rule-id={r.id}
+                      aria-current={isHighlighted ? "true" : undefined}
+                    >
+                      <div slot="headline">{r.name}</div>
+                      <div slot="supporting-text">
+                        {isHighlighted
+                          ? `Just added · ${modeLabel(r.mode)}`
+                          : modeLabel(r.mode)}
+                      </div>
+                      <div slot="end" className="road-rules-actions">
+                        <select
+                          className="road-rules-select"
+                          aria-label={`Rule for ${r.name}`}
+                          value={r.mode}
+                          onChange={(e) =>
+                            onSetRoadRuleMode?.(r.id, e.target.value)
+                          }
+                        >
+                          {ROAD_RULE_MODES.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.label}
+                            </option>
+                          ))}
+                        </select>
+                        <md-icon-button
+                          type="button"
+                          aria-label={`Remove ${r.name}`}
+                          onClick={() => onRemoveRoadRule?.(r.id)}
+                        >
+                          <md-icon>delete</md-icon>
+                        </md-icon-button>
+                      </div>
+                    </md-list-item>
+                  );
+                })}
               </md-list>
             ) : null}
           </section>

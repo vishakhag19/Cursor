@@ -3619,6 +3619,19 @@ md-text-button {
   margin: 0;
 }
 
+.road-rules-list md-list-item.road-rule-item {
+  --md-list-item-container-color: transparent;
+  border-radius: 12px;
+  margin: 0 8px;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.road-rules-list md-list-item.road-rule-item.is-highlighted {
+  --md-list-item-container-color: var(--atlas-accent-container);
+  background: var(--atlas-accent-container);
+  box-shadow: inset 3px 0 0 var(--atlas-accent);
+}
+
 .road-rules-actions {
   display: flex;
   align-items: center;
