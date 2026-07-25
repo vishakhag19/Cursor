@@ -583,11 +583,12 @@ md-icon-button.collapse-panel-btn:hover,
 }
 
 .dir-save-btn.is-saved {
-  --md-icon-button-icon-color: var(--atlas-accent);
-  color: var(--atlas-accent);
+  --md-icon-button-icon-color: var(--atlas-accent, #1a73e8);
+  color: var(--atlas-accent, #1a73e8);
 }
 
-.dir-save-btn.is-saved md-icon {
+.dir-save-btn.is-saved md-icon,
+md-icon.is-filled {
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 

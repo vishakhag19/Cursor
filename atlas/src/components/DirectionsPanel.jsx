@@ -313,20 +313,15 @@ export default function DirectionsPanel({
 
   const savedMatch =
     selectedRoute &&
-    savedRoutes.find(
-      (s) =>
-        s.route &&
-        s.route.distance === selectedRoute.distance &&
-        s.route.duration === selectedRoute.duration &&
-        (s.route.geometry?.length || 0) ===
-          (selectedRoute.geometry?.length || 0) &&
-        s.route.geometry?.[0]?.[0] === selectedRoute.geometry?.[0]?.[0] &&
-        s.route.geometry?.[0]?.[1] === selectedRoute.geometry?.[0]?.[1] &&
-        s.route.geometry?.at?.(-1)?.[0] ===
-          selectedRoute.geometry?.at?.(-1)?.[0] &&
-        s.route.geometry?.at?.(-1)?.[1] ===
-          selectedRoute.geometry?.at?.(-1)?.[1],
-    );
+    (savedRoutes.find((s) => s.route?.id && s.route.id === selectedRoute.id) ||
+      savedRoutes.find(
+        (s) =>
+          s.route &&
+          Math.round(s.route.distance) === Math.round(selectedRoute.distance) &&
+          Math.round(s.route.duration) === Math.round(selectedRoute.duration) &&
+          (s.route.geometry?.length || 0) ===
+            (selectedRoute.geometry?.length || 0),
+      ));
   const routeIsSaved = Boolean(savedMatch);
 
   useEffect(() => {
@@ -858,8 +853,8 @@ export default function DirectionsPanel({
                       setSaving(true);
                     }}
                   >
-                    <md-icon>
-                      {routeIsSaved ? "bookmark" : "bookmark_border"}
+                    <md-icon class={routeIsSaved ? "is-filled" : undefined}>
+                      bookmark
                     </md-icon>
                   </md-icon-button>
                 </ActionTip>
