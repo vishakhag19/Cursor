@@ -792,7 +792,7 @@ md-icon-button.dir-add-stop:hover {
   --md-list-item-top-space: 4px;
   --md-list-item-bottom-space: 4px;
   --md-list-item-leading-space: 0px;
-  --md-list-item-trailing-space: 4px;
+  --md-list-item-trailing-space: 0px;
   --md-list-item-one-line-container-height: 48px;
   --md-list-item-two-line-container-height: 52px;
 }
@@ -829,7 +829,8 @@ md-icon-button.dir-add-stop:hover {
 .landing-saved-actions {
   display: flex;
   align-items: center;
-  padding-right: calc(var(--panel-pad-x, 16px) - 4px);
+  /* Card already insets the list; keep trailing control tight to the edge. */
+  padding-right: 0;
 }
 
 /* Match delete icon to secondary label color (meta), not a third tone */
