@@ -156,6 +156,8 @@ export default function DirectionsPanel({
   const [dragFrom, setDragFrom] = useState(null);
   const [dragOver, setDragOver] = useState(null);
   const dragGhostRef = useRef(null);
+  const stopDragRef = useRef(null);
+  const dragOverRef = useRef(null);
   const [placeList, setPlaceList] = useState({
     open: false,
     items: [],
@@ -187,12 +189,22 @@ export default function DirectionsPanel({
     dragGhostRef.current = null;
   }
 
-  function beginStopDrag(e, index) {
-    e.dataTransfer.setData("text/atlas-stop", String(index));
-    e.dataTransfer.setData("text/plain", String(index));
-    e.dataTransfer.effectAllowed = "move";
+  function setDropTarget(index) {
+    dragOverRef.current = index;
+    setDragOver(index);
+  }
 
-    const field = e.currentTarget.closest(".dir-stop-field");
+  function placeDragGhost(clientX, clientY) {
+    const ghost = dragGhostRef.current;
+    if (!ghost) return;
+    const w = ghost.offsetWidth || 260;
+    const h = ghost.offsetHeight || 48;
+    ghost.style.top = `${Math.max(8, clientY - h / 2)}px`;
+    ghost.style.left = `${Math.max(8, clientX - Math.min(56, w / 3))}px`;
+  }
+
+  function ensureDragGhost(index) {
+    if (dragGhostRef.current) return dragGhostRef.current;
     const label =
       index === 0
         ? "Starting point"
@@ -200,39 +212,104 @@ export default function DirectionsPanel({
           ? "Destination"
           : `Stop ${index}`;
     const value = (stopTexts[index] || "").trim() || label;
-
-    clearDragGhost();
     const ghost = document.createElement("div");
-    ghost.className = "dir-stop-drag-ghost";
+    ghost.className = "dir-stop-drag-ghost is-pointer";
     ghost.innerHTML =
       '<span class="dir-stop-drag-ghost-label"></span><span class="dir-stop-drag-ghost-value"></span>';
     ghost.querySelector(".dir-stop-drag-ghost-label").textContent = label;
     ghost.querySelector(".dir-stop-drag-ghost-value").textContent = value;
-    const width = field?.offsetWidth || 260;
-    ghost.style.width = `${width}px`;
+    const field = document.querySelector(`#dir-stop-${index}`)?.closest?.(
+      ".dir-stop-field",
+    );
+    ghost.style.width = `${Math.min(field?.offsetWidth || 260, 280)}px`;
     document.body.appendChild(ghost);
     dragGhostRef.current = ghost;
-
-    const rect = ghost.getBoundingClientRect();
-    const offsetX = field
-      ? Math.min(
-          Math.max(e.clientX - field.getBoundingClientRect().left, 16),
-          width - 16,
-        )
-      : rect.width - 28;
-    const offsetY = rect.height / 2;
-    e.dataTransfer.setDragImage(ghost, offsetX, offsetY);
-    setDragFrom(index);
-    setDragOver(index);
+    return ghost;
   }
 
-  function endStopDrag() {
+  function stopIndexFromPoint(clientX, clientY) {
+    const stack = document.elementsFromPoint(clientX, clientY);
+    for (const el of stack) {
+      const row = el?.closest?.(".dir-stop-row");
+      if (!row) continue;
+      const parent = row.parentElement;
+      if (!parent) continue;
+      const rows = [...parent.querySelectorAll(":scope > .dir-stop-row")];
+      const idx = rows.indexOf(row);
+      if (idx >= 0) return idx;
+    }
+    return dragOverRef.current;
+  }
+
+  function beginStopPointerDrag(e, index) {
+    if (!onMoveStop || stops.length < 2) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.stopPropagation();
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    stopDragRef.current = {
+      from: index,
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      startX: e.clientX,
+      active: false,
+    };
+    setDragFrom(index);
+    setDropTarget(index);
+  }
+
+  function moveStopPointerDrag(e) {
+    const drag = stopDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const dy = e.clientY - drag.startY;
+    const dx = e.clientX - drag.startX;
+    if (!drag.active) {
+      if (Math.hypot(dx, dy) < 8) return;
+      drag.active = true;
+      document.body.classList.add("is-stop-reordering");
+      ensureDragGhost(drag.from);
+    }
+    if (e.cancelable) e.preventDefault();
+    placeDragGhost(e.clientX, e.clientY);
+    const over = stopIndexFromPoint(e.clientX, e.clientY);
+    if (over != null && over !== dragOverRef.current) {
+      setDropTarget(over);
+    }
+  }
+
+  function endStopPointerDrag(e) {
+    const drag = stopDragRef.current;
+    if (!drag || (e && drag.pointerId !== e.pointerId)) return;
+    const from = drag.from;
+    const to = dragOverRef.current;
+    const wasActive = drag.active;
+    stopDragRef.current = null;
+    document.body.classList.remove("is-stop-reordering");
     clearDragGhost();
     setDragFrom(null);
-    setDragOver(null);
+    setDropTarget(null);
+    if (
+      wasActive &&
+      onMoveStop &&
+      to != null &&
+      from !== to &&
+      to >= 0 &&
+      to < stops.length
+    ) {
+      onMoveStop(from, to);
+    }
   }
 
-  useEffect(() => () => clearDragGhost(), []);
+  useEffect(
+    () => () => {
+      clearDragGhost();
+      document.body.classList.remove("is-stop-reordering");
+    },
+    [],
+  );
 
   function handleListChange(index, payload) {
     // Opening always wins for that field (activeStop setState can lag focus).
@@ -595,6 +672,7 @@ export default function DirectionsPanel({
           <div className="dir-stops-fields">
             {stops.map((stop, i) => {
               const multi = stops.length > 2;
+              const canReorder = Boolean(onMoveStop) && stops.length >= 2;
               const isStart = i === 0;
               const isDest = i === stops.length - 1;
               const canClear = Boolean(stopTexts[i] || stop);
@@ -609,8 +687,9 @@ export default function DirectionsPanel({
                 );
               const rowClass = [
                 "dir-stop-row",
-                multi ? "has-controls" : "",
-                !multi && canClear ? "has-clear" : "",
+                multi || canReorder ? "has-controls" : "",
+                !multi && canClear && !canReorder ? "has-clear" : "",
+                canReorder ? "can-reorder" : "",
                 dragFrom === i ? "is-dragging" : "",
                 dragOver === i && dragFrom != null && dragFrom !== i
                   ? "is-drop-target"
@@ -622,47 +701,35 @@ export default function DirectionsPanel({
               <div
                 className={rowClass}
                 key={`stop-${i}`}
-                onDragOver={
-                  multi
-                    ? (e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
-                        if (dragOver !== i) setDragOver(i);
-                      }
-                    : undefined
-                }
-                onDragLeave={
-                  multi
-                    ? (e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                          setDragOver((cur) => (cur === i ? null : cur));
-                        }
-                      }
-                    : undefined
-                }
-                onDrop={
-                  multi
-                    ? (e) => {
-                        e.preventDefault();
-                        const raw =
-                          e.dataTransfer.getData("text/atlas-stop") ||
-                          e.dataTransfer.getData("text/plain");
-                        endStopDrag();
-                        if (raw === "" || raw == null) return;
-                        const from = Number(raw);
-                        if (
-                          Number.isFinite(from) &&
-                          from >= 0 &&
-                          from < stops.length &&
-                          onMoveStop
-                        ) {
-                          onMoveStop(from, i);
-                        }
-                      }
-                    : undefined
-                }
               >
                 <div className="dir-stop-field">
+                  {canReorder ? (
+                    <button
+                      type="button"
+                      className="dir-stop-drag"
+                      aria-label="Drag to reorder stop"
+                      title="Drag to reorder"
+                      onPointerDown={(e) => beginStopPointerDrag(e, i)}
+                      onPointerMove={moveStopPointerDrag}
+                      onPointerUp={endStopPointerDrag}
+                      onPointerCancel={endStopPointerDrag}
+                      onKeyDown={(e) => {
+                        if (!onMoveStop) return;
+                        if (e.key === "ArrowUp" && i > 0) {
+                          e.preventDefault();
+                          onMoveStop(i, i - 1);
+                        } else if (
+                          e.key === "ArrowDown" &&
+                          i < stops.length - 1
+                        ) {
+                          e.preventDefault();
+                          onMoveStop(i, i + 1);
+                        }
+                      }}
+                    >
+                      <md-icon>drag_indicator</md-icon>
+                    </button>
+                  ) : null}
                     <SuggestInput
                     id={`dir-stop-${i}`}
                     label={
@@ -697,31 +764,6 @@ export default function DirectionsPanel({
                   />
                   {multi ? (
                     <div className="dir-stop-reorder">
-                      <div
-                        className="dir-stop-drag"
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Drag to reorder"
-                        title="Drag to reorder"
-                        draggable
-                        onDragStart={(e) => beginStopDrag(e, i)}
-                        onDragEnd={endStopDrag}
-                        onKeyDown={(e) => {
-                          if (!onMoveStop) return;
-                          if (e.key === "ArrowUp" && i > 0) {
-                            e.preventDefault();
-                            onMoveStop(i, i - 1);
-                          } else if (
-                            e.key === "ArrowDown" &&
-                            i < stops.length - 1
-                          ) {
-                            e.preventDefault();
-                            onMoveStop(i, i + 1);
-                          }
-                        }}
-                      >
-                        <md-icon>drag_indicator</md-icon>
-                      </div>
                       <md-icon-button
                         type="button"
                         aria-label="Remove stop"

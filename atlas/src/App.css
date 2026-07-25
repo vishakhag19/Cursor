@@ -393,10 +393,14 @@ md-icon-button.collapse-panel-btn:hover,
 .dir-stop-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: nowrap;
   min-width: 0;
   width: 100%;
+}
+
+.dir-stop-row.can-reorder {
+  gap: 0;
 }
 
 .dir-stop-field {
@@ -413,6 +417,10 @@ md-icon-button.collapse-panel-btn:hover,
   border: 1px solid var(--atlas-control-outline, var(--atlas-surface-pressed));
   border-radius: 999px;
   overflow: visible;
+}
+
+.dir-stop-row.can-reorder .dir-stop-field {
+  padding-left: 4px;
 }
 
 .dir-stop-field .suggest-wrap {
@@ -518,11 +526,14 @@ md-icon-button.dir-add-stop {
   margin: 0;
 }
 
+/* Large in-field grabber — easy for mouse and touch */
 .dir-stop-drag {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  flex: 0 0 auto;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
   margin: 0;
   padding: 0;
   border: none;
@@ -531,30 +542,39 @@ md-icon-button.dir-add-stop {
   color: #5f6368;
   cursor: grab;
   user-select: none;
+  -webkit-user-select: none;
   -webkit-user-drag: element;
   touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .dir-stop-drag:active {
   cursor: grabbing;
+  background: var(--atlas-surface-hover);
+  color: #202124;
 }
 
 .dir-stop-drag:hover,
 .dir-stop-drag:focus-visible {
   background: var(--atlas-surface-hover);
+  color: #202124;
   outline: none;
 }
 
 .dir-stop-drag md-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  --md-icon-size: 20px;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  --md-icon-size: 24px;
   pointer-events: none;
 }
 
 .dir-stop-row.is-dragging {
-  opacity: 0.4;
+  opacity: 0.45;
+}
+
+.dir-stop-row.is-dragging .dir-stop-drag {
+  cursor: grabbing;
 }
 
 .dir-stop-row.is-drop-target .dir-stop-field {
@@ -581,6 +601,23 @@ md-icon-button.dir-add-stop {
   color: #202124;
   font: inherit;
   pointer-events: none;
+}
+
+.dir-stop-drag-ghost.is-pointer {
+  top: 0;
+  left: 0;
+  opacity: 0.96;
+}
+
+body.is-stop-reordering {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.is-stop-reordering .dir-drive-sheet,
+body.is-stop-reordering .dir-mobile-stop-card {
+  touch-action: none;
 }
 
 .dir-stop-drag-ghost-label {
