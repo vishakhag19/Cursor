@@ -667,8 +667,8 @@ md-icon-button.dir-add-stop:hover {
   color: var(--atlas-accent, #1a73e8);
 }
 
-.dir-save-btn.is-saved md-icon,
-md-icon.is-filled {
+.dir-save-btn.is-saved md-icon {
+  color: var(--atlas-accent, #1a73e8);
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 

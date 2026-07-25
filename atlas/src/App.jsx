@@ -1207,7 +1207,14 @@ export default function App() {
             }
           : null,
       };
-      setSavedRoutes((prev) => [entry, ...prev.filter((r) => r.name !== entry.name)].slice(0, 24));
+      setSavedRoutes((prev) => {
+        const withoutDupes = prev.filter(
+          (r) =>
+            r.route?.id !== entry.route.id &&
+            r.name !== entry.name,
+        );
+        return [entry, ...withoutDupes].slice(0, 24);
+      });
       showStatus("Route saved on this device");
     },
     [

@@ -468,11 +468,25 @@ export default function DirectionsPanel({
     null;
   const sheetChromeOnly = sheetSnap === "s10" && sheetDragPx == null;
 
-  // Only treat as saved when this exact route id was bookmarked (no fuzzy match —
-  // loose distance/duration matches were eating the first tap as an "unsave").
+  // Exact route id first; endpoint-tight fingerprint if ids were regenerated.
   const savedMatch =
     selectedRoute &&
-    savedRoutes.find((s) => s.route?.id && s.route.id === selectedRoute.id);
+    (savedRoutes.find((s) => s.route?.id && s.route.id === selectedRoute.id) ||
+      savedRoutes.find((s) => {
+        const r = s.route;
+        if (!r?.geometry?.length || !selectedRoute.geometry?.length) return false;
+        return (
+          Math.round(r.distance) === Math.round(selectedRoute.distance) &&
+          Math.round(r.duration) === Math.round(selectedRoute.duration) &&
+          r.geometry.length === selectedRoute.geometry.length &&
+          r.geometry[0][0] === selectedRoute.geometry[0][0] &&
+          r.geometry[0][1] === selectedRoute.geometry[0][1] &&
+          r.geometry[r.geometry.length - 1][0] ===
+            selectedRoute.geometry[selectedRoute.geometry.length - 1][0] &&
+          r.geometry[r.geometry.length - 1][1] ===
+            selectedRoute.geometry[selectedRoute.geometry.length - 1][1]
+        );
+      }));
   const routeIsSaved = Boolean(savedMatch);
 
   useEffect(() => {
@@ -1006,8 +1020,8 @@ export default function DirectionsPanel({
                   onPointerCancel={onSavePointerEnd}
                   onClick={onSaveClick}
                 >
-                  <md-icon class={routeIsSaved ? "is-filled" : undefined}>
-                    bookmark
+                  <md-icon key={routeIsSaved ? "saved" : "unsaved"}>
+                    {routeIsSaved ? "bookmark" : "bookmark_border"}
                   </md-icon>
                 </button>
               ) : null}
