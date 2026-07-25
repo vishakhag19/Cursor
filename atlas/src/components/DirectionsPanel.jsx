@@ -438,7 +438,11 @@ export default function DirectionsPanel({
                       <md-icon-button
                         type="button"
                         aria-label="Remove stop"
-                        onClick={() => onRemoveStop(i)}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          clearPlaceList();
+                          onRemoveStop(i);
+                        }}
                       >
                         <md-icon>close</md-icon>
                       </md-icon-button>

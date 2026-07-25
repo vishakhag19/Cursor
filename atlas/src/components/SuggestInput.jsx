@@ -355,7 +355,18 @@ export default function SuggestInput({
   function handleFocus() {
     onFocusField?.();
     const q = (value || "").trim();
-    // Filled stop fields: search immediately so the place list opens on click.
+    // Already showing matches for this value — don't restart search (avoids
+    // re-render storms that fight the Material text field while typing).
+    if (
+      open &&
+      !loading &&
+      listQuery.trim().toLowerCase() === q.toLowerCase() &&
+      suggestions.length > 0
+    ) {
+      publish({ open: true, items: suggestions, query: q, loading: false });
+      return;
+    }
+    // Filled stop fields: search so the place list opens on click.
     if (q && q.toLowerCase() !== "your location") {
       committedRef.current = null;
       void runSearch(q, { forceOpen: true });

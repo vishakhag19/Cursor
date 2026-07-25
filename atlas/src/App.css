@@ -118,7 +118,8 @@ md-icon-button.collapse-panel-btn:hover,
 .dir-sticky-chrome {
   position: sticky;
   top: 0;
-  z-index: 20;
+  /* Above focused stop fields so Options / mode chips stay clickable */
+  z-index: 60;
   background: #fff;
   margin: 0 calc(-1 * var(--panel-pad-x, 16px));
   padding: 0 var(--panel-pad-x, 16px) 4px;
@@ -347,7 +348,8 @@ md-icon-button.collapse-panel-btn:hover,
   align-items: center;
   flex-shrink: 0;
   gap: 0;
-  z-index: 3;
+  /* Above .suggest-wrap:focus-within so remove / drag stay clickable */
+  z-index: 50;
   background: linear-gradient(
     to right,
     transparent,
@@ -1204,6 +1206,9 @@ md-filled-tonal-button.is-edit-active {
   /* Keep left/right gutters equal when the scrollbar appears */
   scrollbar-gutter: stable both-edges;
   padding-inline: var(--panel-pad-x, 16px);
+  /* Sit flush under the Maps header — no extra top gap before Drive */
+  padding-top: 0;
+  gap: 6px;
   box-sizing: border-box;
 }
 
@@ -1566,6 +1571,11 @@ md-filled-tonal-button.is-edit-active {
   z-index: 40;
 }
 
+/* Directions uses an external list — don't elevate over remove / Options */
+.suggest-wrap.is-external-list:focus-within {
+  z-index: 2;
+}
+
 .suggest-wrap md-outlined-text-field {
   width: 100%;
 }
@@ -1607,7 +1617,13 @@ md-outlined-text-field {
   width: 24px;
   height: 24px;
   line-height: 0;
+  pointer-events: none;
   --md-circular-progress-size: 20px;
+}
+
+/* Keep spinner clear of drag / remove controls on multi-stop rows */
+.dir-stop-row.has-controls .suggest-spinner {
+  right: 78px;
 }
 
 .search-bar .suggest-spinner {
