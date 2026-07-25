@@ -2522,21 +2522,26 @@ md-icon-button.expand-panel:hover,
   color: var(--atlas-accent);
 }
 
-/* MD3 snackbar: desktop bottom-right, mobile bottom edge */
+/* MD3 snackbar — one style for every status toast */
 .map-status {
+  --snackbar-pad-y: 14px;
+  --snackbar-pad-x: 16px;
+  --snackbar-radius: var(--md-sys-shape-corner-extra-small, 4px);
   position: absolute;
   right: 16px;
   bottom: 24px;
   left: auto;
-  translate: none;
   z-index: 1100;
+  box-sizing: border-box;
   min-width: 288px;
   max-width: min(420px, calc(100% - 32px));
-  padding: 14px 16px;
-  border-radius: 4px;
-  background: var(--md-sys-color-inverse-surface);
-  color: var(--md-sys-color-inverse-on-surface);
-  box-shadow: var(--atlas-elevation-2);
+  margin: 0;
+  padding: var(--snackbar-pad-y) var(--snackbar-pad-x);
+  border: none;
+  border-radius: var(--snackbar-radius);
+  background: var(--md-sys-color-inverse-surface, #303030);
+  color: var(--md-sys-color-inverse-on-surface, #f5f5f5);
+  box-shadow: var(--atlas-elevation-2, 0 1px 3px rgba(60, 64, 67, 0.3));
   text-align: left;
   animation: snackbar-in 0.2s ease;
   pointer-events: none;
@@ -2545,11 +2550,11 @@ md-icon-button.expand-panel:hover,
 @keyframes snackbar-in {
   from {
     opacity: 0;
-    translate: 0 12px;
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    translate: 0 0;
+    transform: translateY(0);
   }
 }
 
@@ -3829,7 +3834,7 @@ md-text-button {
     display: flex;
   }
 
-  /* MD3 snackbar — pinned to the bottom edge on mobile */
+  /* Same snackbar look — only pin to the bottom edge on mobile */
   .map-status {
     left: 8px;
     right: 8px;
@@ -3837,10 +3842,6 @@ md-text-button {
     width: auto;
     min-width: 0;
     max-width: none;
-    translate: none;
-    text-align: left;
-    border-radius: 4px;
-    animation: snackbar-in 0.2s ease;
   }
 
   .app:has(.steps-fab) .map-status,
@@ -5129,31 +5130,4 @@ md-icon-button:hover {
 .app.road-pick-mode .map-stage,
 .app.road-pick-mode .leaflet-container {
   cursor: crosshair !important;
-}
-
-.app.road-pick-mode .map-stage::after {
-  content: "Tap a road to Prefer / Avoid / Never";
-  position: absolute;
-  left: 50%;
-  top: 16px;
-  translate: -50% 0;
-  z-index: 1200;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: #202124;
-  color: #fff;
-  font-size: 0.8125rem;
-  pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
-  white-space: nowrap;
-}
-
-@media (max-width: 800px) {
-  .app.road-pick-mode .map-stage::after {
-    top: auto;
-    bottom: 24px;
-    max-width: calc(100% - 24px);
-    white-space: normal;
-    text-align: center;
-  }
 }

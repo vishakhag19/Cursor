@@ -1537,9 +1537,8 @@ export default function App() {
     setCtx(null);
     setPanelOpen(false);
     setRoadPickMode(true);
-    // Instruction is the on-map chip (.road-pick-mode ::after) — no snackbar.
-    clearStatus();
-  }, [clearStatus]);
+    showStatus("Tap a road on the map to Prefer, Avoid, or Never use it", 0);
+  }, [showStatus]);
 
   const restoreAfterRoadPick = useCallback((returnTo = roadPickReturnTo) => {
     setRoadPickMode(false);
