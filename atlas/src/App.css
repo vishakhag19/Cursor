@@ -2702,44 +2702,60 @@ md-text-button {
     box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
   }
 
-  .app:has(.search-panel.is-searching) .panel,
-  .app:has(.search-panel.has-suggest) .panel {
-    max-height: min(92dvh, 860px);
-    border-radius: 0;
-  }
-
   /*
-   * Search panel floats as a rounded card over the map on mobile.
-   * Keep all four corners rounded — including when Recent / suggestions open
-   * (the rule above would otherwise square the bottom edge).
+   * Search: transparent full-screen host + inner rounded card.
+   * Card radius lives on .search-panel (not the transformed host) so all four
+   * corners stay round — transform + overflow:hidden on one node was squaring
+   * the bottom edge in some browsers.
    */
   .panel.is-search-chrome {
-    top: 50%;
-    left: 50%;
-    right: auto;
-    bottom: auto;
-    width: min(92vw, 400px);
-    max-width: min(92vw, 400px);
-    max-height: min(72dvh, 560px);
-    transform: translate(-50%, -50%);
-    border-radius: 28px;
-    border: 1px solid rgba(60, 64, 67, 0.12);
-    border-left: 1px solid rgba(60, 64, 67, 0.12);
-    border-right: 1px solid rgba(60, 64, 67, 0.12);
-    border-top: 1px solid rgba(60, 64, 67, 0.12);
-    padding-top: 10px;
-    padding-bottom: 10px;
-    box-shadow:
-      0 1px 2px rgba(60, 64, 67, 0.12),
-      0 10px 32px rgba(60, 64, 67, 0.24);
-    overflow: hidden;
+    inset: 0;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    transform: none;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
   }
 
   .app:has(.search-panel.is-searching) .panel.is-search-chrome,
   .app:has(.search-panel.has-suggest) .panel.is-search-chrome,
   .app:has(.search-panel.has-place) .panel.is-search-chrome {
-    top: max(16px, env(safe-area-inset-top, 0px));
-    transform: translate(-50%, 0);
+    place-items: start center;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+  }
+
+  .panel.is-search-chrome .search-panel {
+    pointer-events: auto;
+    width: min(92vw, 400px);
+    max-width: min(92vw, 400px);
+    max-height: min(72dvh, 560px);
+    min-height: 0;
+    margin: 0;
+    padding: 10px 12px 12px;
+    background: #fff;
+    border: 1px solid rgba(60, 64, 67, 0.12);
+    border-radius: 28px;
+    box-shadow:
+      0 1px 2px rgba(60, 64, 67, 0.12),
+      0 10px 32px rgba(60, 64, 67, 0.24);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app:has(.search-panel.is-searching) .panel.is-search-chrome .search-panel,
+  .app:has(.search-panel.has-suggest) .panel.is-search-chrome .search-panel,
+  .app:has(.search-panel.has-place) .panel.is-search-chrome .search-panel {
     max-height: min(70dvh, 560px);
     border-radius: 28px;
   }
@@ -2749,26 +2765,21 @@ md-text-button {
   }
 
   .app.panel-collapsed .panel.is-search-chrome {
-    transform: translate(-50%, calc(-50% + 120px));
+    transform: none;
     opacity: 0;
     pointer-events: none;
   }
 
-  .app.panel-collapsed:has(.search-panel.is-searching) .panel.is-search-chrome,
-  .app.panel-collapsed:has(.search-panel.has-suggest) .panel.is-search-chrome,
-  .app.panel-collapsed:has(.search-panel.has-place) .panel.is-search-chrome {
-    transform: translate(-50%, 120px);
-  }
-
-  .panel.is-search-chrome .search-panel {
-    max-height: inherit;
+  .panel.is-search-chrome .search-block,
+  .panel.is-search-chrome .search-suggest,
+  .panel.is-search-chrome .place-card,
+  .panel.is-search-chrome .landing-saved {
     min-height: 0;
-    overflow: hidden;
   }
 
   .panel.is-search-chrome .search-suggest,
-  .panel.is-search-chrome .place-card {
-    min-height: 0;
+  .panel.is-search-chrome .place-card,
+  .panel.is-search-chrome .landing-saved {
     overflow: auto;
   }
 
