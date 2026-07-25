@@ -152,10 +152,6 @@ export default function SearchPanel({
   const showHomeList = !listVisible && !place && hasSaved;
   const showPlaceCard = Boolean(place) && !listVisible;
   const isSearching = listVisible || (isCompact && mobileExpanded && !place);
-  const showingRecents =
-    listVisible &&
-    !(placeList.query || "").trim() &&
-    placeList.items.some((p) => p?.isRecent || p?.fromRecent);
   const placeCard = showPlaceCard ? (
     <PlaceDetailsCard
       place={place}
@@ -190,7 +186,7 @@ export default function SearchPanel({
                   onSelect={pickPlace}
                   placeholder="Search here"
                   allowCurrentLocation={false}
-                  recentPlaces={recentPlaces}
+                  recentPlaces={[]}
                   near={near}
                   bare
                   externalList
@@ -219,11 +215,6 @@ export default function SearchPanel({
 
         {listVisible && (
           <div className="landing-suggest">
-            {(showingRecents || !(placeList.query || "").trim()) && (
-              <div className="landing-suggest-head">
-                <h2 className="md-typescale-title-small">Recent</h2>
-              </div>
-            )}
             <PlaceSuggestionList
               items={placeList.items}
               query={placeList.query}
