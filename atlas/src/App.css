@@ -1796,6 +1796,15 @@ md-filled-tonal-button.is-edit-active {
   z-index: 1;
 }
 
+.panel.is-search-chrome .landing-saved-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .panel.is-search-chrome .landing-saved-open {
   padding-left: 4px;
   padding-right: 4px;
