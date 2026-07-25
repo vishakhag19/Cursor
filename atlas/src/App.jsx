@@ -1979,10 +1979,11 @@ export default function App() {
     editHistory.length > 0 ||
     Boolean(editPreview?.active) ||
     editBusy;
+  // Undo/reset only after a reshape in this session — not for opened saved routes.
   const showEditBar =
     view === "directions" &&
     !navigating &&
-    hasCustomEdits &&
+    editHistory.length > 0 &&
     Boolean(selectedRoute);
 
   // Keep mid-stops in the reshape via list as soon as the route is editable
