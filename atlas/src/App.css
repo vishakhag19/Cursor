@@ -2816,7 +2816,7 @@ md-icon-button.expand-panel:hover,
   width: auto;
 }
 
-/* Keep Cancel | Save side-by-side on phones (override stacked .btn-row) */
+/* Keep Save | Cancel side-by-side on phones (override stacked .btn-row) */
 @media (max-width: 800px) {
   .btn-row.dir-save-actions {
     flex-direction: row;
