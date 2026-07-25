@@ -1819,6 +1819,12 @@ md-filled-tonal-button.is-edit-active {
   box-shadow: none;
 }
 
+.panel.is-search-chrome .landing-saved .route-option-card:hover,
+.panel.is-search-chrome .landing-saved .route-option-card.is-active,
+.panel.is-search-chrome .landing-saved .route-option-row.is-active .route-option-card {
+  border: none;
+}
+
 .panel.is-search-chrome .landing-saved-list {
   flex: 1 1 auto;
   min-height: 0;
