@@ -2018,8 +2018,9 @@ export default function App() {
             onStart={startNavigation}
             onOpenAssistant={() => {
               setPrefsOpen(false);
-              setAssistantOpen(true);
+              setAssistantOpen((open) => !open);
             }}
+            assistantOpen={assistantOpen}
             onOpenPrefs={() => setPrefsOpen((open) => !open)}
             prefsOpen={prefsOpen}
             onOpenRoadRules={() => setPrefsOpen(true)}
@@ -2359,27 +2360,7 @@ export default function App() {
         />
       ) : null}
 
-      {view === "directions" &&
-        selectedRoute &&
-        !assistantOpen &&
-        !prefsOpen &&
-        !roadRulesOpen &&
-        !showEditBar &&
-        !navigating && (
-        <ActionTip tip="Ask route assistant" className="assistant-fab-tip">
-          <button
-            type="button"
-            className="assistant-fab"
-            aria-label="Ask route assistant"
-            onClick={() => {
-              setPrefsOpen(false);
-              setAssistantOpen(true);
-            }}
-          >
-            <md-icon>auto_awesome</md-icon>
-          </button>
-        </ActionTip>
-      )}
+      {/* Assistant entry lives beside Route options in the Drive top bar. */}
     </div>
   );
 }

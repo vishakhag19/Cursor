@@ -88,6 +88,7 @@ export default function DirectionsPanel({
   onStart = null,
   onSaveRoute = null,
   onOpenAssistant = null,
+  assistantOpen = false,
   onOpenPrefs = null,
   prefsOpen = false,
   onOpenRoadRules = null,
@@ -560,6 +561,19 @@ export default function DirectionsPanel({
                       onClick={onOpenPrefs}
                     >
                       <md-icon>tune</md-icon>
+                    </md-icon-button>
+                  </ActionTip>
+                ) : null}
+                {onOpenAssistant ? (
+                  <ActionTip tip={assistantOpen ? "Close assistant" : "Ask route assistant"}>
+                    <md-icon-button
+                      type="button"
+                      class={`dir-assistant-btn ${assistantOpen ? "is-active" : ""}`}
+                      aria-label={assistantOpen ? "Close assistant" : "Ask route assistant"}
+                      aria-pressed={assistantOpen ? "true" : "false"}
+                      onClick={onOpenAssistant}
+                    >
+                      <md-icon>auto_awesome</md-icon>
                     </md-icon-button>
                   </ActionTip>
                 ) : null}
