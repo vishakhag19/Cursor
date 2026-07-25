@@ -1068,7 +1068,7 @@ export default function DirectionsPanel({
                       }
                     >
                       {on ? <md-icon>check</md-icon> : null}
-                      <span>{f.chipLabel || f.label}</span>
+                      <span>{f.label}</span>
                     </button>
                   );
                 })}
