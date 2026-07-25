@@ -367,6 +367,38 @@ export async function reverseGeocode(lat, lng) {
   return mapPlace(item, lat, lng);
 }
 
+/** Label for saved-route titles — never “Your location”. */
+export async function resolveSaveEndpointName(place, fallback = "Start") {
+  if (!place) return fallback;
+  const raw = String(place.name || "").trim();
+  const isGeneric =
+    place.isCurrentLocation ||
+    /^your location$/i.test(raw) ||
+    /^current location$/i.test(raw);
+  if (!isGeneric && raw) return raw;
+
+  if (place.lat == null || place.lng == null) return fallback;
+  try {
+    const geo = await reverseGeocode(place.lat, place.lng);
+    const a = geo.address || {};
+    const line = [a.house_number, a.road].filter(Boolean).join(" ");
+    const name =
+      line ||
+      a.neighbourhood ||
+      a.city ||
+      String(geo.name || "").trim() ||
+      String(geo.display_name || "")
+        .split(",")[0]
+        .trim();
+    if (name && !/^your location$/i.test(name) && !/^current location$/i.test(name)) {
+      return name;
+    }
+  } catch {
+    /* fall through */
+  }
+  return fallback;
+}
+
 export function formatAddressLines(place) {
   if (!place?.address) return [place?.display_name].filter(Boolean);
   const a = place.address;

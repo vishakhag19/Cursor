@@ -4,6 +4,7 @@ import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
 import MdTextField from "./MdTextField";
 import { formatDistance, formatDuration } from "../utils/format";
+import { resolveSaveEndpointName } from "../api/geocode";
 import {
   TRAVEL_MODES,
   travelModeMeta,
@@ -860,12 +861,26 @@ export default function DirectionsPanel({
                       }
                       // Form already open — ignore (avoids touch ghost-click toggle-off).
                       if (saving) return;
-                      const from = stops[0]?.name || "Start";
-                      const to =
-                        stops[stops.length - 1]?.name || "Destination";
-                      setSaveName(`${from} to ${to}`);
                       setSaveNameError("");
                       setSaving(true);
+                      const fromPlace = stops[0];
+                      const toPlace = stops[stops.length - 1];
+                      // Instant placeholder without "Your location", then refine.
+                      const roughFrom =
+                        fromPlace && !fromPlace.isCurrentLocation
+                          ? fromPlace.name || "Start"
+                          : "Start";
+                      const roughTo =
+                        toPlace && !toPlace.isCurrentLocation
+                          ? toPlace.name || "Destination"
+                          : "Destination";
+                      setSaveName(`${roughFrom} to ${roughTo}`);
+                      void Promise.all([
+                        resolveSaveEndpointName(fromPlace, "Start"),
+                        resolveSaveEndpointName(toPlace, "Destination"),
+                      ]).then(([from, to]) => {
+                        setSaveName(`${from} to ${to}`);
+                      });
                     }}
                   >
                     <md-icon class={routeIsSaved ? "is-filled" : undefined}>

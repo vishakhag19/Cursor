@@ -7,7 +7,7 @@ import ContextMenu from "./components/ContextMenu";
 import RouteAssistant from "./components/RouteAssistant";
 import RoutePrefsSheet from "./components/RoutePrefsSheet";
 import RoadRulesSheet from "./components/RoadRulesSheet";
-import { reverseGeocode, haversineMeters, searchPlaces } from "./api/geocode";
+import { reverseGeocode, haversineMeters, searchPlaces, resolveSaveEndpointName } from "./api/geocode";
 import {
   closestPointOnPolyline,
   fetchShortestRoutes,
@@ -1310,8 +1310,11 @@ export default function App() {
         }
 
         if (intent.type === "save") {
-          const from = stops[0]?.name || "Start";
-          const to = stops[stops.length - 1]?.name || "Destination";
+          const from = await resolveSaveEndpointName(stops[0], "Start");
+          const to = await resolveSaveEndpointName(
+            stops[stops.length - 1],
+            "Destination",
+          );
           saveCurrentRoute(`${from} to ${to}`);
           pushAssistant(
             "agent",
