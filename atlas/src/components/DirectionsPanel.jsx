@@ -394,7 +394,10 @@ export default function DirectionsPanel({
       setSaveNameError("Name must be 80 characters or fewer");
       return;
     }
-    onSaveRoute?.(name);
+    const saved = onSaveRoute?.(name);
+    // Lock out residual taps so the reappearing bookmark cannot unsave.
+    lockSaveGesture(900);
+    if (saved === false) return;
     closeSaveForm();
   }
 
@@ -1075,7 +1078,11 @@ export default function DirectionsPanel({
                 >
                   Cancel
                 </md-outlined-button>
-                <md-filled-button type="submit" disabled={Boolean(saveNameError) || undefined}>
+                <md-filled-button
+                  type="button"
+                  disabled={Boolean(saveNameError) || undefined}
+                  onClick={submitSaveForm}
+                >
                   Save route
                 </md-filled-button>
               </div>

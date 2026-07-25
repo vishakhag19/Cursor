@@ -36,8 +36,9 @@ export default function SaveRouteSheet({
 
   if (!open) return null;
 
-  function handleSubmit(e) {
-    e.preventDefault();
+  function handleSave(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     onSave?.();
   }
 
@@ -59,7 +60,7 @@ export default function SaveRouteSheet({
           <md-icon>close</md-icon>
         </md-icon-button>
       </div>
-      <form className="save-route-sheet-body" onSubmit={handleSubmit}>
+      <form className="save-route-sheet-body" onSubmit={handleSave}>
         <div className={`dir-save-field${error ? " is-error" : ""}`}>
           <input
             ref={inputRef}
@@ -82,10 +83,12 @@ export default function SaveRouteSheet({
             {error}
           </p>
         ) : null}
+        {/* type=button + onClick: MD submitters are unreliable inside React forms */}
         <md-filled-button
-          type="submit"
+          type="button"
           class="save-route-sheet-submit"
           disabled={Boolean(error) || undefined}
+          onClick={handleSave}
         >
           Save
         </md-filled-button>

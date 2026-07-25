@@ -1155,13 +1155,28 @@ export default function App() {
 
   const saveCurrentRoute = useCallback(
     (name) => {
-      const route =
+      let route =
         routeOptionsRef.current.find(
           (r) => r.id === selectedRouteIdRef.current,
         ) || null;
       if (!route?.geometry?.length) {
+        route =
+          routeOptionsRef.current.find((r) => r.geometry?.length > 1) || null;
+      }
+      if (!route?.geometry?.length && routeGeometryRef.current?.length > 1) {
+        route = {
+          id: selectedRouteIdRef.current || `route-${Date.now()}`,
+          label: "Route",
+          distance: 0,
+          duration: 0,
+          geometry: cloneGeometry(routeGeometryRef.current),
+          steps: [],
+          edited: editViasRef.current.length > 0,
+        };
+      }
+      if (!route?.geometry?.length) {
         showStatus("No route to save");
-        return;
+        return false;
       }
       const entry = {
         id: uid(),
@@ -1215,7 +1230,22 @@ export default function App() {
         );
         return [entry, ...withoutDupes].slice(0, 24);
       });
+      // Keep the live route linked so the bookmark fills immediately.
+      setRouteOptions((prev) => {
+        const next = prev.map((r) =>
+          r.id === route.id
+            ? {
+                ...r,
+                savedEntryId: entry.id,
+                originalRouteId: r.originalRouteId || route.id,
+              }
+            : r,
+        );
+        routeOptionsRef.current = next;
+        return next;
+      });
       showStatus("Route saved on this device");
+      return true;
     },
     [
       travelMode,
