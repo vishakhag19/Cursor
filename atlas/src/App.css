@@ -2729,7 +2729,7 @@ md-text-button {
   }
 
   .search-panel {
-    padding-top: 12px;
+    padding-top: 0;
   }
 
   .search-panel.is-expanded {
@@ -2742,7 +2742,7 @@ md-text-button {
 
   .search-panel.is-searching,
   .search-panel.has-suggest {
-    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    padding-top: 0;
   }
 
   .place-card.place-details,
