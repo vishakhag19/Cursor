@@ -875,16 +875,12 @@ export default function DirectionsPanel({
                   aria-label={routeIsSaved ? "Unsave route" : "Save route"}
                   aria-pressed={routeIsSaved ? "true" : "false"}
                   title={routeIsSaved ? "Unsave route" : "Save route"}
-                  onPointerDown={(e) => {
-                    // Fire on press so the first touch isn't lost to focus/ghost click.
-                    if (e.pointerType === "mouse" && e.button !== 0) return;
+                  onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     if (routeIsSaved && savedMatch?.id) {
                       onUnsaveRoute?.(savedMatch.id);
-                      setSaving(false);
-                      setSaveName("");
-                      setSaveNameError("");
+                      closeSaveForm();
                       return;
                     }
                     if (saving) return;

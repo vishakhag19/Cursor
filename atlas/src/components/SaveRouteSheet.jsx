@@ -14,13 +14,24 @@ export default function SaveRouteSheet({
   onClose,
 }) {
   const inputRef = useRef(null);
+  const allowDismissRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) {
+      allowDismissRef.current = false;
+      return undefined;
+    }
+
+    // Ignore the opening gesture so the same tap can't close via backdrop.
+    allowDismissRef.current = false;
+    const armId = window.setTimeout(() => {
+      allowDismissRef.current = true;
+    }, 280);
+
     function onKey(e) {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose?.();
+        if (allowDismissRef.current) onClose?.();
       }
     }
     document.addEventListener("keydown", onKey);
@@ -29,6 +40,7 @@ export default function SaveRouteSheet({
       inputRef.current?.select?.();
     }, 40);
     return () => {
+      window.clearTimeout(armId);
       document.removeEventListener("keydown", onKey);
       window.clearTimeout(focusId);
     };
@@ -41,13 +53,25 @@ export default function SaveRouteSheet({
     onSave?.();
   }
 
+  function handleDismiss() {
+    if (!allowDismissRef.current) return;
+    onClose?.();
+  }
+
   return createPortal(
     <>
       <button
         type="button"
         className="save-route-sheet-backdrop"
         aria-label="Dismiss save route"
-        onClick={onClose}
+        onClick={handleDismiss}
+        onPointerUp={(e) => {
+          // Swallow the opening pointer so it never becomes a dismiss click.
+          if (!allowDismissRef.current) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
       />
       <div
         className="save-route-sheet"
