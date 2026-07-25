@@ -117,6 +117,7 @@ export default function DirectionsPanel({
   onShowSteps = null,
   onStart = null,
   onSaveRoute = null,
+  onUnsaveRoute = null,
   savedRoutes = [],
   onOpenAssistant = null,
   assistantOpen = false,
@@ -310,23 +311,23 @@ export default function DirectionsPanel({
     null;
   const sheetChromeOnly = sheetSnap === "s10" && sheetDragPx == null;
 
-  const routeIsSaved = Boolean(
+  const savedMatch =
     selectedRoute &&
-      savedRoutes.some(
-        (s) =>
-          s.route &&
-          s.route.distance === selectedRoute.distance &&
-          s.route.duration === selectedRoute.duration &&
-          (s.route.geometry?.length || 0) ===
-            (selectedRoute.geometry?.length || 0) &&
-          s.route.geometry?.[0]?.[0] === selectedRoute.geometry?.[0]?.[0] &&
-          s.route.geometry?.[0]?.[1] === selectedRoute.geometry?.[0]?.[1] &&
-          s.route.geometry?.at?.(-1)?.[0] ===
-            selectedRoute.geometry?.at?.(-1)?.[0] &&
-          s.route.geometry?.at?.(-1)?.[1] ===
-            selectedRoute.geometry?.at?.(-1)?.[1],
-      ),
-  );
+    savedRoutes.find(
+      (s) =>
+        s.route &&
+        s.route.distance === selectedRoute.distance &&
+        s.route.duration === selectedRoute.duration &&
+        (s.route.geometry?.length || 0) ===
+          (selectedRoute.geometry?.length || 0) &&
+        s.route.geometry?.[0]?.[0] === selectedRoute.geometry?.[0]?.[0] &&
+        s.route.geometry?.[0]?.[1] === selectedRoute.geometry?.[0]?.[1] &&
+        s.route.geometry?.at?.(-1)?.[0] ===
+          selectedRoute.geometry?.at?.(-1)?.[0] &&
+        s.route.geometry?.at?.(-1)?.[1] ===
+          selectedRoute.geometry?.at?.(-1)?.[1],
+    );
+  const routeIsSaved = Boolean(savedMatch);
 
   useEffect(() => {
     const root = modesRef.current;
@@ -830,14 +831,20 @@ export default function DirectionsPanel({
                 </md-filled-button>
               ) : null}
               {onSaveRoute ? (
-                <ActionTip tip={routeIsSaved ? "Saved" : "Save route"}>
+                <ActionTip tip={routeIsSaved ? "Unsave route" : "Save route"}>
                   <md-icon-button
                     type="button"
                     class={`dir-save-btn${routeIsSaved ? " is-saved" : ""}`}
-                    aria-label={routeIsSaved ? "Route saved" : "Save route"}
+                    aria-label={routeIsSaved ? "Unsave route" : "Save route"}
                     aria-pressed={routeIsSaved ? "true" : "false"}
                     onClick={() => {
-                      if (routeIsSaved) return;
+                      if (routeIsSaved && savedMatch?.id) {
+                        onUnsaveRoute?.(savedMatch.id);
+                        setSaving(false);
+                        setSaveName("");
+                        setSaveNameError("");
+                        return;
+                      }
                       if (saving) {
                         setSaving(false);
                         setSaveName("");

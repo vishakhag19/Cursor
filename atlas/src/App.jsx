@@ -2173,6 +2173,10 @@ export default function App() {
             comparison={hasCustomEdits ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
             onSaveRoute={saveCurrentRoute}
+            onUnsaveRoute={(id) => {
+              deleteSavedRoute(id);
+              showStatus("Route removed from saved");
+            }}
             savedRoutes={savedRoutes}
             onStart={startNavigation}
             onOpenAssistant={() => {

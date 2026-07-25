@@ -2541,15 +2541,32 @@ md-icon-button.expand-panel:hover,
 
 .dir-save-actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-wrap: nowrap;
+  justify-content: stretch;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
 .dir-save-actions md-outlined-button,
 .dir-save-actions md-filled-button {
+  flex: 1 1 0;
   min-width: 0;
+  width: auto;
+}
+
+/* Keep Cancel | Save side-by-side on phones (override stacked .btn-row) */
+@media (max-width: 800px) {
+  .btn-row.dir-save-actions {
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .btn-row.dir-save-actions md-outlined-button,
+  .btn-row.dir-save-actions md-filled-button {
+    width: auto;
+    flex: 1 1 0;
+  }
 }
 
 .dir-blocked {
@@ -3512,6 +3529,17 @@ md-text-button {
   .btn-row md-filled-button,
   .btn-row md-outlined-button {
     width: 100%;
+  }
+
+  .btn-row.dir-save-actions {
+    flex-wrap: nowrap;
+    flex-direction: row;
+  }
+
+  .btn-row.dir-save-actions md-filled-button,
+  .btn-row.dir-save-actions md-outlined-button {
+    width: auto;
+    flex: 1 1 0;
   }
 
   /* Free map space: hide start/destination once routes exist */
