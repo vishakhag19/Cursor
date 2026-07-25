@@ -36,6 +36,7 @@ export default function SearchPanel({
   savedRoutes = [],
   onLoadSaved = null,
   onDeleteSaved = null,
+  onRenameSaved = null,
   backRef = null,
   onBackableChange = null,
 }) {
@@ -263,6 +264,11 @@ export default function SearchPanel({
                 saved: r,
               }))}
               onSelect={(opt) => onLoadSaved?.(opt.saved)}
+              onRename={
+                onRenameSaved
+                  ? (opt, name) => onRenameSaved(opt.id, name)
+                  : null
+              }
               onDelete={
                 onDeleteSaved
                   ? (opt) => onDeleteSaved(opt.id)
