@@ -622,48 +622,21 @@ export default function App() {
       // Ignore the click that follows a route-line drag (otherwise it inserts a stop).
       if (Date.now() < suppressMapClickUntil.current) return;
 
-      // Directions: fill empty stop, or insert a mid-waypoint when A/B are set
-      // (Feature 3 — tap map to add pins). Disabled after any route reshape.
+      // When a route is on the map, stops are added only via the stop fields —
+      // never by tapping / interacting with the map.
       if (view === "directions") {
-        const routeAlreadyEdited =
-          editViasRef.current.length > 0 ||
-          editHistoryRef.current.length > 0 ||
-          routeOptionsRef.current?.some((r) => r.edited);
-        if (routeAlreadyEdited) return;
-
-        // Clicks near the active route belong to reshape — don't add a stop.
-        const geom = routeGeometryRef.current;
-        if (geom?.length > 1) {
-          const closest = closestPointOnPolyline(latlng, geom);
-          if (closest) {
-            // ~28m / ~40px-ish at city zoom — keep taps on empty map working.
-            const d = haversineMeters(
-              latlng.lat,
-              latlng.lng,
-              closest.lat,
-              closest.lng,
-            );
-            if (d < 35) return;
-          }
-        }
+        const routeShowing =
+          Boolean(routeGeometryRef.current?.length > 1) ||
+          Boolean(
+            routeOptionsRef.current?.some((r) => r?.geometry?.length > 1),
+          );
+        if (routeShowing) return;
 
         const emptyIdx = stops.findIndex((s) => !s);
         try {
           const place = await reverseGeocode(latlng.lat, latlng.lng);
           rememberPlace(place);
           if (emptyIdx === -1) {
-            // Insert before destination so start/end stay anchors.
-            const nextStops = [...stops];
-            const dest = nextStops.pop();
-            nextStops.push(place, dest);
-            const nextTexts = [...stopTexts];
-            const destText = nextTexts.pop();
-            nextTexts.push(place.name, destText);
-            setStops(nextStops);
-            setStopTexts(nextTexts);
-            clearRoutes();
-            runDirections(nextStops, travelMode);
-            showStatus(`Added stop: ${place.name}`);
             return;
           }
           const nextStops = [...stops];
@@ -706,7 +679,6 @@ export default function App() {
     [
       view,
       stops,
-      stopTexts,
       travelMode,
       showStatus,
       clearStatus,
