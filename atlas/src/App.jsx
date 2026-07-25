@@ -585,7 +585,7 @@ export default function App() {
         const roadPromise = resolveRoadAt(latlng);
         setCtx({ latlng, x, y, roadPromise });
         setRoadPickMode(false);
-        showStatus("Choose Prefer, Avoid, or Never for this road", 3200);
+        clearStatus();
         return;
       }
 
@@ -681,6 +681,7 @@ export default function App() {
       stopTexts,
       travelMode,
       showStatus,
+      clearStatus,
       clearRoutes,
       rememberPlace,
       runDirections,
@@ -1526,11 +1527,9 @@ export default function App() {
     setCtx(null);
     setPanelOpen(false);
     setRoadPickMode(true);
-    showStatus(
-      "Tap a road on the map to Prefer, Avoid, or Never use it",
-      5000,
-    );
-  }, [showStatus]);
+    // Instruction is the on-map chip (.road-pick-mode ::after) — no snackbar.
+    clearStatus();
+  }, [clearStatus]);
 
   const restoreAfterRoadPick = useCallback((returnTo = roadPickReturnTo) => {
     setRoadPickMode(false);
