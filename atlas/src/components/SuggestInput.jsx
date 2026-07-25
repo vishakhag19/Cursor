@@ -313,7 +313,9 @@ export default function SuggestInput({
     }
 
     // Immediate feedback while typing: filter recents + show Searching…
-    // before the debounced geocode round-trip returns.
+    // before the debounced geocode round-trip returns. Bump requestSeq so
+    // a slower response for an older prefix cannot overwrite this query.
+    requestSeq.current += 1;
     const preview = matchingRecents(q);
     setSuggestions(preview);
     suggestionsRef.current = preview;
