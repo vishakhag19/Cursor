@@ -1,6 +1,6 @@
 /* Material Design 3 theme for Atlas
- * Color roles follow https://github.com/material-components/material-web/blob/main/docs/theming/README.md
- * Primary keyed from Google Maps blue (#1A73E8).
+ * Brand accent = Google Maps blue (#1A73E8). All interactive chrome
+ * (buttons, chips, FABs, selected states, focus) should use these tokens.
  */
 
 :root {
@@ -15,55 +15,121 @@
   --md-sys-shape-corner-large: 16px;
   --md-sys-shape-corner-extra-large: 28px;
 
-  /* Light scheme */
-  --md-sys-color-primary: #005ac1;
-  --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-primary-container: #d8e2ff;
-  --md-sys-color-on-primary-container: #001a41;
+  /* —— Atlas interactive palette (single source of truth) —— */
+  --atlas-accent: #1a73e8;
+  --atlas-accent-hover: #1765cc;
+  --atlas-accent-pressed: #174ea6;
+  --atlas-on-accent: #ffffff;
+  --atlas-accent-container: #e8f0fe;
+  --atlas-accent-container-hover: #d2e3fc;
+  --atlas-accent-outline: #aecbfa;
+  --atlas-control-surface: #ffffff;
+  --atlas-surface-hover: #f1f3f4;
+  --atlas-surface-pressed: #e8eaed;
+  --atlas-control-outline: #dadce0;
+  --atlas-control-outline-hover: #bdc1c6;
 
-  --md-sys-color-secondary: #565e71;
+  /* Light scheme — MD3 roles keyed to Maps blue */
+  --md-sys-color-primary: var(--atlas-accent);
+  --md-sys-color-on-primary: var(--atlas-on-accent);
+  --md-sys-color-primary-container: var(--atlas-accent-container);
+  --md-sys-color-on-primary-container: var(--atlas-accent-pressed);
+
+  --md-sys-color-secondary: #5f6368;
   --md-sys-color-on-secondary: #ffffff;
-  --md-sys-color-secondary-container: #dae2f9;
-  --md-sys-color-on-secondary-container: #131c2b;
+  --md-sys-color-secondary-container: #e8eaed;
+  --md-sys-color-on-secondary-container: #202124;
 
-  --md-sys-color-tertiary: #705575;
-  --md-sys-color-on-tertiary: #ffffff;
-  --md-sys-color-tertiary-container: #fad8fd;
-  --md-sys-color-on-tertiary-container: #29132e;
+  --md-sys-color-tertiary: var(--atlas-accent-pressed);
+  --md-sys-color-on-tertiary: var(--atlas-on-accent);
+  --md-sys-color-tertiary-container: var(--atlas-accent-container);
+  --md-sys-color-on-tertiary-container: var(--atlas-accent-pressed);
 
   --md-sys-color-error: #ba1a1a;
   --md-sys-color-on-error: #ffffff;
   --md-sys-color-error-container: #ffdad6;
   --md-sys-color-on-error-container: #410002;
 
-  --md-sys-color-background: #f9f9ff;
-  --md-sys-color-on-background: #1a1b20;
-  --md-sys-color-surface: #f9f9ff;
-  --md-sys-color-on-surface: #1a1b20;
-  --md-sys-color-surface-variant: #e1e2ec;
-  --md-sys-color-on-surface-variant: #44474f;
+  --md-sys-color-background: #ffffff;
+  --md-sys-color-on-background: #202124;
+  --md-sys-color-surface: #ffffff;
+  --md-sys-color-on-surface: #202124;
+  --md-sys-color-surface-variant: #e8eaed;
+  --md-sys-color-on-surface-variant: #5f6368;
 
-  --md-sys-color-surface-dim: #dad9e0;
-  --md-sys-color-surface-bright: #f9f9ff;
+  --md-sys-color-surface-dim: #e8eaed;
+  --md-sys-color-surface-bright: #ffffff;
   --md-sys-color-surface-container-lowest: #ffffff;
-  --md-sys-color-surface-container-low: #f3f3fa;
-  --md-sys-color-surface-container: #eeedf4;
-  --md-sys-color-surface-container-high: #e8e7ef;
-  --md-sys-color-surface-container-highest: #e2e2e9;
+  --md-sys-color-surface-container-low: #f8f9fa;
+  --md-sys-color-surface-container: #f1f3f4;
+  --md-sys-color-surface-container-high: #e8eaed;
+  --md-sys-color-surface-container-highest: #dadce0;
 
-  --md-sys-color-outline: #74777f;
-  --md-sys-color-outline-variant: #c4c6d0;
+  --md-sys-color-outline: #80868b;
+  --md-sys-color-outline-variant: #e8eaed;
   --md-sys-color-shadow: #000000;
   --md-sys-color-scrim: #000000;
-  --md-sys-color-inverse-surface: #2f3036;
-  --md-sys-color-inverse-on-surface: #f0f0f7;
-  --md-sys-color-inverse-primary: #adc6ff;
+  --md-sys-color-inverse-surface: #202124;
+  --md-sys-color-inverse-on-surface: #ffffff;
+  --md-sys-color-inverse-primary: #aecbfa;
 
   /* App aliases */
   --atlas-panel-width: 400px;
   --atlas-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
   --atlas-elevation-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
   --atlas-elevation-3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* Material Web button / chip / FAB — same accent everywhere */
+  --md-filled-button-container-color: var(--atlas-accent);
+  --md-filled-button-label-text-color: var(--atlas-on-accent);
+  --md-filled-button-hover-container-color: var(--atlas-accent-hover);
+  --md-filled-button-pressed-container-color: var(--atlas-accent-pressed);
+  --md-filled-button-focus-container-color: var(--atlas-accent-hover);
+  --md-filled-button-icon-color: var(--atlas-on-accent);
+
+  --md-outlined-button-outline-color: var(--atlas-control-outline);
+  --md-outlined-button-label-text-color: var(--atlas-accent);
+  --md-outlined-button-hover-label-text-color: var(--atlas-accent-pressed);
+  --md-outlined-button-hover-state-layer-color: var(--atlas-accent);
+  --md-outlined-button-pressed-state-layer-color: var(--atlas-accent);
+  --md-outlined-button-focus-state-layer-color: var(--atlas-accent);
+  --md-outlined-button-icon-color: var(--atlas-accent);
+
+  --md-text-button-label-text-color: var(--atlas-accent);
+  --md-text-button-hover-label-text-color: var(--atlas-accent-pressed);
+  --md-text-button-hover-state-layer-color: var(--atlas-accent);
+  --md-text-button-pressed-state-layer-color: var(--atlas-accent);
+  --md-text-button-icon-color: var(--atlas-accent);
+
+  --md-filled-tonal-button-container-color: var(--atlas-accent-container);
+  --md-filled-tonal-button-label-text-color: var(--atlas-accent-pressed);
+  --md-filled-tonal-button-icon-color: var(--atlas-accent-pressed);
+  --md-filled-tonal-button-hover-state-layer-color: var(--atlas-accent);
+  --md-filled-tonal-button-pressed-state-layer-color: var(--atlas-accent);
+
+  --md-icon-button-icon-color: #3c4043;
+  --md-icon-button-hover-state-layer-color: #3c4043;
+  --md-icon-button-pressed-state-layer-color: #3c4043;
+  --md-icon-button-focus-state-layer-color: var(--atlas-accent);
+
+  --md-fab-container-color: var(--atlas-accent);
+  --md-fab-icon-color: var(--atlas-on-accent);
+  --md-fab-hover-container-color: var(--atlas-accent-hover);
+
+  --md-assist-chip-label-text-color: #202124;
+  --md-assist-chip-outline-color: var(--atlas-control-outline);
+  --md-assist-chip-hover-state-layer-color: #3c4043;
+  --md-filter-chip-selected-container-color: var(--atlas-accent-container);
+  --md-filter-chip-label-text-color: #3c4043;
+  --md-filter-chip-selected-label-text-color: var(--atlas-accent-pressed);
+  --md-filter-chip-selected-hover-state-layer-color: var(--atlas-accent);
+
+  --md-switch-selected-handle-color: var(--atlas-on-accent);
+  --md-switch-selected-track-color: var(--atlas-accent);
+  --md-switch-selected-hover-track-color: var(--atlas-accent-hover);
+  --md-checkbox-selected-container-color: var(--atlas-accent);
+  --md-checkbox-selected-icon-color: var(--atlas-on-accent);
+  --md-circular-progress-active-indicator-color: var(--atlas-accent);
 }
 
 html,
