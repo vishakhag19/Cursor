@@ -2143,10 +2143,15 @@ md-icon-button.expand-panel:hover,
 
 /* Mobile: panel is a top sheet — keep bar at top center of the viewport */
 @media (max-width: 800px) {
+  .app {
+    /* Same inset as the collapsed-panel expand chevron (top / right). */
+    --atlas-mobile-chrome-inset: 12px;
+  }
+
   .expand-panel-tip {
-    top: 12px;
+    top: var(--atlas-mobile-chrome-inset);
     left: auto;
-    right: 12px;
+    right: var(--atlas-mobile-chrome-inset);
   }
 
   .expand-panel {
@@ -2703,7 +2708,8 @@ md-text-button {
 
   /*
    * Search: transparent full-screen host + inner rounded card.
-   * Default: pinned to the top with a hard 16px gap from left/right edges.
+   * Top / left / right inset matches the collapsed expand chevron
+   * (--atlas-mobile-chrome-inset, currently 12px).
    */
   .panel.is-search-chrome {
     inset: 0;
@@ -2723,13 +2729,15 @@ md-text-button {
   }
 
   .panel.is-search-chrome .search-panel {
+    --search-card-inset: var(--atlas-mobile-chrome-inset, 12px);
     pointer-events: auto;
     box-sizing: border-box;
-    width: calc(100% - 32px);
-    max-width: calc(100% - 32px);
+    width: calc(100% - (2 * var(--search-card-inset)));
+    max-width: calc(100% - (2 * var(--search-card-inset)));
     max-height: min(72dvh, 560px);
     min-height: 0;
-    margin: max(16px, env(safe-area-inset-top, 0px)) 16px 0;
+    margin: max(var(--search-card-inset), env(safe-area-inset-top, 0px))
+      var(--search-card-inset) 0;
     padding: 10px 12px 12px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
