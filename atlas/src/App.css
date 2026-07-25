@@ -1221,7 +1221,8 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .search-panel {
-  padding-top: 12px;
+  /* Header brand removed — search bar is the chrome */
+  padding-top: 0;
   padding-bottom: 8px;
   overflow-x: hidden;
   overflow-y: auto;
