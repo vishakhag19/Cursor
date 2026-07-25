@@ -148,8 +148,12 @@ export default function SearchPanel({
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, [listVisible, isCompact, mobileExpanded, place]);
 
+  const recentDestinations = (recentPlaces || [])
+    .filter((p) => p && !p.isCurrentLocation && p.lat != null && p.lng != null)
+    .slice(0, 6);
   const hasSaved = savedRoutes.length > 0;
-  const showSaved = !listVisible && !place && hasSaved;
+  const hasRecents = recentDestinations.length > 0;
+  const showHomeList = !listVisible && !place && (hasSaved || hasRecents);
   const showPlaceCard = Boolean(place) && !listVisible;
   const isSearching = listVisible || (isCompact && mobileExpanded && !place);
   const showingRecents =
@@ -168,7 +172,7 @@ export default function SearchPanel({
     <>
       <section
         ref={panelRef}
-        className={`mode-panel search-panel is-bare ${listVisible ? "has-suggest" : ""} ${isSearching ? "is-searching" : ""} ${showSaved ? "has-saved" : ""} ${showPlaceCard && !isCompact ? "has-place" : ""}`}
+        className={`mode-panel search-panel is-bare ${listVisible ? "has-suggest" : ""} ${isSearching ? "is-searching" : ""} ${showHomeList ? "has-saved" : ""} ${showPlaceCard && !isCompact ? "has-place" : ""}`}
       >
         <div className={`search-block ${listVisible ? "has-list" : ""}`}>
           <div className="search-chrome">
@@ -239,14 +243,50 @@ export default function SearchPanel({
         {/* Desktop: place details stay in the side panel */}
         {!isCompact && placeCard}
 
-        {showSaved && (
+        {showHomeList && (
           <div className="landing-saved">
             <div className="landing-saved-head">
-              <h2 className="md-typescale-title-small">Saved routes</h2>
+              <h2 className="md-typescale-title-small">
+                {hasSaved && hasRecents
+                  ? "Recents"
+                  : hasSaved
+                    ? "Saved routes"
+                    : "Recent"}
+              </h2>
             </div>
             <md-list class="landing-saved-list">
+              {recentDestinations.map((p) => (
+                <md-list-item
+                  key={`recent-${p.id}`}
+                  class="landing-saved-item is-recent"
+                >
+                  <md-icon slot="start" class="landing-item-icon">
+                    history
+                  </md-icon>
+                  <button
+                    type="button"
+                    className="landing-saved-open"
+                    onClick={() => pickPlace(p)}
+                  >
+                    <span className="landing-saved-open-title">
+                      {p.name || "Place"}
+                    </span>
+                    <span className="landing-saved-open-meta">
+                      {p.display_name && p.display_name !== p.name
+                        ? p.display_name
+                        : "Recent search"}
+                    </span>
+                  </button>
+                </md-list-item>
+              ))}
               {savedRoutes.map((r) => (
-                <md-list-item key={r.id} class="landing-saved-item">
+                <md-list-item
+                  key={`saved-${r.id}`}
+                  class="landing-saved-item is-saved"
+                >
+                  <md-icon slot="start" class="landing-item-icon">
+                    bookmark
+                  </md-icon>
                   <button
                     type="button"
                     className="landing-saved-open"
