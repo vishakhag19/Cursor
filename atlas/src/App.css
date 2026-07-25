@@ -2870,6 +2870,12 @@ md-icon-button.expand-panel:hover,
   display: none;
 }
 
+/* Higher specificity than `.map-ctrl-stack > .action-tip-wrap` so undo/reset
+   stay out of the zoom / layers / recenter group on tablet & desktop. */
+.map-ctrl-stack > .action-tip-wrap.map-ctrl-mobile-only {
+  display: none;
+}
+
 .map-controls > * {
   pointer-events: auto;
 }
@@ -4328,7 +4334,8 @@ md-text-button {
     display: none !important;
   }
 
-  .map-ctrl-mobile-only {
+  .map-ctrl-mobile-only,
+  .map-ctrl-stack > .action-tip-wrap.map-ctrl-mobile-only {
     display: flex;
   }
 
