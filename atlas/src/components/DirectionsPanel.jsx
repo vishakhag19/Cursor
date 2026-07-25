@@ -125,6 +125,10 @@ export default function DirectionsPanel({
   onOpenPrefs = null,
   prefsOpen = false,
   hasCustomEdits = false,
+  onUndoEdit = null,
+  onResetRoute = null,
+  canUndoEdit = false,
+  canResetRoute = false,
   travelMode = "driving",
   onTravelMode = null,
   showTollPassPrices = false,
@@ -402,7 +406,8 @@ export default function DirectionsPanel({
     <section
       className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""} ${placeList.open ? "has-stop-suggest" : ""} is-sheet-${sheetSnap}${sheetDragPx != null ? " is-sheet-dragging" : ""}`}
     >
-      {/* Mobile: floating top card. Desktop: flattened via display:contents + order. */}
+      {/* Mobile: floating top card (+ reshape actions). Desktop: flattened via display:contents. */}
+      <div className="dir-mobile-top-stack">
       <div className="dir-mobile-stop-card">
       <div className="dir-stops-block">
         <div
@@ -633,6 +638,42 @@ export default function DirectionsPanel({
           </div>
         ) : null}
       </div>
+      </div>
+
+      {hasCustomEdits && (onUndoEdit || onResetRoute) ? (
+        <div
+          className="dir-mobile-reshape-bar"
+          role="toolbar"
+          aria-label="Route reshape actions"
+        >
+          {onUndoEdit ? (
+            <ActionTip tip="Undo last reshape">
+              <md-icon-button
+                type="button"
+                class="route-reshape-undo"
+                aria-label="Undo last reshape"
+                onClick={onUndoEdit}
+                disabled={!canUndoEdit || undefined}
+              >
+                <md-icon>undo</md-icon>
+              </md-icon-button>
+            </ActionTip>
+          ) : null}
+          {onResetRoute ? (
+            <ActionTip tip="Reset to original route">
+              <md-icon-button
+                type="button"
+                class="route-reshape-reset"
+                aria-label="Reset to original route"
+                onClick={onResetRoute}
+                disabled={!canResetRoute || undefined}
+              >
+                <md-icon>restart_alt</md-icon>
+              </md-icon-button>
+            </ActionTip>
+          ) : null}
+        </div>
+      ) : null}
       </div>
 
       {/* Mobile: bottom Drive sheet. Desktop: flattened via display:contents + order. */}

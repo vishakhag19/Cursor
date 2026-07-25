@@ -2269,6 +2269,10 @@ export default function App() {
             onOpenPrefs={() => setPrefsOpen((open) => !open)}
             prefsOpen={prefsOpen}
             hasCustomEdits={hasCustomEdits}
+            onUndoEdit={undoEdit}
+            onResetRoute={resetToSuggested}
+            canUndoEdit={editHistory.length > 0}
+            canResetRoute={canReset}
             travelMode={travelMode}
             onTravelMode={handleTravelModeChange}
             showTollPassPrices={Boolean(routePrefs.showTollPassPrices)}

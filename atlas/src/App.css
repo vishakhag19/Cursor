@@ -2303,10 +2303,7 @@ md-icon-button.expand-panel:hover,
 
   .app:not(.panel-collapsed) .route-reshape-bar,
   .app.panel-collapsed .route-reshape-bar {
-    top: max(12px, env(safe-area-inset-top, 0px));
-    left: 50%;
-    bottom: auto;
-    translate: -50% 0;
+    display: none !important;
   }
 }
 
@@ -3081,15 +3078,29 @@ md-text-button {
     pointer-events: none;
   }
 
-  .panel.is-directions-chrome .dir-mobile-stop-card {
+  .panel.is-directions-chrome .dir-mobile-top-stack {
     position: absolute;
     top: max(12px, env(safe-area-inset-top, 0px));
     left: 12px;
     right: 12px;
-    /* Always above the Drive sheet so stops stay editable */
     z-index: 4;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    max-height: min(52dvh, 440px);
+    pointer-events: none;
+  }
+
+  .panel.is-directions-chrome .dir-mobile-stop-card {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    z-index: auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     max-height: min(42dvh, 360px);
     /*
      * Floating MD labels sit on the outline notch and extend above the field.
@@ -3106,6 +3117,30 @@ md-text-button {
     pointer-events: auto;
     isolation: isolate;
     transition: opacity 0.18s ease;
+  }
+
+  .panel.is-directions-chrome .dir-mobile-reshape-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    height: 48px;
+    min-height: 48px;
+    padding: 4px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid var(--atlas-surface-pressed);
+    border-radius: 999px;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+    pointer-events: auto;
+  }
+
+  .panel.is-directions-chrome .dir-mobile-reshape-bar md-icon-button {
+    width: var(--panel-control-size);
+    height: var(--panel-control-size);
+    margin: 0;
+    --md-icon-button-icon-color: #5f6368;
   }
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
@@ -3638,6 +3673,7 @@ md-text-button {
     flex-direction: column;
   }
 
+  .dir-mobile-top-stack,
   .dir-mobile-stop-card,
   .dir-drive-sheet,
   .dir-drive-body,
@@ -3645,6 +3681,10 @@ md-text-button {
   .dir-sheet-grabber-hit,
   .dir-sticky-chrome {
     display: contents;
+  }
+
+  .dir-mobile-reshape-bar {
+    display: none !important;
   }
 
   .dir-sheet-grabber,
