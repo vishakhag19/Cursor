@@ -155,7 +155,7 @@ md-icon-button.collapse-panel-btn:hover,
   gap: 2px;
   overflow-x: auto;
   margin: 0 -4px 4px;
-  padding: 2px 4px 6px;
+  padding: 10px 4px 6px;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
 }
@@ -3551,7 +3551,7 @@ md-text-button {
 
   .panel.is-directions-chrome .dir-travel-modes {
     margin: 0 -4px 2px;
-    padding: 2px 4px 6px;
+    padding: 10px 4px 6px;
     width: auto;
   }
 
@@ -3725,7 +3725,7 @@ md-text-button {
 
   .dir-travel-modes {
     margin: 0 calc(-1 * var(--panel-pad-x, 14px)) 4px;
-    padding: 2px var(--panel-pad-x, 14px) 6px;
+    padding: 10px var(--panel-pad-x, 14px) 6px;
     width: calc(100% + 2 * var(--panel-pad-x, 14px));
     box-sizing: border-box;
     justify-content: space-between;
