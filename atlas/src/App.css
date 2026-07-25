@@ -790,6 +790,8 @@ md-icon-button.dir-add-stop:hover {
   --md-list-item-trailing-space: 0px;
   --md-list-item-one-line-container-height: 48px;
   --md-list-item-two-line-container-height: 52px;
+  /* No gap before the trailing delete control */
+  gap: 0;
 }
 
 .landing-saved-open {
@@ -824,8 +826,8 @@ md-icon-button.dir-add-stop:hover {
 .landing-saved-actions {
   display: flex;
   align-items: center;
-  /* Card already insets the list; keep trailing control tight to the edge. */
-  padding-right: 0;
+  padding: 0;
+  margin: 0;
 }
 
 /* Match delete icon to secondary label color (meta), not a third tone */
