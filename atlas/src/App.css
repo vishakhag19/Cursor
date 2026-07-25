@@ -1489,20 +1489,15 @@ md-filled-tonal-button.is-edit-active {
   box-sizing: border-box;
 }
 
-.search-bar-leading {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
+.search-bar-leading-pin {
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  color: #5f6368;
-}
-
-.search-bar-leading md-icon {
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
-  --md-icon-size: 22px;
+  display: block;
+  object-fit: contain;
+  border-radius: 50%;
+  pointer-events: none;
+  user-select: none;
 }
 
 .search-bar-field {
@@ -2708,6 +2703,73 @@ md-text-button {
 
   .app.panel-collapsed .panel {
     transform: translateY(calc(-100% - 12px));
+  }
+
+  /*
+   * Phone only: float the search panel in the center of the screen.
+   * Directions keeps the top sheet; expanded suggest/place shifts up for room.
+   */
+  @media (max-width: 480px) {
+    .panel.is-search-chrome {
+      top: 50%;
+      left: 50%;
+      right: auto;
+      bottom: auto;
+      width: min(92vw, 400px);
+      max-width: min(92vw, 400px);
+      max-height: min(72dvh, 560px);
+      transform: translate(-50%, -50%);
+      border-radius: 28px;
+      border: 1px solid rgba(60, 64, 67, 0.12);
+      border-left: 1px solid rgba(60, 64, 67, 0.12);
+      border-right: 1px solid rgba(60, 64, 67, 0.12);
+      border-top: 1px solid rgba(60, 64, 67, 0.12);
+      padding-top: 10px;
+      padding-bottom: 10px;
+      box-shadow:
+        0 1px 2px rgba(60, 64, 67, 0.12),
+        0 10px 32px rgba(60, 64, 67, 0.24);
+      overflow: hidden;
+    }
+
+    .app:has(.search-panel.is-searching) .panel.is-search-chrome,
+    .app:has(.search-panel.has-suggest) .panel.is-search-chrome,
+    .app:has(.search-panel.has-place) .panel.is-search-chrome {
+      top: max(16px, env(safe-area-inset-top, 0px));
+      transform: translate(-50%, 0);
+      max-height: min(70dvh, 560px);
+      border-radius: 28px;
+    }
+
+    .app.panel-collapsed .panel.is-search-chrome {
+      transform: translate(-50%, calc(-50% + 120px));
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .app.panel-collapsed:has(.search-panel.is-searching) .panel.is-search-chrome,
+    .app.panel-collapsed:has(.search-panel.has-suggest) .panel.is-search-chrome,
+    .app.panel-collapsed:has(.search-panel.has-place) .panel.is-search-chrome {
+      transform: translate(-50%, 120px);
+    }
+
+    .panel.is-search-chrome .search-panel {
+      max-height: inherit;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel.is-search-chrome .search-suggest,
+    .panel.is-search-chrome .place-card {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .panel.is-search-chrome .place-card.place-details,
+    .panel.is-search-chrome .place-details.m3-card {
+      margin-left: 0;
+      margin-right: 0;
+    }
   }
 
   .panel-header {

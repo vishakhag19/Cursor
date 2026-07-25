@@ -101,9 +101,14 @@ export default function SearchPanel({
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
         <div className="search-chrome">
           <div className={`search-bar ${query ? "has-query" : ""}`}>
-            <span className="search-bar-leading" aria-hidden>
-              <md-icon>search</md-icon>
-            </span>
+            <img
+              className="search-bar-leading-pin"
+              src={`${import.meta.env.BASE_URL}favicon.svg`}
+              alt=""
+              width="28"
+              height="28"
+              aria-hidden
+            />
             <div className="search-bar-field">
               <SuggestInput
                 id="main-search"
