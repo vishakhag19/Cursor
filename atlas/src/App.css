@@ -2662,51 +2662,9 @@ md-icon-button.expand-panel:hover,
   color: #5f6368;
 }
 
-/* Mobile save-route sheet — same interaction model as road-rule sheet */
-.save-route-sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1400;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: rgba(32, 33, 36, 0.45);
-  cursor: pointer;
-}
-
+/* Mobile save-route sheet — replaces the Drive sheet in-place */
 .save-route-sheet {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: auto;
-  z-index: 1401;
-  display: flex;
-  flex-direction: column;
-  width: auto;
-  max-height: min(72dvh, 520px);
-  padding: 0 0 max(12px, env(safe-area-inset-bottom, 0px));
-  background: #fff;
-  border: 1px solid rgba(60, 64, 67, 0.12);
-  border-left: none;
-  border-right: none;
-  border-bottom: none;
-  border-radius: 28px 28px 0 0;
-  box-shadow:
-    0 1px 2px rgba(60, 64, 67, 0.12),
-    0 8px 28px rgba(60, 64, 67, 0.22);
-  overflow: hidden;
-  animation: save-route-sheet-up 0.22s ease;
-  pointer-events: auto;
-}
-
-@keyframes save-route-sheet-up {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  display: none;
 }
 
 .save-route-sheet-handle {
@@ -3439,6 +3397,44 @@ md-text-button {
     overflow: hidden;
     pointer-events: auto;
     transition: height 0.22s ease, max-height 0.22s ease, border-radius 0.22s ease;
+  }
+
+  /* Save sheet replaces the Drive sheet — same anchor, Drive stays mounted. */
+  .panel.is-directions-chrome .directions-panel.is-saving-route .dir-drive-sheet {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .panel.is-directions-chrome .directions-panel.is-saving-route .save-route-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    height: auto;
+    max-height: min(56dvh, 420px);
+    padding: 0 0 max(12px, env(safe-area-inset-bottom, 0px));
+    background: #fff;
+    border: none;
+    border-radius: 28px 28px 0 0;
+    box-shadow:
+      0 -1px 2px rgba(60, 64, 67, 0.08),
+      0 -8px 28px rgba(60, 64, 67, 0.18);
+    overflow: hidden;
+    pointer-events: auto;
+    animation: save-route-sheet-up 0.22s ease;
+  }
+
+  @keyframes save-route-sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-s10 {

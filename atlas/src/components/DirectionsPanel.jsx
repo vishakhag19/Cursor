@@ -520,7 +520,7 @@ export default function DirectionsPanel({
 
   return (
     <section
-      className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""} ${placeList.open ? "has-stop-suggest" : ""} is-sheet-${sheetSnap}${sheetDragPx != null ? " is-sheet-dragging" : ""}`}
+      className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""} ${placeList.open ? "has-stop-suggest" : ""} is-sheet-${sheetSnap}${sheetDragPx != null ? " is-sheet-dragging" : ""}${saving && isCompact ? " is-saving-route" : ""}`}
     >
       {/* Mobile: floating top card (+ reshape actions). Desktop: flattened via display:contents. */}
       <div className="dir-mobile-top-stack">
@@ -1032,20 +1032,6 @@ export default function DirectionsPanel({
             </form>
           ) : null}
 
-          <SaveRouteSheet
-            open={saving && isCompact}
-            name={saveName}
-            error={saveNameError}
-            onNameChange={(v) => {
-              setSaveName(v);
-              setSaveNameError(
-                v.length > 80 ? "Name must be 80 characters or fewer" : "",
-              );
-            }}
-            onSave={submitSaveForm}
-            onClose={closeSaveForm}
-          />
-
           {(selectedRoute.steps || []).length > 0 ? (
             <ol className="dir-inline-steps" aria-label="Turn-by-turn steps">
               {(selectedRoute.steps || []).map((s, i) => (
@@ -1096,6 +1082,20 @@ export default function DirectionsPanel({
         </div>
       ) : null}
       </div>
+
+      <SaveRouteSheet
+        open={saving && isCompact}
+        name={saveName}
+        error={saveNameError}
+        onNameChange={(v) => {
+          setSaveName(v);
+          setSaveNameError(
+            v.length > 80 ? "Name must be 80 characters or fewer" : "",
+          );
+        }}
+        onSave={submitSaveForm}
+        onClose={closeSaveForm}
+      />
     </section>
   );
 }
