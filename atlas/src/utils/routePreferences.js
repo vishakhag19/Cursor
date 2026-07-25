@@ -82,6 +82,12 @@ export const ROUTE_OPTION_FIELDS = [
 ];
 
 /**
+ * Quick-toggle chips in the directions panel.
+ * All route option toggles — not road rules (Prefer / Avoid / Never).
+ */
+export const ROUTE_PREF_CHIP_FIELDS = ROUTE_OPTION_FIELDS;
+
+/**
  * Preferred OSRM exclude flags derived from prefs.
  * Public router.project-osrm.org rejects these with 400 — routing treats
  * them as soft ranking bias and only probes hard excludes when supported.

@@ -8,7 +8,7 @@ import { resolveSaveEndpointName } from "../api/geocode";
 import {
   TRAVEL_MODES,
   travelModeMeta,
-  ROUTE_OPTION_FIELDS,
+  ROUTE_PREF_CHIP_FIELDS,
   NON_DRIVE_MODE_HINT,
 } from "../utils/routePreferences";
 
@@ -27,10 +27,6 @@ function useIsCompact(query = "(max-width: 800px)") {
   }, [query]);
   return compact;
 }
-
-const AVOID_CHIP_FIELDS = ROUTE_OPTION_FIELDS.filter((f) =>
-  ["avoidTolls", "avoidHighways", "avoidFerries"].includes(f.id),
-);
 
 /** Sheet heights as fractions of the viewport — 10% steps up to full screen. */
 const SHEET_SNAPS = [
@@ -1054,8 +1050,12 @@ export default function DirectionsPanel({
             </div>
 
             {travelMode === "driving" && routePrefs && onRoutePrefsChange ? (
-              <div className="dir-avoid-chips" role="group" aria-label="Avoid">
-                {AVOID_CHIP_FIELDS.map((f) => {
+              <div
+                className="dir-avoid-chips"
+                role="group"
+                aria-label="Route options"
+              >
+                {ROUTE_PREF_CHIP_FIELDS.map((f) => {
                   const on = Boolean(routePrefs[f.id]);
                   return (
                     <button
@@ -1068,7 +1068,7 @@ export default function DirectionsPanel({
                       }
                     >
                       {on ? <md-icon>check</md-icon> : null}
-                      <span>{f.label}</span>
+                      <span>{f.chipLabel || f.label}</span>
                     </button>
                   );
                 })}
