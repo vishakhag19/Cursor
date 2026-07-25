@@ -60,9 +60,16 @@ function sheetSnapHeights() {
 function nearestSheetSnap(height, heights, velocityY) {
   const ordered = SHEET_SNAPS.map((id) => ({ id, h: heights[id] }));
   // Negative velocityY = finger moving up → prefer taller snap
+  if (velocityY < -1.1) {
+    /* Strong upward fling → full screen */
+    return SHEET_MAX_SNAP;
+  }
   if (velocityY < -0.45) {
     const taller = ordered.find((s) => s.h > height + 8);
-    return taller?.id || SHEET_SNAPS[SHEET_SNAPS.length - 1];
+    return taller?.id || SHEET_MAX_SNAP;
+  }
+  if (velocityY > 1.1) {
+    return SHEET_SNAPS[0];
   }
   if (velocityY > 0.45) {
     const shorter = [...ordered].reverse().find((s) => s.h < height - 8);
@@ -602,6 +609,12 @@ export default function DirectionsPanel({
           onPointerMove={onSheetHandlePointerMove}
           onPointerUp={endSheetDrag}
           onPointerCancel={endSheetDrag}
+          onDoubleClick={() => {
+            if (!isMobileSheetViewport()) return;
+            setSheetSnap((cur) =>
+              cur === SHEET_MAX_SNAP ? "s30" : SHEET_MAX_SNAP,
+            );
+          }}
         >
           <div className="dir-sheet-grabber" aria-hidden />
         </div>

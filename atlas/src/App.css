@@ -1747,9 +1747,13 @@ md-outlined-text-field {
   --md-outlined-text-field-outline-color: var(--atlas-control-outline);
   --md-outlined-text-field-hover-outline-color: var(--atlas-control-outline-hover);
   --md-outlined-text-field-focus-outline-color: var(--atlas-accent);
-  --md-outlined-text-field-container-height: 48px;
-  --md-outlined-text-field-top-space: 12px;
-  --md-outlined-text-field-bottom-space: 12px;
+  /*
+   * Labeled outlined fields need the MD3 default 56px height — 48px clips
+   * the floating label (e.g. "Starting point") at the top of the outline.
+   */
+  --md-outlined-text-field-container-height: 56px;
+  --md-outlined-text-field-top-space: 16px;
+  --md-outlined-text-field-bottom-space: 16px;
   --md-outlined-text-field-leading-space: 16px;
   --md-outlined-text-field-trailing-space: 12px;
 }
@@ -2934,8 +2938,8 @@ md-text-button {
     display: flex;
     flex-direction: column;
     max-height: min(42dvh, 360px);
-    /* Extra top pad so MD outlined labels ("Starting point") aren't clipped */
-    padding: 22px 10px 10px;
+    /* Top pad clears the floating MD label above the outline notch */
+    padding: 16px 10px 10px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
     border-radius: 24px;
