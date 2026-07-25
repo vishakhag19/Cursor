@@ -537,7 +537,11 @@ export default function RoutePrefsSheet({
                         <md-icon-button
                           type="button"
                           aria-label={`Remove ${r.name}`}
-                          onClick={() => onRemoveRoadRule?.(r.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onRemoveRoadRule?.(r.id);
+                          }}
                         >
                           <md-icon>delete</md-icon>
                         </md-icon-button>

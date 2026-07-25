@@ -14,7 +14,15 @@ const AVOID_CHIP_FIELDS = ROUTE_OPTION_FIELDS.filter((f) =>
   ["avoidTolls", "avoidHighways", "avoidFerries"].includes(f.id),
 );
 
-const SHEET_SNAPS = ["peek", "mid", "full"];
+/** Sheet heights as fractions of the viewport — max 50% so the map stays visible. */
+const SHEET_SNAPS = ["s10", "s20", "s30", "s40", "s50"];
+const SHEET_FRACTIONS = {
+  s10: 0.1,
+  s20: 0.2,
+  s30: 0.3,
+  s40: 0.4,
+  s50: 0.5,
+};
 
 function isMobileSheetViewport() {
   return (
@@ -23,36 +31,29 @@ function isMobileSheetViewport() {
   );
 }
 
-function sheetSnapHeights(handleEl) {
+function sheetSnapHeights() {
   const vh = window.innerHeight;
-  const topBar = handleEl?.querySelector?.(".dir-top-bar");
-  const grabber = handleEl?.querySelector?.(".dir-sheet-grabber");
-  const peek = Math.max(
-    56,
-    Math.round(
-      (grabber?.getBoundingClientRect?.().height || 4) +
-        (topBar?.getBoundingClientRect?.().height || 40) +
-        16,
-    ),
-  );
-  const mid = Math.round(Math.min(vh * 0.52, 480));
-  const full = Math.round(Math.max(mid, vh - 12));
-  return { peek, mid, full };
+  const heights = {};
+  for (const id of SHEET_SNAPS) {
+    heights[id] = Math.max(64, Math.round(vh * SHEET_FRACTIONS[id]));
+  }
+  return heights;
 }
 
 function nearestSheetSnap(height, heights, velocityY) {
+  const ordered = SHEET_SNAPS.map((id) => ({ id, h: heights[id] }));
   // Negative velocityY = finger moving up → prefer taller snap
-  if (velocityY < -0.55) {
-    if (height > heights.mid - 24) return "full";
-    return "mid";
+  if (velocityY < -0.45) {
+    const taller = ordered.find((s) => s.h > height + 8);
+    return taller?.id || SHEET_SNAPS[SHEET_SNAPS.length - 1];
   }
-  if (velocityY > 0.55) {
-    if (height < heights.mid + 24) return "peek";
-    return "mid";
+  if (velocityY > 0.45) {
+    const shorter = [...ordered].reverse().find((s) => s.h < height - 8);
+    return shorter?.id || SHEET_SNAPS[0];
   }
-  const entries = SHEET_SNAPS.map((id) => ({
-    id,
-    dist: Math.abs(heights[id] - height),
+  const entries = ordered.map((s) => ({
+    id: s.id,
+    dist: Math.abs(s.h - height),
   }));
   entries.sort((a, b) => a.dist - b.dist);
   return entries[0].id;
@@ -76,6 +77,8 @@ export default function DirectionsPanel({
   collapseIcon = "chevron_left",
   /** Imperative handle: { handleBack(): boolean, isBackable(): boolean } */
   backRef = null,
+  /** Report sheet height fraction so the map can stay framed. */
+  onSheetHeightChange = null,
   routeOptions,
   selectedRouteId,
   onSelectRoute,
@@ -120,8 +123,9 @@ export default function DirectionsPanel({
     select: null,
   });
   const wasLoadingRef = useRef(false);
-  const [sheetSnap, setSheetSnap] = useState("mid");
+  const [sheetSnap, setSheetSnap] = useState("s30");
   const [sheetDragPx, setSheetDragPx] = useState(null);
+  const [saveNameError, setSaveNameError] = useState("");
   const sheetRef = useRef(null);
   const sheetHandleRef = useRef(null);
   const sheetBodyRef = useRef(null);
@@ -216,6 +220,7 @@ export default function DirectionsPanel({
   function handleSystemBack() {
     if (saving) {
       setSaving(false);
+      setSaveNameError("");
       return true;
     }
     if (placeList.open) {
@@ -227,11 +232,8 @@ export default function DirectionsPanel({
       clearPlaceList();
       return true;
     }
-    if (
-      isMobileSheetViewport() &&
-      (sheetSnap === "full" || sheetSnap === "mid")
-    ) {
-      setSheetSnap("peek");
+    if (isMobileSheetViewport() && sheetSnap !== "s10") {
+      setSheetSnap("s10");
       return true;
     }
     onClose?.();
@@ -255,10 +257,26 @@ export default function DirectionsPanel({
     }
     if (wasLoadingRef.current && routeOptions.length > 0) {
       wasLoadingRef.current = false;
-      setForceShowStops(false);
+      /* Keep the stops card visible so Add stop / edits stay available. */
       clearPlaceList();
+      if (isMobileSheetViewport() && sheetSnap === "s10") {
+        setSheetSnap("s30");
+      }
     }
-  }, [loading, routeOptions.length]);
+  }, [loading, routeOptions.length, sheetSnap]);
+
+  useEffect(() => {
+    if (!onSheetHeightChange) return;
+    const frac = SHEET_FRACTIONS[sheetSnap] ?? 0.3;
+    onSheetHeightChange(frac);
+  }, [sheetSnap, onSheetHeightChange]);
+
+  useEffect(() => {
+    if (!isMobileSheetViewport()) {
+      setSheetSnap("s30");
+      setSheetDragPx(null);
+    }
+  }, []);
 
   useEffect(() => {
     if (menuFor == null) return undefined;
@@ -279,11 +297,12 @@ export default function DirectionsPanel({
     routeOptions.find((r) => r.id === selectedRouteId) ||
     routeOptions[0] ||
     null;
+  const sheetChromeOnly = sheetSnap === "s10" && sheetDragPx == null;
 
   useEffect(() => {
     const root = modesRef.current;
     if (!root) return;
-    const active = root.querySelector('.dir-travel-mode.is-active');
+    const active = root.querySelector(".dir-travel-mode.is-active");
     active?.scrollIntoView({
       behavior: "smooth",
       inline: "center",
@@ -291,27 +310,14 @@ export default function DirectionsPanel({
     });
   }, [travelMode]);
 
-  useEffect(() => {
-    if (!isMobileSheetViewport()) {
-      setSheetSnap("mid");
-      setSheetDragPx(null);
-    }
-  }, []);
-
   function onSheetHandlePointerDown(e) {
     if (!isMobileSheetViewport()) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    // Don't start a sheet drag from interactive controls inside the handle.
-    if (
-      e.target?.closest?.(
-        "md-icon-button, button, a, input, textarea, md-filled-button, md-outlined-button, md-text-button",
-      )
-    ) {
-      return;
-    }
-    const heights = sheetSnapHeights(sheetHandleRef.current);
+    const heights = sheetSnapHeights();
     const measured = sheetRef.current?.getBoundingClientRect?.().height;
-    const startHeight = Math.round(measured || heights[sheetSnap] || heights.mid);
+    const startHeight = Math.round(
+      measured || heights[sheetSnap] || heights.s30,
+    );
     sheetDragRef.current = {
       pointerId: e.pointerId,
       startY: e.clientY,
@@ -334,10 +340,11 @@ export default function DirectionsPanel({
     drag.velocityY = dy / dt;
     drag.lastY = e.clientY;
     drag.lastT = now;
-    // Finger down → shorter sheet
+    const minH = drag.heights.s10;
+    const maxH = drag.heights.s50;
     const next = Math.min(
-      drag.heights.full,
-      Math.max(drag.heights.peek, drag.startHeight - (e.clientY - drag.startY)),
+      maxH,
+      Math.max(minH, drag.startHeight - (e.clientY - drag.startY)),
     );
     drag.currentHeight = next;
     setSheetDragPx(next);
@@ -346,14 +353,13 @@ export default function DirectionsPanel({
   function endSheetDrag(e) {
     const drag = sheetDragRef.current;
     if (!drag || (e && drag.pointerId !== e.pointerId)) return;
+    const minH = drag.heights.s10;
+    const maxH = drag.heights.s50;
     const height =
       drag.currentHeight ??
       Math.min(
-        drag.heights.full,
-        Math.max(
-          drag.heights.peek,
-          drag.startHeight - (drag.lastY - drag.startY),
-        ),
+        maxH,
+        Math.max(minH, drag.startHeight - (drag.lastY - drag.startY)),
       );
     const snap = nearestSheetSnap(height, drag.heights, drag.velocityY);
     sheetDragRef.current = null;
@@ -536,7 +542,11 @@ export default function DirectionsPanel({
 
         {/* Keep Add stop with the fixed stop fields (not inside the scrolling list). */}
         {!(placeList.open && (placeList.items.length > 0 || placeList.loading)) ? (
-          <button type="button" className="dir-add-stop" onClick={onAddStop}>
+          <button type="button" className="dir-add-stop" onClick={() => {
+            onAddStop?.();
+            setForceShowStops(true);
+            if (isMobileSheetViewport()) setSheetSnap("s20");
+          }}>
             <md-icon>add</md-icon>
             <span className="md-typescale-body-medium">Add stop</span>
           </button>
@@ -564,19 +574,21 @@ export default function DirectionsPanel({
       {/* Mobile: bottom Drive sheet. Desktop: flattened via display:contents + order. */}
       <div
         ref={sheetRef}
-        className={`dir-drive-sheet is-${sheetSnap}`}
+        className={`dir-drive-sheet is-${sheetSnap}${sheetChromeOnly ? " is-chrome-only" : ""}`}
         style={sheetStyle}
       >
         <div
           ref={sheetHandleRef}
-          className="dir-sheet-handle"
+          className="dir-sheet-grabber-hit"
+          aria-label="Drag to resize route sheet"
           onPointerDown={onSheetHandlePointerDown}
           onPointerMove={onSheetHandlePointerMove}
           onPointerUp={endSheetDrag}
           onPointerCancel={endSheetDrag}
         >
           <div className="dir-sheet-grabber" aria-hidden />
-          <div className="dir-sticky-chrome">
+        </div>
+        <div className="dir-sticky-chrome">
             <div className="dir-top-bar">
               <md-icon-button
                 type="button"
@@ -705,7 +717,6 @@ export default function DirectionsPanel({
               </div>
             ) : null}
           </div>
-        </div>
 
         <div className="dir-drive-body" ref={sheetBodyRef}>
       {modeMeta.unsupported ? (
@@ -761,7 +772,7 @@ export default function DirectionsPanel({
               ) : null}
             </div>
             <div className="dir-selected-actions">
-              {onStart ? (
+              {onStart && !saving ? (
                 <md-filled-button
                   type="button"
                   class="dir-start-btn dir-start-btn-inline"
@@ -854,9 +865,14 @@ export default function DirectionsPanel({
               onSubmit={(e) => {
                 e.preventDefault();
                 const name = saveName.trim() || "Saved route";
+                if (saveName.length > 80) {
+                  setSaveNameError("Name must be 80 characters or fewer");
+                  return;
+                }
                 onSaveRoute?.(name);
                 setSaving(false);
                 setSaveName("");
+                setSaveNameError("");
               }}
             >
               <MdTextField
@@ -864,8 +880,16 @@ export default function DirectionsPanel({
                 className="dir-save-field"
                 label="Route name"
                 value={saveName}
-                onChange={setSaveName}
-                maxLength={80}
+                onChange={(v) => {
+                  setSaveName(v);
+                  setSaveNameError(
+                    v.length > 80
+                      ? "Name must be 80 characters or fewer"
+                      : "",
+                  );
+                }}
+                error={Boolean(saveNameError)}
+                supportingText={saveNameError || undefined}
                 placeholder="Optional"
               />
               <div className="dir-save-actions btn-row">
@@ -874,11 +898,14 @@ export default function DirectionsPanel({
                   onClick={() => {
                     setSaving(false);
                     setSaveName("");
+                    setSaveNameError("");
                   }}
                 >
                   Cancel
                 </md-outlined-button>
-                <md-filled-button type="submit">Save route</md-filled-button>
+                <md-filled-button type="submit" disabled={Boolean(saveNameError) || undefined}>
+                  Save route
+                </md-filled-button>
               </div>
             </form>
           ) : null}
@@ -907,7 +934,7 @@ export default function DirectionsPanel({
         </div>
       ) : null}
 
-      {selectedRoute && onStart ? (
+      {selectedRoute && onStart && !saving ? (
         <div className="dir-bottom-actions" role="toolbar" aria-label="Route actions">
           <md-filled-button
             type="button"

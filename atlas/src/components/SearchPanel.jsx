@@ -19,7 +19,8 @@ function useIsCompact(query = "(max-width: 800px)") {
 }
 
 /**
- * Landing search — place card after a selection; Saved underneath when idle.
+ * Landing search — Search + Saved routes in one card (Google Maps–style).
+ * Selected place details sit in a bottom sheet on mobile.
  */
 export default function SearchPanel({
   query,
@@ -35,11 +36,7 @@ export default function SearchPanel({
   savedRoutes = [],
   onLoadSaved = null,
   onDeleteSaved = null,
-  onCollapsePanel = null,
-  collapseIcon = "chevron_left",
-  /** Imperative handle: { handleBack(): boolean, isBackable(): boolean } */
   backRef = null,
-  /** Notify App when search has a system-back layer (for history sync). */
   onBackableChange = null,
 }) {
   const isCompact = useIsCompact();
@@ -84,7 +81,7 @@ export default function SearchPanel({
   function pickPlace(selected) {
     onSelectPlace(selected);
     clearPlaceList();
-    if (isCompact) setMobileExpanded(true);
+    setMobileExpanded(false);
   }
 
   function collapseSearch() {
@@ -96,7 +93,6 @@ export default function SearchPanel({
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
 
-  /** @returns {boolean} true if another search layer remains after this peel */
   function handleSystemBack() {
     if (listVisible) {
       dismissSearchList();
@@ -144,6 +140,8 @@ export default function SearchPanel({
       const root = panelRef.current;
       if (!root) return;
       if (root.contains(e.target)) return;
+      /* Place card is outside the top panel on mobile — don't dismiss for it. */
+      if (e.target?.closest?.(".place-bottom-sheet")) return;
       dismissSearchList();
     }
     document.addEventListener("pointerdown", onPointerDown, true);
@@ -151,147 +149,141 @@ export default function SearchPanel({
   }, [listVisible, isCompact, mobileExpanded, place]);
 
   const hasSaved = savedRoutes.length > 0;
-  const showBody =
-    !isCompact ||
-    mobileExpanded ||
-    listVisible ||
-    Boolean(place) ||
-    hasSaved;
-  const showSaved = showBody && !listVisible && !place && hasSaved;
-  const showPlaceCard = Boolean(place) && !listVisible && showBody;
+  const showSaved = !listVisible && !place && hasSaved;
+  const showPlaceCard = Boolean(place) && !listVisible;
   const isSearching = listVisible || (isCompact && mobileExpanded && !place);
   const showingRecents =
     listVisible &&
     !(placeList.query || "").trim() &&
     placeList.items.some((p) => p?.isRecent || p?.fromRecent);
-  /* Mobile: no collapse chevron — system back handles leaving overlays. */
-  const showCollapse = Boolean(onCollapsePanel) && !isCompact;
-  /* Default landing: only the search pill floats (no padded card chrome). */
-  const isBareSearch = !listVisible && !showPlaceCard;
+  /* Pill-only when idle with nothing saved; otherwise one grouped card. */
+  const isBareSearch = !listVisible && !showPlaceCard && !hasSaved;
+  const isGroupedCard = hasSaved && !listVisible && !showPlaceCard;
+
+  const placeCard = showPlaceCard ? (
+    <PlaceDetailsCard
+      place={place}
+      onDirectionsTo={onDirectionsTo}
+      onDirectionsFrom={onDirectionsFrom}
+    />
+  ) : null;
 
   return (
-    <section
-      ref={panelRef}
-      className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""} ${isSearching ? "is-searching" : ""} ${isBareSearch ? "is-bare" : ""}`}
-    >
-      <div className={`search-block ${listVisible ? "has-list" : ""}`}>
-        <div className="search-chrome">
-          <div className={`search-bar ${query ? "has-query" : ""}`}>
-            <img
-              className="search-bar-leading-pin"
-              src={`${import.meta.env.BASE_URL}favicon.svg`}
-              alt=""
-              width="28"
-              height="28"
-              aria-hidden
-            />
-            <div className="search-bar-field">
-              <SuggestInput
-                id="main-search"
-                label=""
-                value={query}
-                onChange={handleQueryChange}
-                onSelect={pickPlace}
-                placeholder="Search here"
-                allowCurrentLocation={false}
-                recentPlaces={recentPlaces}
-                near={near}
-                bare
-                externalList
-                enterSelectsFirst={false}
-                dismissNonce={listDismissNonce}
-                onListChange={setPlaceList}
-                onFocusField={() => {
-                  if (isCompact) setMobileExpanded(true);
-                }}
+    <>
+      <section
+        ref={panelRef}
+        className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${isSearching ? "is-searching" : ""} ${isBareSearch ? "is-bare" : ""} ${isGroupedCard ? "has-saved-group" : ""} ${showPlaceCard && !isCompact ? "has-place" : ""}`}
+      >
+        <div className={`search-block ${listVisible ? "has-list" : ""}`}>
+          <div className="search-chrome">
+            <div className={`search-bar ${query ? "has-query" : ""}`}>
+              <img
+                className="search-bar-leading-pin"
+                src={`${import.meta.env.BASE_URL}favicon.svg`}
+                alt=""
+                width="28"
+                height="28"
+                aria-hidden
               />
-            </div>
-            {query ? (
-              <div className="search-bar-actions">
-                <md-icon-button
-                  class="search-clear-btn"
-                  aria-label="Clear search"
-                  onClick={collapseSearch}
-                >
-                  <md-icon>close</md-icon>
-                </md-icon-button>
+              <div className="search-bar-field">
+                <SuggestInput
+                  id="main-search"
+                  label=""
+                  value={query}
+                  onChange={handleQueryChange}
+                  onSelect={pickPlace}
+                  placeholder="Search here"
+                  allowCurrentLocation={false}
+                  recentPlaces={recentPlaces}
+                  near={near}
+                  bare
+                  externalList
+                  enterSelectsFirst={false}
+                  dismissNonce={listDismissNonce}
+                  onListChange={setPlaceList}
+                  onFocusField={() => {
+                    if (isCompact) setMobileExpanded(true);
+                  }}
+                />
               </div>
-            ) : null}
-          </div>
-          {showCollapse ? (
-            <md-icon-button
-              type="button"
-              class="collapse-panel-btn search-chrome-collapse"
-              aria-label="Collapse panel"
-              onClick={onCollapsePanel}
-            >
-              <md-icon>{collapseIcon}</md-icon>
-            </md-icon-button>
-          ) : null}
-        </div>
-      </div>
-
-      {listVisible && (
-        <div className="landing-suggest">
-          {(showingRecents || !(placeList.query || "").trim()) && (
-            <div className="landing-suggest-head">
-              <h2 className="md-typescale-title-small">Recent</h2>
-            </div>
-          )}
-          <PlaceSuggestionList
-            items={placeList.items}
-            query={placeList.query}
-            loading={placeList.loading}
-            onSelect={(selected) => {
-              if (placeList.select) placeList.select(selected);
-              else pickPlace(selected);
-            }}
-          />
-        </div>
-      )}
-
-      {showPlaceCard ? (
-        <PlaceDetailsCard
-          place={place}
-          onDirectionsTo={onDirectionsTo}
-          onDirectionsFrom={onDirectionsFrom}
-        />
-      ) : null}
-
-      {showSaved && (
-        <div className="landing-saved">
-          <div className="landing-saved-head">
-            <md-icon class="landing-saved-icon">bookmark</md-icon>
-            <h2 className="md-typescale-title-small">Saved</h2>
-          </div>
-          <md-list class="landing-saved-list">
-            {savedRoutes.map((r) => (
-              <md-list-item key={r.id} class="landing-saved-item">
-                <button
-                  type="button"
-                  className="landing-saved-open"
-                  onClick={() => onLoadSaved?.(r)}
-                >
-                  <span className="landing-saved-open-title">{r.name}</span>
-                  <span className="landing-saved-open-meta">
-                    {formatDistance(r.route?.distance || 0)} ·{" "}
-                    {formatDuration(r.route?.duration || 0)}
-                  </span>
-                </button>
-                <div slot="end" className="landing-saved-actions">
+              {query ? (
+                <div className="search-bar-actions">
                   <md-icon-button
-                    type="button"
-                    aria-label={`Delete ${r.name}`}
-                    onClick={() => onDeleteSaved?.(r.id)}
+                    class="search-clear-btn"
+                    aria-label="Clear search"
+                    onClick={collapseSearch}
                   >
-                    <md-icon>delete</md-icon>
+                    <md-icon>close</md-icon>
                   </md-icon-button>
                 </div>
-              </md-list-item>
-            ))}
-          </md-list>
+              ) : null}
+            </div>
+          </div>
         </div>
-      )}
-    </section>
+
+        {listVisible && (
+          <div className="landing-suggest">
+            {(showingRecents || !(placeList.query || "").trim()) && (
+              <div className="landing-suggest-head">
+                <h2 className="md-typescale-title-small">Recent</h2>
+              </div>
+            )}
+            <PlaceSuggestionList
+              items={placeList.items}
+              query={placeList.query}
+              loading={placeList.loading}
+              onSelect={(selected) => {
+                if (placeList.select) placeList.select(selected);
+                else pickPlace(selected);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Desktop: place details stay in the side panel */}
+        {!isCompact && placeCard}
+
+        {showSaved && (
+          <div className="landing-saved">
+            <div className="landing-saved-head">
+              <h2 className="md-typescale-title-small">Saved routes</h2>
+            </div>
+            <md-list class="landing-saved-list">
+              {savedRoutes.map((r) => (
+                <md-list-item key={r.id} class="landing-saved-item">
+                  <button
+                    type="button"
+                    className="landing-saved-open"
+                    onClick={() => onLoadSaved?.(r)}
+                  >
+                    <span className="landing-saved-open-title">{r.name}</span>
+                    <span className="landing-saved-open-meta">
+                      {formatDistance(r.route?.distance || 0)} ·{" "}
+                      {formatDuration(r.route?.duration || 0)}
+                    </span>
+                  </button>
+                  <div slot="end" className="landing-saved-actions">
+                    <md-icon-button
+                      type="button"
+                      aria-label={`Delete ${r.name}`}
+                      onClick={() => onDeleteSaved?.(r.id)}
+                    >
+                      <md-icon>delete</md-icon>
+                    </md-icon-button>
+                  </div>
+                </md-list-item>
+              ))}
+            </md-list>
+          </div>
+        )}
+      </section>
+
+      {/* Mobile: selected place as a bottom card (map stays visible above) */}
+      {isCompact && placeCard ? (
+        <div className="place-bottom-sheet" role="region" aria-label="Place details">
+          {placeCard}
+        </div>
+      ) : null}
+    </>
   );
 }

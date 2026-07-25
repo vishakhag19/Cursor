@@ -162,6 +162,8 @@ export default function App() {
   const [ctx, setCtx] = useState(null);
   /** Search panel list / place / focus — drives mobile history sync. */
   const [searchBackable, setSearchBackable] = useState(false);
+  /** Mobile Drive sheet height as fraction of viewport (0.1–0.5). */
+  const [sheetHeightFrac, setSheetHeightFrac] = useState(0.3);
   const [followingLocation, setFollowingLocation] = useState(false);
   const suppressMapClickUntil = useRef(0);
   const locateFn = useRef(null);
@@ -242,26 +244,30 @@ export default function App() {
     persistRoadRules(roadRules);
   }, [roadRules]);
 
-  // Fold legacy Saved → Avoided streets into Your road rules (prefer/avoid/never).
+  // One-time fold of legacy Avoided streets into Your road rules.
   useEffect(() => {
-    if (!blockedStreets.length) return;
-    setRoadRules((prev) => {
-      let next = prev;
-      let changed = false;
-      for (const b of blockedStreets) {
-        if (!b?.name) continue;
-        if (next.some((r) => roadNamesMatch(r.name, b.name))) continue;
-        next = upsertRoadRule(next, {
-          name: b.name,
-          lat: b.lat,
-          lng: b.lng,
-          mode: "avoid",
-        });
-        changed = true;
-      }
-      return changed ? next : prev;
+    setBlockedStreets((streets) => {
+      if (!streets.length) return streets;
+      setRoadRules((prev) => {
+        let next = prev;
+        let changed = false;
+        for (const b of streets) {
+          if (!b?.name) continue;
+          if (next.some((r) => roadNamesMatch(r.name, b.name))) continue;
+          next = upsertRoadRule(next, {
+            name: b.name,
+            lat: b.lat,
+            lng: b.lng,
+            mode: "avoid",
+          });
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+      return [];
     });
-  }, [blockedStreets]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!userLocation) return;
@@ -2055,14 +2061,22 @@ export default function App() {
       return { top: 72, right: 72, bottom: 72, left: 72 };
     }
     if (mobile) {
-      /* Floating stops card on top + Drive sheet on bottom */
       if (view === "directions") {
-        return { top: 140, right: 28, bottom: 300, left: 28 };
+        const sheetPx = Math.round(
+          (typeof window !== "undefined" ? window.innerHeight : 800) *
+            (sheetHeightFrac || 0.3),
+        );
+        return {
+          top: 160,
+          right: 28,
+          bottom: Math.max(120, sheetPx + 24),
+          left: 28,
+        };
       }
-      return { top: 280, right: 28, bottom: 56, left: 28 };
+      return { top: 120, right: 28, bottom: 200, left: 28 };
     }
     return { top: 48, right: 72, bottom: 48, left: 420 };
-  }, [panelOpen, view]);
+  }, [panelOpen, view, sheetHeightFrac]);
 
   return (
     <div
@@ -2100,17 +2114,6 @@ export default function App() {
             }}
             backRef={searchBackRef}
             onBackableChange={setSearchBackable}
-            collapseIcon="chevron_left"
-            onCollapsePanel={
-              isCompact
-                ? null
-                : () => {
-                    setPanelOpen(false);
-                    setPrefsOpen(false);
-                    setRoadRulesOpen(false);
-                    setAssistantOpen(false);
-                  }
-            }
           />
         )}
 
@@ -2128,17 +2131,7 @@ export default function App() {
             onMoveStop={moveStop}
             onSwap={swapStops}
             backRef={dirBackRef}
-            collapseIcon="chevron_left"
-            onCollapsePanel={
-              isCompact
-                ? null
-                : () => {
-                    setPanelOpen(false);
-                    setPrefsOpen(false);
-                    setRoadRulesOpen(false);
-                    setAssistantOpen(false);
-                  }
-            }
+            onSheetHeightChange={setSheetHeightFrac}
             onClose={closeDirectionsView}
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
@@ -2186,19 +2179,6 @@ export default function App() {
           />
         )}
       </aside>
-
-      {!panelOpen && !isCompact && (
-        <ActionTip tip="Open panel" className="expand-panel-tip">
-          <md-icon-button
-            type="button"
-            class="expand-panel"
-            aria-label="Open panel"
-            onClick={() => setPanelOpen(true)}
-          >
-            <md-icon>chevron_right</md-icon>
-          </md-icon-button>
-        </ActionTip>
-      )}
 
       <main className="map-stage">
         {showEditBar ? (
@@ -2477,8 +2457,9 @@ export default function App() {
           const rule = roadRules.find((r) => r.id === id);
           setRoadRules((prev) => removeRoadRule(prev, id));
           if (rule?.name) {
+            const name = rule.name;
             setBlockedStreets((prev) =>
-              prev.filter((b) => !roadNamesMatch(b.name, rule.name)),
+              prev.filter((b) => !roadNamesMatch(b.name, name)),
             );
           }
         }}

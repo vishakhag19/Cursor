@@ -2158,16 +2158,13 @@ md-icon-button.expand-panel:hover,
     --atlas-mobile-chrome-inset: 12px;
   }
 
-  /* Mobile: no expand/collapse chevrons — system back handles navigation. */
-  .expand-panel-tip {
-    display: none !important;
-  }
-
-  .collapse-panel-btn,
-  .search-chrome-collapse,
-  .dir-collapse-btn {
-    display: none !important;
-  }
+  .expand-panel-tip,
+.expand-panel,
+.collapse-panel-btn,
+.search-chrome-collapse,
+.dir-collapse-btn {
+  display: none !important;
+}
 
   .app:not(.panel-collapsed) .route-reshape-bar,
   .app.panel-collapsed .route-reshape-bar {
@@ -2466,11 +2463,16 @@ md-icon-button.expand-panel:hover,
   }
 
   .route-assistant {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    width: auto;
-    max-height: min(52vh, 420px);
+    inset: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    z-index: 1500;
   }
 }
 
@@ -2762,12 +2764,12 @@ md-text-button {
   }
 
   /*
-   * Default "Search here": no card padding/chrome — only the input pill floats.
-   * Saved (if any) sits in its own card underneath.
+   * Default "Search here": floating pill only when nothing is saved.
+   * With Saved routes: one grouped white card (search on top, list below).
    */
   .panel.is-search-chrome .search-panel.is-bare {
     padding: 0;
-    gap: 8px;
+    gap: 0;
     background: transparent;
     border: none;
     border-radius: 0;
@@ -2782,16 +2784,65 @@ md-text-button {
       0 4px 16px rgba(60, 64, 67, 0.18);
   }
 
-  .panel.is-search-chrome .search-panel.is-bare .landing-saved {
-    margin: 0;
-    padding: 8px 12px 10px;
+  .panel.is-search-chrome .search-panel.has-saved-group {
+    padding: 10px 12px 8px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
-    border-radius: 20px;
+    border-radius: 28px;
     box-shadow:
       0 1px 2px rgba(60, 64, 67, 0.12),
-      0 4px 16px rgba(60, 64, 67, 0.16);
+      0 10px 32px rgba(60, 64, 67, 0.24);
     overflow: hidden;
+  }
+
+  .panel.is-search-chrome .search-panel.has-saved-group .search-bar {
+    border-radius: 999px;
+    box-shadow: none;
+    background: var(--atlas-surface-hover, #f1f3f4);
+  }
+
+  .panel.is-search-chrome .landing-saved {
+    margin: 4px 0 0;
+    padding: 4px 0 0;
+    max-height: calc(3 * 56px + 36px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .panel.is-search-chrome .landing-saved-head {
+    padding: 10px 4px 6px;
+  }
+
+  .panel.is-search-chrome .landing-saved-icon {
+    display: none;
+  }
+
+  /* Selected place — bottom sheet on mobile so the map stays visible */
+  .place-bottom-sheet {
+    position: absolute;
+    left: var(--atlas-mobile-chrome-inset, 12px);
+    right: var(--atlas-mobile-chrome-inset, 12px);
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    z-index: 4;
+    max-height: min(42dvh, 360px);
+    overflow: auto;
+    pointer-events: auto;
+    background: #fff;
+    border: 1px solid rgba(60, 64, 67, 0.12);
+    border-radius: 24px;
+    box-shadow:
+      0 1px 2px rgba(60, 64, 67, 0.12),
+      0 8px 28px rgba(60, 64, 67, 0.2);
+  }
+
+  .place-bottom-sheet .place-card.place-details,
+  .place-bottom-sheet .place-details.m3-card {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 14px 16px 12px;
   }
 
   /*
@@ -2876,13 +2927,12 @@ md-text-button {
     top: max(12px, env(safe-area-inset-top, 0px));
     left: 12px;
     right: 12px;
-    /* Below the Drive sheet so a raised drawer never sits under the stops card */
-    z-index: 2;
+    /* Always above the Drive sheet so stops stay editable */
+    z-index: 4;
     display: flex;
     flex-direction: column;
     max-height: min(42dvh, 360px);
-    /* Match top/bottom so outlined field labels (e.g. Starting point) aren’t clipped */
-    padding: 8px;
+    padding: 14px 10px 10px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
     border-radius: 24px;
@@ -2944,26 +2994,19 @@ md-text-button {
     display: block;
   }
 
-  /* Change stops — available when the floating card is tucked (mid/full) */
-  .panel.is-directions-chrome .dir-change-stops {
-    display: inline-flex;
-  }
-
   .panel.is-directions-chrome .dir-drive-sheet {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    /* Above the stops card so drag-up covers it instead of stacking under it */
     z-index: 3;
     display: flex;
     flex-direction: column;
-    height: min(52dvh, 480px);
-    max-height: min(52dvh, 480px);
+    height: 30dvh;
+    max-height: 50dvh;
     padding: 0;
     background: #fff;
     border: none;
-    /* Same top radius at peek, mid, and full */
     border-radius: 28px 28px 0 0;
     box-shadow:
       0 -1px 2px rgba(60, 64, 67, 0.08),
@@ -2973,25 +3016,30 @@ md-text-button {
     transition: height 0.22s ease, max-height 0.22s ease;
   }
 
-  .panel.is-directions-chrome .dir-drive-sheet.is-mid {
-    height: min(52dvh, 480px);
-    max-height: min(52dvh, 480px);
+  .panel.is-directions-chrome .dir-drive-sheet.is-s10 {
+    height: 10dvh;
+    max-height: 10dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s20 {
+    height: 20dvh;
+    max-height: 20dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s30 {
+    height: 30dvh;
+    max-height: 30dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s40 {
+    height: 40dvh;
+    max-height: 40dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s50 {
+    height: 50dvh;
+    max-height: 50dvh;
   }
 
-  .panel.is-directions-chrome .dir-drive-sheet.is-full {
-    height: calc(100dvh - 12px);
-    max-height: calc(100dvh - 12px);
-  }
-
-  /* Title row only — Drive / options / close */
-  .panel.is-directions-chrome .dir-drive-sheet.is-peek {
-    height: auto;
-    max-height: none;
-  }
-
-  .panel.is-directions-chrome .dir-drive-sheet.is-peek .dir-travel-modes,
-  .panel.is-directions-chrome .dir-drive-sheet.is-peek .dir-avoid-chips,
-  .panel.is-directions-chrome .dir-drive-sheet.is-peek .dir-drive-body {
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-travel-modes,
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-avoid-chips,
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-drive-body {
     display: none;
   }
 
@@ -3001,40 +3049,25 @@ md-text-button {
     transition: none;
   }
 
-  /* Mid/full (and drag) — tuck stops so they don’t compete with the drawer */
-  .panel.is-directions-chrome
-    .directions-panel.has-route-results.is-sheet-mid
-    .dir-mobile-stop-card,
-  .panel.is-directions-chrome
-    .directions-panel.has-route-results.is-sheet-full
-    .dir-mobile-stop-card,
-  .panel.is-directions-chrome
-    .directions-panel.has-route-results.is-sheet-dragging
-    .dir-mobile-stop-card {
-    opacity: 0;
-    pointer-events: none;
+  /* Stops card stays visible at every snap so Add stop / edits remain available */
+  .panel.is-directions-chrome .dir-change-stops {
+    display: none !important;
   }
 
-  .panel.is-directions-chrome
-    .directions-panel.has-route-results.is-sheet-peek:not(.is-sheet-dragging)
-    .dir-mobile-stop-card,
-  .panel.is-directions-chrome
-    .directions-panel.show-stops:not(.is-sheet-dragging)
-    .dir-mobile-stop-card {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .panel.is-directions-chrome .dir-sheet-handle {
-    display: block;
+  .panel.is-directions-chrome .dir-sheet-grabber-hit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 auto;
+    min-height: 28px;
+    padding: 10px 0 6px;
     touch-action: none;
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
   }
 
-  .panel.is-directions-chrome .dir-sheet-handle:active {
+  .panel.is-directions-chrome .dir-sheet-grabber-hit:active {
     cursor: grabbing;
   }
 
@@ -3042,7 +3075,7 @@ md-text-button {
     display: block;
     width: 40px;
     height: 4px;
-    margin: 10px auto 4px;
+    margin: 0;
     border-radius: 999px;
     background: #bdc1c6;
     flex-shrink: 0;
@@ -3052,7 +3085,7 @@ md-text-button {
     position: static;
     z-index: auto;
     margin: 0;
-    padding: 0 12px 4px;
+    padding: 0 12px 8px;
     flex-shrink: 0;
   }
 
@@ -3100,36 +3133,49 @@ md-text-button {
     flex-shrink: 0;
   }
 
-  /* Steps stay in the default (mid) sheet — not only when fully expanded */
+  /* Steps visible once the sheet is tall enough to scroll */
   .panel.is-directions-chrome .dir-inline-steps {
     display: none;
   }
 
-  .panel.is-directions-chrome .dir-drive-sheet.is-mid .dir-inline-steps,
-  .panel.is-directions-chrome .dir-drive-sheet.is-full .dir-inline-steps {
+  .panel.is-directions-chrome .dir-drive-sheet.is-s30 .dir-inline-steps,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s40 .dir-inline-steps,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s50 .dir-inline-steps {
     display: block;
     max-height: none;
   }
 
   .panel.is-directions-chrome .dir-drag-hint {
-    display: none;
+    display: block;
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--atlas-surface-hover, #f1f3f4);
+    color: #5f6368;
   }
 
   /* Stay above the Drive sheet, clear of the top stops card. */
   .app:has(.panel.is-directions-chrome) .map-controls {
     top: auto;
-    bottom: calc(min(52dvh, 480px) + 12px);
+    bottom: calc(30dvh + 12px);
     right: 12px;
   }
 
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-peek)
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s10)
     .map-controls {
-    bottom: 84px;
+    bottom: calc(10dvh + 12px);
   }
-
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-full)
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s20)
     .map-controls {
-    display: none;
+    bottom: calc(20dvh + 12px);
+  }
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s40)
+    .map-controls {
+    bottom: calc(40dvh + 12px);
+  }
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s50)
+    .map-controls {
+    bottom: calc(50dvh + 12px);
   }
 
   .app.panel-collapsed .panel.is-directions-chrome {
@@ -3369,11 +3415,20 @@ md-text-button {
   .dir-mobile-stop-card,
   .dir-drive-sheet,
   .dir-drive-body,
-  .dir-sheet-handle {
+  .dir-sheet-handle,
+  .dir-sheet-grabber-hit,
+  .dir-sticky-chrome {
     display: contents;
   }
 
-  .dir-sticky-chrome {
+  .dir-sheet-grabber,
+  .dir-sheet-grabber-hit {
+    display: none !important;
+  }
+
+  .dir-top-bar,
+  .dir-travel-modes,
+  .dir-avoid-chips {
     order: 1;
   }
 
