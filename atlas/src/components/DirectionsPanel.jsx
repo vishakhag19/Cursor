@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
+import SaveRouteSheet from "./SaveRouteSheet";
 import { formatDistance, formatDuration } from "../utils/format";
 import { resolveSaveEndpointName } from "../api/geocode";
 import {
@@ -9,6 +10,20 @@ import {
   travelModeMeta,
   ROUTE_OPTION_FIELDS,
 } from "../utils/routePreferences";
+
+function useIsCompact(query = "(max-width: 800px)") {
+  const [compact, setCompact] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setCompact(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [query]);
+  return compact;
+}
 
 const AVOID_CHIP_FIELDS = ROUTE_OPTION_FIELDS.filter((f) =>
   ["avoidTolls", "avoidHighways", "avoidFerries"].includes(f.id),
@@ -149,6 +164,7 @@ export default function DirectionsPanel({
   const [sheetSnap, setSheetSnap] = useState("s30");
   const [sheetDragPx, setSheetDragPx] = useState(null);
   const [saveNameError, setSaveNameError] = useState("");
+  const isCompact = useIsCompact();
   const sheetRef = useRef(null);
   const sheetHandleRef = useRef(null);
   const sheetBodyRef = useRef(null);
@@ -240,10 +256,25 @@ export default function DirectionsPanel({
     setActiveStopIndex(null);
   }
 
+  function closeSaveForm() {
+    setSaving(false);
+    setSaveName("");
+    setSaveNameError("");
+  }
+
+  function submitSaveForm() {
+    const name = saveName.trim() || "Saved route";
+    if (saveName.length > 80) {
+      setSaveNameError("Name must be 80 characters or fewer");
+      return;
+    }
+    onSaveRoute?.(name);
+    closeSaveForm();
+  }
+
   function handleSystemBack() {
     if (saving) {
-      setSaving(false);
-      setSaveNameError("");
+      closeSaveForm();
       return true;
     }
     if (placeList.open) {
@@ -886,20 +917,12 @@ export default function DirectionsPanel({
             </div>
           </div>
 
-          {saving ? (
+          {saving && !isCompact ? (
             <form
               className="dir-save-inline"
               onSubmit={(e) => {
                 e.preventDefault();
-                const name = saveName.trim() || "Saved route";
-                if (saveName.length > 80) {
-                  setSaveNameError("Name must be 80 characters or fewer");
-                  return;
-                }
-                onSaveRoute?.(name);
-                setSaving(false);
-                setSaveName("");
-                setSaveNameError("");
+                submitSaveForm();
               }}
             >
               <div className={`dir-save-field${saveNameError ? " is-error" : ""}`}>
@@ -931,11 +954,7 @@ export default function DirectionsPanel({
               <div className="dir-save-actions btn-row">
                 <md-outlined-button
                   type="button"
-                  onClick={() => {
-                    setSaving(false);
-                    setSaveName("");
-                    setSaveNameError("");
-                  }}
+                  onClick={closeSaveForm}
                 >
                   Cancel
                 </md-outlined-button>
@@ -945,6 +964,20 @@ export default function DirectionsPanel({
               </div>
             </form>
           ) : null}
+
+          <SaveRouteSheet
+            open={saving && isCompact}
+            name={saveName}
+            error={saveNameError}
+            onNameChange={(v) => {
+              setSaveName(v);
+              setSaveNameError(
+                v.length > 80 ? "Name must be 80 characters or fewer" : "",
+              );
+            }}
+            onSave={submitSaveForm}
+            onClose={closeSaveForm}
+          />
 
           {(selectedRoute.steps || []).length > 0 ? (
             <ol className="dir-inline-steps" aria-label="Turn-by-turn steps">

@@ -2659,6 +2659,111 @@ md-icon-button.expand-panel:hover,
   color: #5f6368;
 }
 
+/* Mobile save-route sheet — same interaction model as road-rule sheet */
+.save-route-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(32, 33, 36, 0.45);
+  cursor: pointer;
+}
+
+.save-route-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  z-index: 1401;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  max-height: min(72dvh, 520px);
+  padding: 0 0 max(12px, env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border: 1px solid rgba(60, 64, 67, 0.12);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 28px 28px 0 0;
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.12),
+    0 8px 28px rgba(60, 64, 67, 0.22);
+  overflow: hidden;
+  animation: save-route-sheet-up 0.22s ease;
+  pointer-events: auto;
+}
+
+@keyframes save-route-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.save-route-sheet-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 10px 0 4px;
+}
+
+.save-route-sheet-grabber {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: #bdc1c6;
+}
+
+.save-route-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 8px 20px;
+  flex: 0 0 auto;
+}
+
+.save-route-sheet-title {
+  margin: 0;
+  color: #202124;
+}
+
+.save-route-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 4px 20px 8px;
+}
+
+.save-route-sheet-body .dir-save-field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px 16px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid var(--atlas-control-outline, var(--atlas-surface-pressed));
+  border-radius: 999px;
+}
+
+.save-route-sheet-body .dir-save-field.is-error {
+  border-color: #d93025;
+}
+
+.save-route-sheet-submit {
+  width: 100%;
+  min-height: 48px;
+}
+
 /* Save route / blocked streets / assistant */
 .dir-save-form {
   display: flex;
