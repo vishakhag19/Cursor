@@ -470,11 +470,11 @@ md-icon-button.collapse-panel-btn:hover,
 }
 
 .dir-stop-row.has-controls .suggest-wrap md-outlined-text-field {
-  --md-outlined-text-field-trailing-space: 76px;
+  --md-outlined-text-field-trailing-space: 64px;
 }
 
 .dir-stop-row.has-clear .suggest-wrap md-outlined-text-field {
-  --md-outlined-text-field-trailing-space: 40px;
+  --md-outlined-text-field-trailing-space: 36px;
 }
 
 .dir-stop-reorder {
