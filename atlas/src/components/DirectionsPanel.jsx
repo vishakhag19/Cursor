@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
+import MdTextField from "./MdTextField";
 import { formatDistance, formatDuration } from "../utils/format";
 import {
   TRAVEL_MODES,
@@ -821,17 +822,17 @@ export default function DirectionsPanel({
                 setSaveName("");
               }}
             >
-              <input
-                className="dir-save-input md-typescale-body-medium"
+              <MdTextField
+                id="dir-save-route-name"
+                className="dir-save-field"
+                label="Route name"
                 value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
+                onChange={setSaveName}
                 maxLength={80}
-                placeholder="Route name (optional)"
-                aria-label="Route name"
-                autoFocus
+                placeholder="Optional"
               />
-              <div className="dir-save-actions">
-                <md-text-button
+              <div className="dir-save-actions btn-row">
+                <md-outlined-button
                   type="button"
                   onClick={() => {
                     setSaving(false);
@@ -839,10 +840,8 @@ export default function DirectionsPanel({
                   }}
                 >
                   Cancel
-                </md-text-button>
-                <md-filled-tonal-button type="submit">
-                  Save path
-                </md-filled-tonal-button>
+                </md-outlined-button>
+                <md-filled-button type="submit">Save route</md-filled-button>
               </div>
             </form>
           ) : null}
