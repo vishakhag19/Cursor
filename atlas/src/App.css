@@ -521,25 +521,25 @@ md-icon-button.dir-add-stop {
 }
 
 .dir-stop-reorder md-icon-button.dir-stop-clear {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   margin: 0;
   padding: 0;
-  --md-icon-button-state-layer-width: 28px;
-  --md-icon-button-state-layer-height: 28px;
-  --md-icon-button-state-layer-size: 28px;
-  --md-icon-button-icon-size: 16px;
+  --md-icon-button-state-layer-width: 32px;
+  --md-icon-button-state-layer-height: 32px;
+  --md-icon-button-state-layer-size: 32px;
+  --md-icon-button-icon-size: 20px;
   --md-icon-button-icon-color: #70757a;
 }
 
 .dir-stop-reorder md-icon-button.dir-stop-clear md-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }
 
-/* Compact grabber beside the clear/close control — large hit target */
+/* Grabber beside the clear/close control */
 .dir-stop-drag {
   display: grid;
   place-items: center;
@@ -575,10 +575,10 @@ md-icon-button.dir-add-stop {
 }
 
 .dir-stop-drag md-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-  --md-icon-size: 16px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
   pointer-events: none;
 }
 
