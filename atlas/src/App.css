@@ -3450,46 +3450,65 @@ md-text-button {
     color: #5f6368;
   }
 
-  /* Stay above the Drive sheet, clear of the top stops card. */
-  .app:has(.panel.is-directions-chrome) .map-controls {
+  /* Stay above the Drive sheet, clear of the top stops card.
+   * Skip while navigating — nav-mode pins chrome to the bottom-right. */
+  .app:not(.nav-mode):has(.panel.is-directions-chrome) .map-controls {
     top: auto;
     bottom: calc(30dvh + 12px);
     right: 12px;
   }
 
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s10)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s10
+    )
     .map-controls {
     bottom: calc(10dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s20)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s20
+    )
     .map-controls {
     bottom: calc(20dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s40)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s40
+    )
     .map-controls {
     bottom: calc(40dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s50)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s50
+    )
     .map-controls {
     bottom: calc(50dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s60)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s60
+    )
     .map-controls {
     bottom: calc(60dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s70)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s70
+    )
     .map-controls {
     bottom: calc(70dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s80)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s80
+    )
     .map-controls {
     bottom: calc(80dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s90)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s90
+    )
     .map-controls {
     bottom: calc(90dvh + 12px);
   }
-  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s100)
+  .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
+      .directions-panel.is-sheet-s100
+    )
     .map-controls {
     bottom: auto;
     top: max(12px, env(safe-area-inset-top, 0px));
@@ -4117,11 +4136,28 @@ md-text-button {
   display: none;
 }
 
-/* Map chrome: top-right under the maneuver banner (not beside the card) */
+/* Map chrome: bottom-right above the nav footer; lifts when reroute card shows.
+ * Reroute card lives in a body portal, so clearance is mirrored via CSS vars. */
+.app.nav-mode {
+  --nav-footer-clearance: calc(96px + env(safe-area-inset-bottom, 0px));
+  --reroute-prompt-height: 0px;
+  --reroute-prompt-stack: 0px;
+}
+
+.app.nav-mode.has-reroute-prompt,
+body:has(.nav-active .reroute-prompt) .app.nav-mode {
+  /* Fallback until ReroutePrompt publishes measured height */
+  --reroute-prompt-height: 152px;
+  --reroute-prompt-stack: calc(var(--reroute-prompt-height) + 8px);
+}
+
 .app.nav-mode .map-controls {
-  top: calc(env(safe-area-inset-top, 0px) + 148px);
-  bottom: auto;
+  top: auto;
+  bottom: calc(
+    var(--nav-footer-clearance) + 8px + var(--reroute-prompt-stack)
+  );
   right: 12px;
+  transition: bottom 0.2s ease;
 }
 
 .app.nav-mode .leaflet-control-attribution {
@@ -4277,8 +4313,10 @@ md-text-button {
 /* Keep map chrome clear of bottom FABs / sheets on compact layouts */
 @media (max-width: 800px) {
   .app.nav-mode .map-controls {
-    top: calc(env(safe-area-inset-top, 0px) + 140px);
-    bottom: auto;
+    top: auto;
+    bottom: calc(
+      var(--nav-footer-clearance) + 8px + var(--reroute-prompt-stack)
+    );
     right: 12px;
   }
 
@@ -4786,15 +4824,20 @@ md-text-button {
 /*
  * Compact centered card with equal side insets and the same radius on
  * all four corners (phone, tablet, and desktop).
+ * Sits 8px above the nav footer; map controls lift above it when shown.
  */
+.nav-active {
+  --nav-footer-clearance: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
 .reroute-prompt {
   --reroute-card-max: 360px;
   --reroute-card-inset: 12px;
   position: absolute;
   left: 50%;
   right: auto;
-  /* Clear the nav footer so Accept/Reject never cover Exit */
-  bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+  /* Exactly 8px above the bottom nav footer card */
+  bottom: calc(var(--nav-footer-clearance) + 8px);
   /* Below nav footer (z-index 4) inside the portaled layer */
   z-index: 2;
   box-sizing: border-box;
@@ -4862,13 +4905,18 @@ md-text-button {
   cursor: pointer;
 }
 
-.app.nav-mode .reroute-prompt {
-  bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+.app.nav-mode .reroute-prompt,
+.nav-active .reroute-prompt {
+  bottom: calc(var(--nav-footer-clearance) + 8px);
 }
 
 @media (min-width: 801px) {
-  .app.nav-mode .reroute-prompt {
-    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  .app.nav-mode {
+    --nav-footer-clearance: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .nav-active {
+    --nav-footer-clearance: calc(104px + env(safe-area-inset-bottom, 0px));
   }
 }
 

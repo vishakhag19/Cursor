@@ -2174,7 +2174,7 @@ export default function App() {
 
   return (
     <div
-      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${roadPickMode ? "road-pick-mode" : ""}`}
+      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${navigating && rerouteSuggestion ? "has-reroute-prompt" : ""} ${roadPickMode ? "road-pick-mode" : ""}`}
     >
       <aside
         className={`panel m3-surface ${view === "search" ? "is-search-chrome" : "is-directions-chrome"}`}
