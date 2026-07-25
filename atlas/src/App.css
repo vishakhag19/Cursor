@@ -3451,6 +3451,9 @@ md-text-button {
 }
 
 .nav-active {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
   pointer-events: none;
 }
 
@@ -3464,7 +3467,7 @@ md-text-button {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1200;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -3576,8 +3579,8 @@ md-text-button {
   left: 0;
   right: 0;
   bottom: 0;
-  /* Above the reroute card so Exit stays tappable while a prompt is open */
-  z-index: 1360;
+  /* Above the reroute card inside the portaled nav layer */
+  z-index: 4;
   display: grid;
   grid-template-columns: 48px 1fr 48px;
   align-items: center;
@@ -3680,26 +3683,35 @@ md-text-button {
   z-index: 6;
 }
 
-.app.nav-mode .nav-active {
-  position: absolute;
+/* Portaled nav chrome — keep fixed above everything in the app */
+.app.nav-mode .nav-active,
+.nav-active {
+  position: fixed;
   inset: 0;
-  z-index: 1400;
+  z-index: 20000;
   pointer-events: none;
 }
 
-.app.nav-mode .nav-active > * {
+.app.nav-mode .nav-active > *,
+.nav-active > * {
   pointer-events: auto;
 }
 
 .app.nav-mode .nav-footer,
 .app.nav-mode .nav-footer-close,
 .app.nav-mode .nav-banner-close,
-.app.nav-mode .reroute-prompt {
+.app.nav-mode .reroute-prompt,
+.nav-footer,
+.nav-footer-close,
+.nav-banner-close,
+.reroute-prompt {
   pointer-events: auto !important;
 }
 
 .app.nav-mode .nav-footer-close md-icon,
-.app.nav-mode .nav-banner-close md-icon {
+.app.nav-mode .nav-banner-close md-icon,
+.nav-footer-close md-icon,
+.nav-banner-close md-icon {
   pointer-events: none;
 }
 

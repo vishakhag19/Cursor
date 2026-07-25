@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { formatDistance, formatDuration } from "../utils/format";
 import ReroutePrompt from "./ReroutePrompt";
 
 /**
  * Active turn-by-turn navigation — Google Maps mobile layout:
  * dark teal maneuver banner + bottom bar with close, ETA, alt routes.
+ * Portaled to document.body so map / panel stacking cannot swallow Exit.
  */
 export default function NavigationUI({
   active = false,
@@ -18,40 +19,20 @@ export default function NavigationUI({
   onReturnToOriginal = null,
   onShowAlternatives = null,
 }) {
-  const closeRef = useRef(null);
-  const bannerCloseRef = useRef(null);
-  const onExitRef = useRef(onExit);
-  onExitRef.current = onExit;
-
-  // Native capture listeners — survive overlay / synthetic-event edge cases.
-  useEffect(() => {
-    if (!active) return undefined;
-    const exit = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onExitRef.current?.();
-    };
-    const nodes = [closeRef.current, bannerCloseRef.current].filter(Boolean);
-    for (const el of nodes) {
-      el.addEventListener("click", exit, true);
-      el.addEventListener("pointerup", exit, true);
-    }
-    return () => {
-      for (const el of nodes) {
-        el.removeEventListener("click", exit, true);
-        el.removeEventListener("pointerup", exit, true);
-      }
-    };
-  }, [active]);
-
-  if (!route || !active) return null;
+  if (!route || !active || typeof document === "undefined") return null;
 
   const steps = route.steps || [];
   const step = steps[currentStepIndex] || steps[0];
   const nextStep = steps[currentStepIndex + 1];
   const showPrompt = Boolean(rerouteSuggestion);
 
-  return (
+  function handleExit(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    onExit?.();
+  }
+
+  return createPortal(
     <div className="nav-active" role="region" aria-label="Navigation">
       <div className="nav-banner-stack">
         <div className="nav-banner">
@@ -68,14 +49,14 @@ export default function NavigationUI({
               {step?.instruction || "Continue on the route"}
             </div>
           </div>
-          <button
-            ref={bannerCloseRef}
-            type="button"
-            className="nav-banner-close"
-            aria-label="Exit navigation"
-          >
-            <md-icon>close</md-icon>
-          </button>
+        <button
+          type="button"
+          className="nav-banner-close"
+          aria-label="Exit navigation"
+          onClick={handleExit}
+        >
+          <md-icon>close</md-icon>
+        </button>
         </div>
         {nextStep ? (
           <div className="nav-banner-then" aria-label="Then">
@@ -96,10 +77,10 @@ export default function NavigationUI({
 
       <div className="nav-footer">
         <button
-          ref={closeRef}
           type="button"
           className="nav-footer-close"
           aria-label="Exit navigation"
+          onClick={handleExit}
         >
           <md-icon>close</md-icon>
         </button>
@@ -139,6 +120,7 @@ export default function NavigationUI({
           <span className="nav-footer-alts-spacer" aria-hidden />
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
