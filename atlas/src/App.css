@@ -2822,7 +2822,8 @@ md-text-button {
     left: 12px;
     right: 12px;
     z-index: 3;
-    display: block;
+    display: flex;
+    flex-direction: column;
     max-height: min(42dvh, 360px);
     padding: 6px 8px 8px;
     background: #fff;
@@ -2843,20 +2844,39 @@ md-text-button {
   .panel.is-directions-chrome .dir-stops-block {
     margin: 0;
     padding: 0;
-    max-height: inherit;
-    overflow: auto;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Stop fields + Add stop stay pinned; only the place list scrolls. */
+  .panel.is-directions-chrome .dir-stops-block > .dir-stops,
+  .panel.is-directions-chrome .dir-stops-block > .dir-add-stop {
+    flex: 0 0 auto;
+  }
+
+  .panel.is-directions-chrome .dir-stop-suggest-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 4px -8px 0;
+    padding: 0 0 4px;
+  }
+
+  .panel.is-directions-chrome .dir-stop-suggest-scroll .place-suggest-panel {
+    max-height: none;
+    margin: 0;
+    overflow: visible;
   }
 
   /* Compact stop fields inside the floating card */
   .panel.is-directions-chrome .dir-mobile-stop-card .dir-add-stop {
+    display: inline-flex;
     padding: 6px 8px 4px;
-  }
-
-  .panel.is-directions-chrome
-    .directions-panel.has-route-results
-    .dir-mobile-stop-card
-    .dir-add-stop {
-    display: none;
   }
 
   /* Keep origin/destination visible like Google Maps (not hidden after routes). */

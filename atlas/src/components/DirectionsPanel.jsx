@@ -370,27 +370,29 @@ export default function DirectionsPanel({
           ) : null}
         </div>
 
-        {placeList.open && (placeList.items.length > 0 || placeList.loading) && (
-          <PlaceSuggestionList
-            items={placeList.items}
-            query={placeList.query}
-            loading={placeList.loading}
-            onSelect={(place) => {
-              if (placeList.select) placeList.select(place);
-              else if (activeStop != null) {
-                onStopSelect(activeStop, place);
-                clearPlaceList();
-              }
-            }}
-          />
-        )}
-
-        {/* Hide while suggestions are open — avoids a second Add stop under the list */}
+        {/* Keep Add stop with the fixed stop fields (not inside the scrolling list). */}
         {!(placeList.open && (placeList.items.length > 0 || placeList.loading)) ? (
           <button type="button" className="dir-add-stop" onClick={onAddStop}>
             <md-icon>add</md-icon>
             <span className="md-typescale-body-medium">Add stop</span>
           </button>
+        ) : null}
+
+        {placeList.open && (placeList.items.length > 0 || placeList.loading) ? (
+          <div className="dir-stop-suggest-scroll">
+            <PlaceSuggestionList
+              items={placeList.items}
+              query={placeList.query}
+              loading={placeList.loading}
+              onSelect={(place) => {
+                if (placeList.select) placeList.select(place);
+                else if (activeStop != null) {
+                  onStopSelect(activeStop, place);
+                  clearPlaceList();
+                }
+              }}
+            />
+          </div>
         ) : null}
       </div>
       </div>
