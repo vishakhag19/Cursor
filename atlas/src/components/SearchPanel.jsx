@@ -260,21 +260,23 @@ export default function SearchPanel({
                   key={`recent-${p.id}`}
                   class="landing-saved-item is-recent"
                 >
-                  <md-icon slot="start" class="landing-item-icon">
-                    history
-                  </md-icon>
                   <button
                     type="button"
                     className="landing-saved-open"
                     onClick={() => pickPlace(p)}
                   >
-                    <span className="landing-saved-open-title">
-                      {p.name || "Place"}
+                    <span className="landing-item-icon" aria-hidden>
+                      <md-icon>history</md-icon>
                     </span>
-                    <span className="landing-saved-open-meta">
-                      {p.display_name && p.display_name !== p.name
-                        ? p.display_name
-                        : "Recent search"}
+                    <span className="landing-saved-open-text">
+                      <span className="landing-saved-open-title">
+                        {p.name || "Place"}
+                      </span>
+                      <span className="landing-saved-open-meta">
+                        {p.display_name && p.display_name !== p.name
+                          ? p.display_name
+                          : "Recent search"}
+                      </span>
                     </span>
                   </button>
                 </md-list-item>
@@ -284,18 +286,20 @@ export default function SearchPanel({
                   key={`saved-${r.id}`}
                   class="landing-saved-item is-saved"
                 >
-                  <md-icon slot="start" class="landing-item-icon">
-                    bookmark
-                  </md-icon>
                   <button
                     type="button"
                     className="landing-saved-open"
                     onClick={() => onLoadSaved?.(r)}
                   >
-                    <span className="landing-saved-open-title">{r.name}</span>
-                    <span className="landing-saved-open-meta">
-                      {formatDistance(r.route?.distance || 0)} ·{" "}
-                      {formatDuration(r.route?.duration || 0)}
+                    <span className="landing-item-icon" aria-hidden>
+                      <md-icon>bookmark</md-icon>
+                    </span>
+                    <span className="landing-saved-open-text">
+                      <span className="landing-saved-open-title">{r.name}</span>
+                      <span className="landing-saved-open-meta">
+                        {formatDistance(r.route?.distance || 0)} ·{" "}
+                        {formatDuration(r.route?.duration || 0)}
+                      </span>
                     </span>
                   </button>
                   <div slot="end" className="landing-saved-actions">

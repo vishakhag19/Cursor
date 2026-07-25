@@ -880,26 +880,14 @@ md-icon-button.dir-add-stop:hover {
   --md-list-item-trailing-space: 0px;
   --md-list-item-one-line-container-height: 48px;
   --md-list-item-two-line-container-height: 52px;
-  /* No gap before the trailing delete control */
-  gap: 8px;
-}
-
-.landing-item-icon {
-  color: #5f6368;
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
-}
-
-.landing-saved-item.is-saved .landing-item-icon {
-  color: var(--atlas-accent, #1a73e8);
+  gap: 0;
 }
 
 .landing-saved-open {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   min-width: 0;
   padding: 4px var(--panel-pad-x, 16px);
@@ -910,6 +898,38 @@ md-icon-button.dir-add-stop:hover {
   font: inherit;
   color: inherit;
   box-sizing: border-box;
+}
+
+.landing-item-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--atlas-surface-hover, #f1f3f4);
+  color: #5f6368;
+}
+
+.landing-item-icon md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: inherit;
+}
+
+.landing-saved-item.is-saved .landing-item-icon {
+  background: var(--atlas-accent-container, #e8f0fe);
+  color: var(--atlas-accent, #1a73e8);
+}
+
+.landing-saved-open-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
 }
 
 .landing-saved-open-title {
@@ -1760,7 +1780,7 @@ md-filled-tonal-button.is-edit-active {
 
 .panel.is-search-chrome .landing-saved {
   margin: 0;
-  padding: 8px 16px 10px;
+  padding: 6px 16px 8px;
   /* Was 3×56 + 48; reduced by 8px */
   max-height: calc(3 * 56px + 40px);
   display: flex;
@@ -1776,7 +1796,7 @@ md-filled-tonal-button.is-edit-active {
 
 .panel.is-search-chrome .landing-saved-head {
   flex: 0 0 auto;
-  padding: 6px 0 4px;
+  padding: 4px 0 4px;
   background: #fff;
   position: sticky;
   top: 0;
@@ -1795,18 +1815,16 @@ md-filled-tonal-button.is-edit-active {
 .panel.is-search-chrome .landing-saved-item {
   --md-list-item-leading-space: 0px;
   --md-list-item-trailing-space: 0px;
-  gap: 10px;
+  gap: 0;
 }
 
 .panel.is-search-chrome .landing-saved-open {
-  /* Align title with heading after the leading icon */
   padding-left: 0;
   padding-right: 0;
 }
 
 .panel.is-search-chrome .landing-item-icon {
-  display: block;
-  flex-shrink: 0;
+  display: grid;
 }
 
 /* Desktop filled: place details as their own card under the pill */
