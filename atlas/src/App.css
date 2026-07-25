@@ -2825,8 +2825,9 @@ md-text-button {
     box-shadow:
       0 1px 2px rgba(60, 64, 67, 0.12),
       0 4px 16px rgba(60, 64, 67, 0.18);
-    overflow: auto;
+    overflow: hidden;
     pointer-events: auto;
+    isolation: isolate;
   }
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
@@ -2836,6 +2837,20 @@ md-text-button {
   .panel.is-directions-chrome .dir-stops-block {
     margin: 0;
     padding: 0;
+    max-height: inherit;
+    overflow: auto;
+  }
+
+  /* Compact stop fields inside the floating card */
+  .panel.is-directions-chrome .dir-mobile-stop-card .dir-add-stop {
+    padding: 6px 8px 4px;
+  }
+
+  .panel.is-directions-chrome
+    .directions-panel.has-route-results
+    .dir-mobile-stop-card
+    .dir-add-stop {
+    display: none;
   }
 
   /* Keep origin/destination visible like Google Maps (not hidden after routes). */
@@ -2871,11 +2886,11 @@ md-text-button {
 
   .panel.is-directions-chrome .dir-sheet-grabber {
     display: block;
-    width: 36px;
+    width: 40px;
     height: 4px;
-    margin: 10px auto 6px;
-    border-radius: 2px;
-    background: #dadce0;
+    margin: 10px auto 4px;
+    border-radius: 999px;
+    background: #bdc1c6;
     flex-shrink: 0;
   }
 
@@ -2939,9 +2954,10 @@ md-text-button {
     display: none;
   }
 
+  /* Sit just under the floating stops card (not floating mid-map). */
   .app:has(.panel.is-directions-chrome) .map-controls {
-    top: auto;
-    bottom: calc(min(52dvh, 480px) + 12px);
+    top: max(168px, calc(env(safe-area-inset-top, 0px) + 156px));
+    bottom: auto;
     right: 12px;
   }
 
