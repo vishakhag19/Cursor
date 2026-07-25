@@ -99,51 +99,53 @@ export default function SearchPanel({
       className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""} ${isSearching ? "is-searching" : ""}`}
     >
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
-        <div className={`search-bar ${query ? "has-query" : ""}`}>
-          <span className="search-bar-leading" aria-hidden>
-            <md-icon>search</md-icon>
-          </span>
-          <div className="search-bar-field">
-            <SuggestInput
-              id="main-search"
-              label=""
-              value={query}
-              onChange={handleQueryChange}
-              onSelect={pickPlace}
-              placeholder="Search here"
-              allowCurrentLocation={false}
-              recentPlaces={recentPlaces}
-              near={near}
-              bare
-              externalList
-              enterSelectsFirst={false}
-              onListChange={setPlaceList}
-              onFocusField={() => {
-                if (isCompact) setMobileExpanded(true);
-              }}
-            />
-          </div>
-          <div className="search-bar-actions">
+        <div className="search-chrome">
+          <div className={`search-bar ${query ? "has-query" : ""}`}>
+            <span className="search-bar-leading" aria-hidden>
+              <md-icon>search</md-icon>
+            </span>
+            <div className="search-bar-field">
+              <SuggestInput
+                id="main-search"
+                label=""
+                value={query}
+                onChange={handleQueryChange}
+                onSelect={pickPlace}
+                placeholder="Search here"
+                allowCurrentLocation={false}
+                recentPlaces={recentPlaces}
+                near={near}
+                bare
+                externalList
+                enterSelectsFirst={false}
+                onListChange={setPlaceList}
+                onFocusField={() => {
+                  if (isCompact) setMobileExpanded(true);
+                }}
+              />
+            </div>
             {query ? (
-              <md-icon-button
-                class="search-clear-btn"
-                aria-label="Clear search"
-                onClick={collapseSearch}
-              >
-                <md-icon>close</md-icon>
-              </md-icon-button>
-            ) : null}
-            {onCollapsePanel ? (
-              <md-icon-button
-                type="button"
-                class="search-bar-collapse"
-                aria-label="Collapse panel"
-                onClick={onCollapsePanel}
-              >
-                <md-icon>{collapseIcon}</md-icon>
-              </md-icon-button>
+              <div className="search-bar-actions">
+                <md-icon-button
+                  class="search-clear-btn"
+                  aria-label="Clear search"
+                  onClick={collapseSearch}
+                >
+                  <md-icon>close</md-icon>
+                </md-icon-button>
+              </div>
             ) : null}
           </div>
+          {onCollapsePanel ? (
+            <md-icon-button
+              type="button"
+              class="collapse-panel-btn search-chrome-collapse"
+              aria-label="Collapse panel"
+              onClick={onCollapsePanel}
+            >
+              <md-icon>{collapseIcon}</md-icon>
+            </md-icon-button>
+          ) : null}
         </div>
       </div>
 

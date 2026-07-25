@@ -1450,6 +1450,17 @@ md-filled-tonal-button.is-edit-active {
   padding-top: 10px;
 }
 
+.search-chrome {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.search-chrome-collapse {
+  flex-shrink: 0;
+}
+
 .search-bar {
   --search-pad-l: 12px;
   --search-pad-r: 4px;
@@ -1458,6 +1469,8 @@ md-filled-tonal-button.is-edit-active {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 4px var(--search-pad-r) 4px var(--search-pad-l);
   background: #fff;
   border: 1px solid var(--atlas-surface-pressed);
@@ -1498,24 +1511,6 @@ md-filled-tonal-button.is-edit-active {
   justify-content: flex-end;
   min-width: 0;
   padding-right: 0;
-}
-
-.search-bar-actions:empty {
-  display: none;
-}
-
-.search-bar .search-bar-collapse {
-  width: var(--search-action-w);
-  height: var(--search-action-w);
-  margin: 0;
-  flex-shrink: 0;
-  border-radius: 999px;
-  --md-icon-button-icon-size: 24px;
-  --md-icon-button-icon-color: #3c4043;
-}
-
-.search-bar .search-bar-collapse:hover {
-  background: var(--atlas-surface-hover);
 }
 
 .search-bar .suggest-wrap {
