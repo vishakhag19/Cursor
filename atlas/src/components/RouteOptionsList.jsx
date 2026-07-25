@@ -155,7 +155,7 @@ export default function RouteOptionsList({
                                 beginRename(opt);
                               }}
                             >
-                              <md-icon>edit_square</md-icon>
+                              <md-icon class="landing-saved-edit-icon">edit</md-icon>
                             </md-icon-button>
                           ) : null}
                           {onDelete ? (

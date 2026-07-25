@@ -1051,6 +1051,11 @@ md-icon-button.dir-add-stop:hover {
   height: 18px;
 }
 
+/* Material 3 outlined pencil — optical size tuned for compact list actions */
+.landing-saved-actions .landing-saved-edit-icon {
+  font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 20;
+}
+
 .landing-saved-open-title {
   color: #202124;
   font-size: 1rem;
