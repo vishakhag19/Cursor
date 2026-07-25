@@ -1598,6 +1598,7 @@ export default function App() {
         {
           id: "prefer-road",
           label: "Prefer this road",
+          icon: "thumb_up",
           onClick: async () => {
             try {
               const { name, id } = await applyRoadRuleAt(ctx.latlng, "prefer");
@@ -1611,6 +1612,7 @@ export default function App() {
         {
           id: "avoid-road",
           label: "Avoid this road",
+          icon: "do_not_disturb_on",
           onClick: async () => {
             try {
               const { name, id } = await applyRoadRuleAt(ctx.latlng, "avoid");
@@ -1624,6 +1626,7 @@ export default function App() {
         {
           id: "never-road",
           label: "Never use this road",
+          icon: "block",
           onClick: async () => {
             try {
               const { name, id } = await applyRoadRuleAt(ctx.latlng, "never");
@@ -1637,6 +1640,7 @@ export default function App() {
         {
           id: "directions-to",
           label: "Directions to here",
+          icon: "directions",
           onClick: async () => {
             const place = await reverseGeocode(
               ctx.latlng.lat,
@@ -1653,6 +1657,7 @@ export default function App() {
         {
           id: "directions-from",
           label: "Directions from here",
+          icon: "near_me",
           onClick: async () => {
             const place = await reverseGeocode(
               ctx.latlng.lat,
@@ -1669,6 +1674,7 @@ export default function App() {
         {
           id: "road-rules",
           label: "Your road rules",
+          icon: "rule",
           onClick: () => {
             setPrefsOpen(true);
             setPanelOpen(true);
