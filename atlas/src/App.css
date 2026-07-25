@@ -3332,6 +3332,7 @@ md-text-button {
   }
 
   .panel.is-directions-chrome .dir-mobile-stop-card {
+    --dir-stop-card-max-h: min(50dvh, 420px);
     position: relative;
     top: auto;
     left: auto;
@@ -3341,7 +3342,7 @@ md-text-button {
     flex-direction: column;
     width: 100%;
     max-width: 100%;
-    max-height: min(42dvh, 360px);
+    max-height: var(--dir-stop-card-max-h);
     padding: 12px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
@@ -3349,41 +3350,40 @@ md-text-button {
     box-shadow:
       0 1px 2px rgba(60, 64, 67, 0.12),
       0 4px 16px rgba(60, 64, 67, 0.18);
-    overflow: visible;
+    /* Clip anything that would paint past the rounded card. */
+    overflow: hidden;
     pointer-events: auto;
     isolation: isolate;
     transition: opacity 0.18s ease;
     box-sizing: border-box;
+    min-height: 0;
   }
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
-    max-height: min(56dvh, 480px);
-    overflow: hidden;
+    --dir-stop-card-max-h: min(56dvh, 480px);
   }
 
+  /*
+   * Explicit max-height (not %) so 4+ stop fields scroll inside the card.
+   * Parent only has max-height, so max-height:100% on children is unreliable.
+   */
   .panel.is-directions-chrome .dir-stops-block {
     margin: 0;
     padding: 0;
+    flex: 1 1 auto;
     min-height: 0;
-    max-height: 100%;
-    overflow: visible;
+    max-height: calc(var(--dir-stop-card-max-h) - 24px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
   }
 
   .panel.is-directions-chrome .dir-stops-block > .dir-stops {
-    overflow: visible;
-  }
-
-  .panel.is-directions-chrome .dir-mobile-stop-card .dir-stop-field,
-  .panel.is-directions-chrome .dir-mobile-stop-card .dir-stop-row,
-  .panel.is-directions-chrome .dir-mobile-stop-card .dir-stops-fields {
-    overflow: visible;
-  }
-
-  /* Stop fields stay pinned; only the place list scrolls. */
-  .panel.is-directions-chrome .dir-stops-block > .dir-stops {
     flex: 0 0 auto;
+    overflow: visible;
   }
 
   .panel.is-directions-chrome .dir-stop-suggest-scroll {
@@ -3392,6 +3392,7 @@ md-text-button {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     margin: 4px -8px 0;
     padding: 0 0 4px;
   }
@@ -3400,6 +3401,26 @@ md-text-button {
     max-height: none;
     margin: 0;
     overflow: visible;
+  }
+
+  /* Suggest open: keep stop fields in a capped region; suggestions scroll below. */
+  .panel.is-directions-chrome
+    .directions-panel.has-stop-suggest
+    .dir-stops-block {
+    overflow: hidden;
+  }
+
+  .panel.is-directions-chrome
+    .directions-panel.has-stop-suggest
+    .dir-stops-block
+    > .dir-stops {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: min(28dvh, 200px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   /* Keep origin/destination visible like Google Maps (not hidden after routes). */
