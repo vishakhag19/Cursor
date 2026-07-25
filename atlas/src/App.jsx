@@ -1643,13 +1643,18 @@ export default function App() {
     async ({ name, mode, lat = null, lng = null }) => {
       const trimmed = (name || "").trim();
       if (!trimmed || !mode) return;
-      let addedId = null;
-      setRoadRules((prev) => {
-        const next = upsertRoadRule(prev, { name: trimmed, mode, lat, lng });
-        addedId = next[0]?.id ?? null;
-        return next;
-      });
-      if (addedId) setHighlightedRoadRuleId(addedId);
+      const addedId =
+        roadRules.find((r) => r.name.toLowerCase() === trimmed.toLowerCase())
+          ?.id ||
+        `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setRoadRules((prev) =>
+        upsertRoadRule(prev, { name: trimmed, mode, lat, lng, id: addedId }),
+      );
+      setHighlightedRoadRuleId(addedId);
+      clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedRoadRuleId(null);
+      }, 4500);
       if (mode === "prefer" && routeGeometryRef.current?.length) {
         try {
           await preferStreetNamed(trimmed);
@@ -1663,7 +1668,7 @@ export default function App() {
           ...roadRules.filter(
             (r) => r.name.toLowerCase() !== trimmed.toLowerCase(),
           ),
-          { name: trimmed, mode, lat, lng, id: addedId || "tmp" },
+          { name: trimmed, mode, lat, lng, id: addedId },
         ]);
       });
       const verb =
