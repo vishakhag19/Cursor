@@ -214,6 +214,8 @@ export default function App() {
   const userLocationRef = useRef(null);
   const travelModeRef = useRef(travelMode);
   const routePrefsRef = useRef(routePrefs);
+  const roadRulesRef = useRef(roadRules);
+  const directionsSeqRef = useRef(0);
 
   const {
     location: userLocation,
@@ -269,6 +271,7 @@ export default function App() {
   userLocationRef.current = userLocation;
   travelModeRef.current = travelMode;
   routePrefsRef.current = routePrefs;
+  roadRulesRef.current = roadRules;
 
   useEffect(() => {
     persistSavedRoutes(savedRoutes);
@@ -452,7 +455,8 @@ export default function App() {
       nextStops = stopsRef.current,
       mode = travelModeRef.current,
       prefs = routePrefsRef.current,
-      rules = roadRules,
+      rules = roadRulesRef.current,
+      { liveUpdate = false } = {},
     ) => {
       const texts = stopTextsRef.current;
       const loc = userLocationRef.current;
@@ -484,10 +488,16 @@ export default function App() {
       }
 
       const routeMode = routingModeFor(mode);
-      setDirLoading(true);
+      const seq = ++directionsSeqRef.current;
+      const keepVisible = liveUpdate && routeOptionsRef.current.length > 0;
+      // Live chip / road-rule updates keep current cards on screen; only show
+      // the loading line when we have nothing to display yet.
+      if (!keepVisible) setDirLoading(true);
       setDirError(null);
-      clearEditState();
-      clearStatus();
+      if (!liveUpdate) {
+        clearEditState();
+        clearStatus();
+      }
       try {
         const excludes = excludesFromPrefs(prefs);
         const activeRoute =
@@ -505,12 +515,14 @@ export default function App() {
         } catch {
           // Brief retry without hard excludes if the first attempt failed.
           await new Promise((r) => setTimeout(r, 600));
+          if (seq !== directionsSeqRef.current) return;
           options = await fetchShortestRoutes(filled, routeMode, {
             limit: 5,
             excludes: [],
             roadRules: focusedRules,
           });
         }
+        if (seq !== directionsSeqRef.current) return;
         // Feature 1/2/7: enrich with traffic + reasons, re-rank by prefs / road rules.
         const ranked = enrichAndRankRoutes(options, prefs, focusedRules, {
           limit: 5,
@@ -519,23 +531,17 @@ export default function App() {
         setBaselineRoute(ranked[0]);
         selectRoute(ranked[0]);
         setFitKey((k) => k + 1);
-        clearStatus();
+        if (!liveUpdate) clearStatus();
       } catch (err) {
-        clearRoutes();
+        if (seq !== directionsSeqRef.current) return;
+        if (!keepVisible) clearRoutes();
         setDirError(err.message || "Could not find a route");
         showStatus(err.message || "Could not find a route");
       } finally {
-        setDirLoading(false);
+        if (seq === directionsSeqRef.current) setDirLoading(false);
       }
     },
-    [
-      roadRules,
-      showStatus,
-      clearStatus,
-      selectRoute,
-      clearRoutes,
-      clearEditState,
-    ],
+    [showStatus, clearStatus, selectRoute, clearRoutes, clearEditState],
   );
 
   const countResolvableStops = useCallback((nextStops, texts, loc) => {
@@ -553,32 +559,21 @@ export default function App() {
     return n;
   }, []);
 
-  const applyPrefsToRoutes = useCallback(
-    (prefs = routePrefsRef.current) => {
-      if (
-        countResolvableStops(
-          stopsRef.current,
-          stopTextsRef.current,
-          userLocationRef.current,
-        ) >= 2
-      ) {
-        runDirections(stopsRef.current, travelModeRef.current, prefs);
-      }
-    },
-    [runDirections, countResolvableStops],
-  );
+  /**
+   * Instant re-rank of open cards, then background refetch.
+   * Used for preference chips and Prefer / Avoid / Never road rules.
+   */
+  const applyLiveRouteControls = useCallback(
+    ({
+      prefs = routePrefsRef.current,
+      rules = roadRulesRef.current,
+    } = {}) => {
+      routePrefsRef.current = prefs;
+      roadRulesRef.current = rules;
 
-  /** Re-rank open cards immediately, then refetch so Prefer/Avoid/Never feel instant. */
-  const applyRoadRulesNow = useCallback(
-    (nextRules) => {
-      setRoadRules(nextRules);
       setRouteOptions((prev) => {
         if (!prev.length) return prev;
-        const ranked = enrichAndRankRoutes(
-          prev,
-          routePrefsRef.current,
-          nextRules,
-        );
+        const ranked = enrichAndRankRoutes(prev, prefs, rules);
         routeOptionsRef.current = ranked;
         if (ranked[0]) {
           const top = ranked[0];
@@ -589,8 +584,7 @@ export default function App() {
         }
         return ranked;
       });
-      // Always re-fetch with the current stops — including "Your location"
-      // text-only rows — so rules apply without re-entering A/B.
+
       if (
         countResolvableStops(
           stopsRef.current,
@@ -601,17 +595,35 @@ export default function App() {
         void runDirections(
           stopsRef.current,
           travelModeRef.current,
-          routePrefsRef.current,
-          nextRules,
+          prefs,
+          rules,
+          { liveUpdate: true },
         );
       }
     },
     [runDirections, selectRoute, countResolvableStops],
   );
 
+  const applyPrefsToRoutes = useCallback(
+    (prefs = routePrefsRef.current) => {
+      applyLiveRouteControls({ prefs });
+    },
+    [applyLiveRouteControls],
+  );
+
+  /** Re-rank open cards immediately, then refetch so Prefer/Avoid/Never feel instant. */
+  const applyRoadRulesNow = useCallback(
+    (nextRules) => {
+      setRoadRules(nextRules);
+      applyLiveRouteControls({ rules: nextRules });
+    },
+    [applyLiveRouteControls],
+  );
+
   const handleRoutePrefsChange = useCallback(
     (next) => {
       setRoutePrefs(next);
+      routePrefsRef.current = next;
       applyPrefsToRoutes(next);
     },
     [applyPrefsToRoutes],
