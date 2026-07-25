@@ -824,6 +824,11 @@ md-icon-button.dir-add-stop:hover {
 
 .landing-saved-icon {
   color: #5f6368;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  --md-icon-size: 18px;
+  flex-shrink: 0;
 }
 
 .landing-saved-tabs {
@@ -1769,8 +1774,8 @@ md-filled-tonal-button.is-edit-active {
 .panel.is-search-chrome .landing-saved {
   margin: 0;
   padding: 4px 12px 4px;
-  /* ~8px shorter than the previous 3×56+48 card */
-  max-height: calc(3 * 52px + 36px);
+  /* 8px shorter than previous calc(3 * 52px + 36px) */
+  max-height: calc(3 * 52px + 28px);
   display: flex;
   flex-direction: column;
   overflow: hidden;

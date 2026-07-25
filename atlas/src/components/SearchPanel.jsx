@@ -246,6 +246,11 @@ export default function SearchPanel({
         {showHomeList && (
           <div className="landing-saved">
             <div className="landing-saved-head">
+              {hasSaved && !hasRecents ? (
+                <md-icon class="landing-saved-icon" aria-hidden>
+                  bookmark
+                </md-icon>
+              ) : null}
               <h2 className="md-typescale-title-small">
                 {hasSaved && hasRecents
                   ? "Recents"
