@@ -139,107 +139,71 @@ function DraggableStopMarker({
   );
 }
 
-function MapClickHandler({
-  onMapClick,
-  onContextMenu,
-  suppressContextMenu = false,
-}) {
+function MapClickHandler({ onMapClick }) {
   const map = useMap();
-  const longPressTimer = useRef(null);
-  const longPressOrigin = useRef(null);
-  const longPressFired = useRef(false);
-
-  function clearLongPress() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-    longPressOrigin.current = null;
-  }
+  const pointerDownAt = useRef(0);
+  const suppressNextClick = useRef(false);
+  const lastClickAt = useRef(0);
 
   useMapEvents({
     click(e) {
-      if (longPressFired.current) {
-        longPressFired.current = false;
+      if (suppressNextClick.current) {
+        suppressNextClick.current = false;
         return;
       }
+      const now = Date.now();
+      /* Ignore the second click of a double-click / double-tap. */
+      if (now - lastClickAt.current < 350) {
+        lastClickAt.current = now;
+        return;
+      }
+      lastClickAt.current = now;
       const oe = e.originalEvent;
       onMapClick?.(e.latlng, {
         x: oe?.clientX,
         y: oe?.clientY,
       });
     },
-    contextmenu(e) {
-      e.originalEvent.preventDefault();
-      if (suppressContextMenu) return;
-      onContextMenu?.(e.latlng, {
-        x: e.originalEvent.clientX,
-        y: e.originalEvent.clientY,
-      });
+    dblclick() {
+      /* Swallow — no app sheet / menu from double-click. */
+      suppressNextClick.current = true;
     },
-    mousedown(e) {
-      // Desktop right-click uses contextmenu; ignore other mouse buttons here.
-      if (e.originalEvent.button != null && e.originalEvent.button !== 0) return;
+    contextmenu(e) {
+      e.originalEvent?.preventDefault?.();
+      suppressNextClick.current = true;
     },
   });
 
   useEffect(() => {
     const el = map.getContainer();
 
-    function onTouchStart(ev) {
-      if (suppressContextMenu) return;
-      if (ev.touches?.length !== 1) return;
-      const t = ev.touches[0];
-      longPressFired.current = false;
-      longPressOrigin.current = { x: t.clientX, y: t.clientY };
-      clearLongPress();
-      longPressTimer.current = setTimeout(() => {
-        longPressTimer.current = null;
-        const origin = longPressOrigin.current;
-        if (!origin) return;
-        longPressFired.current = true;
-        const rect = el.getBoundingClientRect();
-        const containerPoint = L.point(
-          origin.x - rect.left,
-          origin.y - rect.top,
-        );
-        const latlng = map.containerPointToLatLng(containerPoint);
-        onContextMenu?.(latlng, { x: origin.x, y: origin.y });
-        try {
-          navigator.vibrate?.(12);
-        } catch {
-          /* ignore */
-        }
-      }, 480);
+    function onPointerDown() {
+      pointerDownAt.current = Date.now();
     }
 
-    function onTouchMove(ev) {
-      const origin = longPressOrigin.current;
-      if (!origin || !ev.touches?.[0]) return;
-      const t = ev.touches[0];
-      if (
-        Math.hypot(t.clientX - origin.x, t.clientY - origin.y) > 12
-      ) {
-        clearLongPress();
+    function onPointerUp() {
+      /* Long-press must not open sheets — suppress the click that follows. */
+      if (Date.now() - pointerDownAt.current >= 400) {
+        suppressNextClick.current = true;
       }
     }
 
-    function onTouchEnd() {
-      clearLongPress();
+    function blockContextMenu(ev) {
+      ev.preventDefault();
+      suppressNextClick.current = true;
     }
 
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: true });
-    el.addEventListener("touchend", onTouchEnd);
-    el.addEventListener("touchcancel", onTouchEnd);
+    el.addEventListener("pointerdown", onPointerDown, { passive: true });
+    el.addEventListener("pointerup", onPointerUp, { passive: true });
+    el.addEventListener("pointercancel", onPointerUp, { passive: true });
+    el.addEventListener("contextmenu", blockContextMenu);
     return () => {
-      clearLongPress();
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-      el.removeEventListener("touchcancel", onTouchEnd);
+      el.removeEventListener("pointerdown", onPointerDown);
+      el.removeEventListener("pointerup", onPointerUp);
+      el.removeEventListener("pointercancel", onPointerUp);
+      el.removeEventListener("contextmenu", blockContextMenu);
     };
-  }, [map, onContextMenu, suppressContextMenu]);
+  }, [map]);
 
   return null;
 }
@@ -385,7 +349,6 @@ export default function MapView({
   fitKey,
   fitPadding = null,
   onMapClick,
-  onContextMenu,
   onWaypointDrag,
   onLocateReady,
   onZoomReady,
@@ -442,6 +405,7 @@ export default function MapView({
       center={DEFAULT_CENTER}
       zoom={DEFAULT_ZOOM}
       zoomControl={false}
+      doubleClickZoom={false}
       className="map-root"
     >
       <InvalidateOnResize />
@@ -460,11 +424,7 @@ export default function MapView({
         />
       )}
 
-      <MapClickHandler
-        onMapClick={onMapClick}
-        onContextMenu={onContextMenu}
-        suppressContextMenu
-      />
+      <MapClickHandler onMapClick={onMapClick} />
       <FitBounds
         positions={fitPositions}
         version={fitKey}

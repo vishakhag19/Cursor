@@ -570,8 +570,11 @@ export default function App() {
 
   const handleMapClick = useCallback(
     async (latlng, screenPos = null) => {
-      // Pick-road mode: open Prefer / Avoid / Never instead of dropping a pin.
-      if (roadPickMode) {
+      // Prefer / Avoid / Never sheet: ONLY while actively in Pick-on-map mode.
+      // Never open it from long-press, right-click, or double-click.
+      if (!roadPickMode) {
+        setCtx(null);
+      } else {
         const x =
           screenPos?.x ??
           (typeof window !== "undefined" ? window.innerWidth / 2 : 160);
@@ -584,7 +587,6 @@ export default function App() {
         return;
       }
 
-      setCtx(null);
       setSelectedViaId(null);
 
       // Ignore the click that follows a route-line drag (otherwise it inserts a stop).
