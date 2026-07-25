@@ -34,7 +34,7 @@ import {
   travelModeMeta,
 } from "./utils/routePreferences";
 import { enrichAndRankRoutes } from "./utils/routeRecommend";
-import { removeRoadRule, upsertRoadRule, findRoadRule } from "./utils/roadRules";
+import { removeRoadRule, upsertRoadRule, findRoadRule, enrichRoadRulesFromRoute } from "./utils/roadRules";
 import {
   loadBlockedStreets,
   loadRecentSearches,
@@ -209,6 +209,11 @@ export default function App() {
   const dirBackRef = useRef(null);
   const ignoreMobilePopRef = useRef(false);
   const mobileUiRef = useRef({});
+  const stopsRef = useRef(stops);
+  const stopTextsRef = useRef(stopTexts);
+  const userLocationRef = useRef(null);
+  const travelModeRef = useRef(travelMode);
+  const routePrefsRef = useRef(routePrefs);
 
   const {
     location: userLocation,
@@ -259,6 +264,11 @@ export default function App() {
   routeGeometryRef.current = routeGeometry;
   selectedRouteIdRef.current = selectedRouteId;
   routeOptionsRef.current = routeOptions;
+  stopsRef.current = stops;
+  stopTextsRef.current = stopTexts;
+  userLocationRef.current = userLocation;
+  travelModeRef.current = travelMode;
+  routePrefsRef.current = routePrefs;
 
   useEffect(() => {
     persistSavedRoutes(savedRoutes);
@@ -439,19 +449,21 @@ export default function App() {
 
   const runDirections = useCallback(
     async (
-      nextStops = stops,
-      mode = travelMode,
-      prefs = routePrefs,
+      nextStops = stopsRef.current,
+      mode = travelModeRef.current,
+      prefs = routePrefsRef.current,
       rules = roadRules,
     ) => {
+      const texts = stopTextsRef.current;
+      const loc = userLocationRef.current;
       const resolved = nextStops.map((s, i) => {
         if (s) return s;
-        const text = (stopTexts[i] || "").trim().toLowerCase();
+        const text = (texts[i] || "").trim().toLowerCase();
         if (
-          userLocation &&
+          loc &&
           (text === "your location" || text === "my location")
         ) {
-          return toCurrentLocationPlace(userLocation);
+          return toCurrentLocationPlace(loc);
         }
         return s;
       });
@@ -478,11 +490,17 @@ export default function App() {
       clearStatus();
       try {
         const excludes = excludesFromPrefs(prefs);
+        const activeRoute =
+          routeOptionsRef.current.find(
+            (r) => r.id === selectedRouteIdRef.current,
+          ) || routeOptionsRef.current[0];
+        const focusedRules = enrichRoadRulesFromRoute(rules, activeRoute);
         let options;
         try {
           options = await fetchShortestRoutes(filled, routeMode, {
             limit: 5,
             excludes,
+            roadRules: focusedRules,
           });
         } catch {
           // Brief retry without hard excludes if the first attempt failed.
@@ -490,10 +508,11 @@ export default function App() {
           options = await fetchShortestRoutes(filled, routeMode, {
             limit: 5,
             excludes: [],
+            roadRules: focusedRules,
           });
         }
         // Feature 1/2/7: enrich with traffic + reasons, re-rank by prefs / road rules.
-        const ranked = enrichAndRankRoutes(options, prefs, rules, {
+        const ranked = enrichAndRankRoutes(options, prefs, focusedRules, {
           limit: 5,
         });
         setRouteOptions(ranked);
@@ -510,12 +529,7 @@ export default function App() {
       }
     },
     [
-      stops,
-      stopTexts,
-      travelMode,
-      routePrefs,
       roadRules,
-      userLocation,
       showStatus,
       clearStatus,
       selectRoute,
@@ -524,13 +538,34 @@ export default function App() {
     ],
   );
 
+  const countResolvableStops = useCallback((nextStops, texts, loc) => {
+    let n = 0;
+    for (let i = 0; i < nextStops.length; i += 1) {
+      if (nextStops[i]) {
+        n += 1;
+        continue;
+      }
+      const text = (texts[i] || "").trim().toLowerCase();
+      if (loc && (text === "your location" || text === "my location")) {
+        n += 1;
+      }
+    }
+    return n;
+  }, []);
+
   const applyPrefsToRoutes = useCallback(
-    (prefs = routePrefs) => {
-      if (stops.filter(Boolean).length >= 2) {
-        runDirections(stops, travelMode, prefs);
+    (prefs = routePrefsRef.current) => {
+      if (
+        countResolvableStops(
+          stopsRef.current,
+          stopTextsRef.current,
+          userLocationRef.current,
+        ) >= 2
+      ) {
+        runDirections(stopsRef.current, travelModeRef.current, prefs);
       }
     },
-    [runDirections, stops, travelMode, routePrefs],
+    [runDirections, countResolvableStops],
   );
 
   /** Re-rank open cards immediately, then refetch so Prefer/Avoid/Never feel instant. */
@@ -539,7 +574,11 @@ export default function App() {
       setRoadRules(nextRules);
       setRouteOptions((prev) => {
         if (!prev.length) return prev;
-        const ranked = enrichAndRankRoutes(prev, routePrefs, nextRules);
+        const ranked = enrichAndRankRoutes(
+          prev,
+          routePrefsRef.current,
+          nextRules,
+        );
         routeOptionsRef.current = ranked;
         if (ranked[0]) {
           const top = ranked[0];
@@ -550,11 +589,24 @@ export default function App() {
         }
         return ranked;
       });
-      if (stops.filter(Boolean).length >= 2) {
-        void runDirections(stops, travelMode, routePrefs, nextRules);
+      // Always re-fetch with the current stops — including "Your location"
+      // text-only rows — so rules apply without re-entering A/B.
+      if (
+        countResolvableStops(
+          stopsRef.current,
+          stopTextsRef.current,
+          userLocationRef.current,
+        ) >= 2
+      ) {
+        void runDirections(
+          stopsRef.current,
+          travelModeRef.current,
+          routePrefsRef.current,
+          nextRules,
+        );
       }
     },
-    [routePrefs, stops, travelMode, runDirections, selectRoute],
+    [runDirections, selectRoute, countResolvableStops],
   );
 
   const handleRoutePrefsChange = useCallback(
@@ -568,11 +620,17 @@ export default function App() {
   const handleTravelModeChange = useCallback(
     (mode) => {
       setTravelMode(mode);
-      if (stops.filter(Boolean).length >= 2) {
-        runDirections(stops, mode, routePrefs);
+      if (
+        countResolvableStops(
+          stopsRef.current,
+          stopTextsRef.current,
+          userLocationRef.current,
+        ) >= 2
+      ) {
+        runDirections(stopsRef.current, mode, routePrefsRef.current);
       }
     },
-    [stops, runDirections, routePrefs],
+    [runDirections, countResolvableStops],
   );
 
   const openDirections = useCallback(

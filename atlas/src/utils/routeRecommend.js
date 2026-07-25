@@ -148,11 +148,15 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
 
   for (const rule of roadRules) {
     const uses = routeUsesRoad(route, rule.name);
-    if (!uses) continue;
-    if (rule.mode === "prefer") cost -= 900;
-    if (rule.mode === "avoid") cost += 1400;
+    if (!uses) {
+      // Prefer routes that actually use a preferred road when alternatives exist.
+      if (rule.mode === "prefer") cost += 600;
+      continue;
+    }
+    if (rule.mode === "prefer") cost -= 2800;
+    if (rule.mode === "avoid") cost += 4200;
     // Soft hard-exclude: public OSRM can't drop named roads, so bury them.
-    if (rule.mode === "never") cost += 20000;
+    if (rule.mode === "never") cost += 60000;
   }
 
   return cost;
@@ -175,6 +179,12 @@ function buildReason(route, prefs, rank, fastestId, shortestId, _fewestTurnsId) 
   }
   if (prefs.avoidFerries && rank === 0) {
     return "Avoids ferries · stays on land routes";
+  }
+  if (rank === 0 && route.badge === "Prefers your road") {
+    return "Uses a road you prefer";
+  }
+  if (rank === 0 && /avoids |skirting /i.test(route.label || "")) {
+    return "Follows your road rules";
   }
 
   if (route.id === fastestId && route.id === shortestId) {

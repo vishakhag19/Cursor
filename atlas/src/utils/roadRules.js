@@ -59,3 +59,24 @@ export function removeRoadRule(rules, id) {
 export function modeLabel(mode) {
   return ROAD_RULE_MODES.find((m) => m.id === mode)?.label || mode;
 }
+
+/**
+ * Fill missing lat/lng on road rules from the active route's steps so Prefer /
+ * Avoid / Never can seed detours without re-picking the road on the map.
+ */
+export function enrichRoadRulesFromRoute(rules, route) {
+  if (!rules?.length) return rules || [];
+  const steps = route?.steps || [];
+  if (!steps.length) return rules;
+  return rules.map((rule) => {
+    if (rule.lat != null && rule.lng != null) return rule;
+    const hit = steps.find(
+      (s) =>
+        s?.lat != null &&
+        s?.lng != null &&
+        roadNamesMatch(s.name || "", rule.name),
+    );
+    if (!hit) return rule;
+    return { ...rule, lat: hit.lat, lng: hit.lng };
+  });
+}

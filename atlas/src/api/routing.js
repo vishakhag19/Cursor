@@ -270,11 +270,15 @@ async function fetchOsrmRoutes(profile, path, { alternatives = "true", exclude =
  * excludes, optionally probe exclude variants when a server supports them,
  * then fill with detours so callers still get up to `limit` options.
  * Soft ranking in enrichAndRankRoutes applies the preference bias.
+ *
+ * Named Prefer / Avoid / Never road rules also seed targeted detours so
+ * changing a rule can change the geometry immediately — not just the order
+ * of the same OSRM alternatives.
  */
 export async function fetchShortestRoutes(
   coords,
   travelMode = "driving",
-  { limit = 5, excludes = [] } = {},
+  { limit = 5, excludes = [], roadRules = [] } = {},
 ) {
   if (!coords || coords.length < 2) {
     throw new Error("Need at least two stops");
@@ -323,8 +327,12 @@ export async function fetchShortestRoutes(
   // Prefer more detour variety when the user asked to avoid classes —
   // those corridors are how we surface longer non-highway / non-toll options.
   const wantAvoidBias = (excludes || []).length > 0;
-  if (uniqueRouteCount(routes) < limit || wantAvoidBias) {
-    const needed = Math.max(limit - uniqueRouteCount(routes), wantAvoidBias ? 3 : 0);
+  const hasRoadRules = (roadRules || []).length > 0;
+  if (uniqueRouteCount(routes) < limit || wantAvoidBias || hasRoadRules) {
+    const needed = Math.max(
+      limit - uniqueRouteCount(routes),
+      wantAvoidBias || hasRoadRules ? 3 : 0,
+    );
     if (needed > 0) {
       const extras =
         coords.length === 2
@@ -337,6 +345,15 @@ export async function fetchShortestRoutes(
           : await fetchMultiStopDetourAlternatives(coords, travelMode, needed);
       routes.push(...extras);
     }
+  }
+
+  if (hasRoadRules) {
+    const ruleExtras = await fetchRoadRuleDetours(
+      coords,
+      travelMode,
+      roadRules,
+    );
+    routes.push(...ruleExtras);
   }
 
   return rankShortestAndFastest(routes, limit);
@@ -394,6 +411,85 @@ async function fetchDetourAlternatives(origin, destination, travelMode, needed) 
       /* skip failed detour */
     }
   }
+  return out;
+}
+
+/** ~1.3km cardinal offsets used to pull a route off an avoided / never road. */
+const ROAD_RULE_AVOID_OFFSETS = [
+  { dLat: 0.012, dLng: 0 },
+  { dLat: -0.012, dLng: 0 },
+  { dLat: 0, dLng: 0.014 },
+  { dLat: 0, dLng: -0.014 },
+  { dLat: 0.01, dLng: 0.01 },
+  { dLat: -0.01, dLng: -0.01 },
+];
+
+/**
+ * Seed OSRM alternatives from Prefer / Avoid / Never road rules so changing
+ * a rule can change the drawn path without re-entering stops.
+ */
+async function fetchRoadRuleDetours(coords, travelMode, roadRules) {
+  if (!coords?.length || coords.length < 2 || !roadRules?.length) return [];
+  const origin = coords[0];
+  const destination = coords[coords.length - 1];
+  const midStops = coords.slice(1, -1);
+  const out = [];
+
+  for (const rule of roadRules) {
+    if (rule?.lat == null || rule?.lng == null || !rule.mode) continue;
+    const focus = { lat: Number(rule.lat), lng: Number(rule.lng) };
+    if (!Number.isFinite(focus.lat) || !Number.isFinite(focus.lng)) continue;
+
+    if (rule.mode === "prefer") {
+      try {
+        const snapped = await nearestRoadPoint(
+          focus.lat,
+          focus.lng,
+          travelMode,
+        );
+        const chain = [origin, ...midStops, snapped, destination];
+        const route = await fetchSingleRoute(chain, travelMode);
+        out.push({
+          ...route,
+          id: `prefer-${rule.id || rule.name}-${Math.round(route.distance)}`,
+          label: rule.name ? `via ${rule.name}` : route.label,
+          badge: "Prefers your road",
+        });
+      } catch {
+        /* skip */
+      }
+      continue;
+    }
+
+    if (rule.mode !== "avoid" && rule.mode !== "never") continue;
+
+    const offsets =
+      rule.mode === "never"
+        ? ROAD_RULE_AVOID_OFFSETS
+        : ROAD_RULE_AVOID_OFFSETS.slice(0, 4);
+    for (let i = 0; i < offsets.length; i += 1) {
+      const { dLat, dLng } = offsets[i];
+      const via = { lat: focus.lat + dLat, lng: focus.lng + dLng };
+      try {
+        const snapped = await nearestRoadPoint(via.lat, via.lng, travelMode);
+        const chain = [origin, ...midStops, snapped, destination];
+        const route = await fetchSingleRoute(chain, travelMode);
+        out.push({
+          ...route,
+          id: `${rule.mode}-${rule.id || rule.name}-${i}-${Math.round(route.distance)}`,
+          label:
+            rule.name
+              ? rule.mode === "never"
+                ? `avoids ${rule.name}`
+                : `skirting ${rule.name}`
+              : route.label,
+        });
+      } catch {
+        /* skip failed offset */
+      }
+    }
+  }
+
   return out;
 }
 
