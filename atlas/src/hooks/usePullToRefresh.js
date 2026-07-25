@@ -74,8 +74,38 @@ export default function usePullToRefresh({
     function canStartFromTarget(target, clientY) {
       if (findScrolledAncestor(target)) return false;
 
+      /*
+       * Never steal vertical gestures from drawers, sheets, panels, or
+       * dialogs — swiping those down collapses/dismisses them and must not
+       * reload the page.
+       */
+      if (
+        target?.closest?.(
+          [
+            ".dir-drive-sheet",
+            ".dir-sheet-handle",
+            ".place-bottom-sheet",
+            ".panel",
+            ".search-panel",
+            ".directions-panel",
+            ".context-menu",
+            ".route-prefs-sheet",
+            ".road-rules-sheet",
+            ".map-controls",
+            ".nav-active",
+            ".route-assistant",
+            "md-dialog",
+            "[role='dialog']",
+            "[role='bottomsheet']",
+          ].join(", "),
+        )
+      ) {
+        return false;
+      }
+
+      /* Only the map surface can start pull-to-refresh. */
       const onMap = Boolean(target?.closest?.(".leaflet-container"));
-      if (!onMap) return true;
+      if (!onMap) return false;
 
       /* Map: only start a refresh pull from the upper portion of the screen. */
       const top =
