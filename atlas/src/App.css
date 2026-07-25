@@ -2858,7 +2858,8 @@ md-text-button {
     display: flex;
     flex-direction: column;
     max-height: min(42dvh, 360px);
-    padding: 6px 8px 8px;
+    /* Match top/bottom so outlined field labels (e.g. Starting point) aren’t clipped */
+    padding: 8px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
     border-radius: 24px;
