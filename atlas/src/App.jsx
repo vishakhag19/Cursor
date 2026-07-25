@@ -2279,6 +2279,36 @@ export default function App() {
       </aside>
 
       <main className="map-stage">
+        {showEditBar ? (
+          <div
+            className="route-reshape-bar"
+            role="toolbar"
+            aria-label="Route reshape actions"
+          >
+            <ActionTip tip="Undo last reshape (Ctrl+Z)">
+              <md-icon-button
+                type="button"
+                class="route-reshape-undo"
+                aria-label="Undo last reshape"
+                onClick={undoEdit}
+                disabled={editHistory.length === 0 || undefined}
+              >
+                <md-icon>undo</md-icon>
+              </md-icon-button>
+            </ActionTip>
+            <ActionTip tip="Reset to original route">
+              <md-icon-button
+                type="button"
+                class="route-reshape-reset"
+                aria-label="Reset to original route"
+                onClick={resetToSuggested}
+                disabled={!canReset || undefined}
+              >
+                <md-icon>restart_alt</md-icon>
+              </md-icon-button>
+            </ActionTip>
+          </div>
+        ) : null}
         <MapView
           mode={mapMode}
           layer={layer}
@@ -2373,7 +2403,7 @@ export default function App() {
           <div className="map-ctrl-stack" role="group" aria-label="Map controls">
             {showEditBar ? (
               <>
-                <ActionTip tip="Undo last reshape">
+                <ActionTip tip="Undo last reshape" className="map-ctrl-mobile-only">
                   <button
                     type="button"
                     className="map-ctrl-btn"
@@ -2384,7 +2414,7 @@ export default function App() {
                     <md-icon>undo</md-icon>
                   </button>
                 </ActionTip>
-                <ActionTip tip="Reset to original route">
+                <ActionTip tip="Reset to original route" className="map-ctrl-mobile-only">
                   <button
                     type="button"
                     className="map-ctrl-btn"

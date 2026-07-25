@@ -2338,6 +2338,48 @@ md-icon-button.expand-panel:hover,
   background: #ffffff;
 }
 
+/* Desktop / tablet: undo + reset centered over the map (not in the control stack) */
+.route-reshape-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 1105;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 36px;
+  min-height: 36px;
+  padding: 2px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid var(--atlas-surface-pressed);
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+  pointer-events: auto;
+}
+
+.app:not(.panel-collapsed) .route-reshape-bar {
+  /* Horizontal center of the map to the right of the floating left panel */
+  left: calc(50% + (var(--atlas-panel-width, 400px) + 12px) / 2);
+}
+
+.route-reshape-bar md-icon-button {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  --md-icon-button-state-layer-size: 32px;
+  --md-icon-button-icon-size: 18px;
+  --md-icon-button-icon-color: #5f6368;
+}
+
+.route-reshape-bar md-icon-button md-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  --md-icon-size: 18px;
+}
+
 /* Mobile: panel is a top sheet — hide desktop panel expand/collapse chrome */
 @media (max-width: 800px) {
   .app {
@@ -2350,6 +2392,11 @@ md-icon-button.expand-panel:hover,
   .collapse-panel-btn,
   .search-chrome-collapse,
   .dir-collapse-btn {
+    display: none !important;
+  }
+
+  /* Undo/reset live in the layers + recenter stack on mobile */
+  .route-reshape-bar {
     display: none !important;
   }
 }
