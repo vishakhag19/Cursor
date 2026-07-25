@@ -87,6 +87,7 @@ export const TRAVEL_MODES = [
     label: "Two-wheeler",
     icon: "two_wheeler",
     profile: "driving",
+    unsupported: true,
   },
   {
     id: "transit",
@@ -100,20 +101,27 @@ export const TRAVEL_MODES = [
     label: "Walk",
     icon: "directions_walk",
     profile: "walking",
+    unsupported: true,
   },
   {
     id: "cycling",
     label: "Bicycle",
     icon: "directions_bike",
     profile: "cycling",
+    unsupported: true,
   },
   {
     id: "rides",
     label: "Ride",
     icon: "local_taxi",
     profile: "driving",
+    unsupported: true,
   },
 ];
+
+/** Shown once for every non-Drive tab (Drive is the only live mode). */
+export const NON_DRIVE_MODE_HINT =
+  "This travel mode isn’t available in this prototype yet. Try Drive.";
 
 export function travelModeMeta(id) {
   return TRAVEL_MODES.find((m) => m.id === id) || TRAVEL_MODES[0];

@@ -460,9 +460,9 @@ export default function App() {
       const meta = travelModeMeta(mode);
       if (meta.unsupported) {
         clearRoutes();
-        setDirError(
-          "Public transit isn’t available in this prototype yet. Try Drive, Walk, or Bicycle.",
-        );
+        /* Panel shows NON_DRIVE_MODE_HINT once — don’t also set dirError. */
+        setDirError(null);
+        setDirLoading(false);
         return;
       }
 

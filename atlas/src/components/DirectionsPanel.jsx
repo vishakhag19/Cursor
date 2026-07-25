@@ -9,6 +9,7 @@ import {
   TRAVEL_MODES,
   travelModeMeta,
   ROUTE_OPTION_FIELDS,
+  NON_DRIVE_MODE_HINT,
 } from "../utils/routePreferences";
 
 const SAVE_TAP_MOVE_PX = 10;
@@ -967,8 +968,7 @@ export default function DirectionsPanel({
         <div className="dir-drive-body" ref={sheetBodyRef}>
       {modeMeta.unsupported ? (
         <p className="hint tight md-typescale-body-medium" role="status">
-          Public transit isn’t available in this prototype yet. Try Drive,
-          Walk, or Bicycle.
+          {NON_DRIVE_MODE_HINT}
         </p>
       ) : null}
 
@@ -978,11 +978,11 @@ export default function DirectionsPanel({
         </p>
       )}
 
-      {error && (
+      {error && !modeMeta.unsupported ? (
         <p className="error-msg md-typescale-body-medium" role="alert">
           {error}
         </p>
-      )}
+      ) : null}
 
       {hasRouteResults && (
         <p className="dir-drag-hint md-typescale-body-small">
