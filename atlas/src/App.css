@@ -12,32 +12,6 @@
   --panel-control-size: 40px;
 }
 
-/*
- * Never show scrollbars inside app chrome / floating containers.
- * Overflow scroll still works via touch, trackpad, and mouse wheel.
- */
-.app,
-.app *,
-.nav-active,
-.nav-active *,
-.route-assistant,
-.route-assistant *,
-.route-assistant-backdrop {
-  scrollbar-width: none;
-}
-
-.app::-webkit-scrollbar,
-.app *::-webkit-scrollbar,
-.nav-active::-webkit-scrollbar,
-.nav-active *::-webkit-scrollbar,
-.route-assistant::-webkit-scrollbar,
-.route-assistant *::-webkit-scrollbar,
-.route-assistant-backdrop::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  display: none !important;
-}
-
 .map-stage {
   position: absolute;
   inset: 0;
