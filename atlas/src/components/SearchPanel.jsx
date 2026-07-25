@@ -93,6 +93,8 @@ export default function SearchPanel({
     listVisible &&
     !(placeList.query || "").trim() &&
     placeList.items.some((p) => p?.isRecent || p?.fromRecent);
+  /* No collapse on idle "Search here" or place card — panel stays open. */
+  const showCollapse = Boolean(onCollapsePanel) && listVisible;
 
   return (
     <section
@@ -141,7 +143,7 @@ export default function SearchPanel({
               </div>
             ) : null}
           </div>
-          {onCollapsePanel ? (
+          {showCollapse ? (
             <md-icon-button
               type="button"
               class="collapse-panel-btn search-chrome-collapse"
