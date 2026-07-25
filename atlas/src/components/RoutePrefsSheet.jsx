@@ -84,16 +84,28 @@ export default function RoutePrefsSheet({
   // Scroll the newly added road into view when Route options opens.
   useEffect(() => {
     if (!open || !highlightedRoadRuleId) return undefined;
-    const id = requestAnimationFrame(() => {
+    let cancelled = false;
+    const tryScroll = () => {
+      if (cancelled) return false;
       const root = roadRulesSectionRef.current;
-      const el =
-        root?.querySelector(
-          `[data-road-rule-id="${CSS.escape(String(highlightedRoadRuleId))}"]`,
-        ) || root;
-      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const el = root?.querySelector(
+        `[data-road-rule-id="${CSS.escape(String(highlightedRoadRuleId))}"]`,
+      );
+      if (!el) return false;
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return true;
+    };
+    const raf = requestAnimationFrame(() => {
+      if (tryScroll()) return;
+      // Rule may land one frame after highlight id — retry briefly.
+      setTimeout(tryScroll, 50);
+      setTimeout(tryScroll, 200);
     });
-    return () => cancelAnimationFrame(id);
-  }, [open, highlightedRoadRuleId, roadRules.length]);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [open, highlightedRoadRuleId, roadRules]);
 
   useEffect(() => {
     if (!addingRoad) return;

@@ -1554,17 +1554,28 @@ export default function App() {
   const applyRoadRuleAt = useCallback(
     async (latlng, mode, roadOrPromise = null) => {
       const road = await (roadOrPromise || resolveRoadAt(latlng));
-      let addedId = null;
-      setRoadRules((prev) => {
-        const next = upsertRoadRule(prev, {
+      // Compute id synchronously — setState updaters aren't sync after await.
+      const addedId =
+        roadRules.find(
+          (r) => r.name.toLowerCase() === String(road.name).toLowerCase(),
+        )?.id ||
+        `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setRoadRules((prev) =>
+        upsertRoadRule(prev, {
           name: road.name,
           lat: road.lat,
           lng: road.lng,
           mode,
-        });
-        addedId = next[0]?.id ?? null;
-        return next;
-      });
+          id: addedId,
+        }),
+      );
+      // Highlight as soon as the rule is written so Route options can scroll to it.
+      setHighlightedRoadRuleId(addedId);
+      clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedRoadRuleId(null);
+      }, 4500);
+
       // Re-rank cards so Prefer/Avoid/Never change recommendation order.
       setRouteOptions((prev) => {
         if (prev.length < 2) return prev;
@@ -1577,7 +1588,7 @@ export default function App() {
             mode,
             lat: road.lat,
             lng: road.lng,
-            id: addedId || "tmp",
+            id: addedId,
           },
         ]);
       });
@@ -1674,18 +1685,11 @@ export default function App() {
             openPrefsWithRoadRules(null);
             void (async () => {
               try {
-                const { name, id } = await applyRoadRuleAt(
+                const { name } = await applyRoadRuleAt(
                   latlng,
                   "prefer",
                   roadPromise,
                 );
-                if (id) {
-                  setHighlightedRoadRuleId(id);
-                  clearTimeout(highlightTimerRef.current);
-                  highlightTimerRef.current = setTimeout(() => {
-                    setHighlightedRoadRuleId(null);
-                  }, 4500);
-                }
                 showStatus(`Preferring ${name}`);
               } catch (err) {
                 showStatus(err.message || "Could not set road rule");
@@ -1702,18 +1706,11 @@ export default function App() {
             openPrefsWithRoadRules(null);
             void (async () => {
               try {
-                const { name, id } = await applyRoadRuleAt(
+                const { name } = await applyRoadRuleAt(
                   latlng,
                   "avoid",
                   roadPromise,
                 );
-                if (id) {
-                  setHighlightedRoadRuleId(id);
-                  clearTimeout(highlightTimerRef.current);
-                  highlightTimerRef.current = setTimeout(() => {
-                    setHighlightedRoadRuleId(null);
-                  }, 4500);
-                }
                 showStatus(`Avoiding ${name}`);
               } catch (err) {
                 showStatus(err.message || "Could not set road rule");
@@ -1730,18 +1727,11 @@ export default function App() {
             openPrefsWithRoadRules(null);
             void (async () => {
               try {
-                const { name, id } = await applyRoadRuleAt(
+                const { name } = await applyRoadRuleAt(
                   latlng,
                   "never",
                   roadPromise,
                 );
-                if (id) {
-                  setHighlightedRoadRuleId(id);
-                  clearTimeout(highlightTimerRef.current);
-                  highlightTimerRef.current = setTimeout(() => {
-                    setHighlightedRoadRuleId(null);
-                  }, 4500);
-                }
                 showStatus(`Never use ${name}`);
               } catch (err) {
                 showStatus(err.message || "Could not set road rule");

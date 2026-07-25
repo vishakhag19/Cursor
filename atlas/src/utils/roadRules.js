@@ -24,9 +24,10 @@ export const ROAD_RULE_MODES = [
   },
 ];
 
-export function upsertRoadRule(rules, { name, lat, lng, mode }) {
+export function upsertRoadRule(rules, { name, lat, lng, mode, id: idIn } = {}) {
   if (!name || !mode) return rules || [];
   const id =
+    idIn ||
     rules?.find((r) => r.name.toLowerCase() === name.toLowerCase())?.id ||
     `road-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const next = (rules || []).filter(
