@@ -74,6 +74,8 @@ export default function SuggestInput({
    * keep the matching places listed as rows (landing search).
    */
   enterSelectsFirst = true,
+  /** Parent increments to force-close the list (e.g. outside click). */
+  dismissNonce = 0,
 }) {
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
@@ -111,6 +113,18 @@ export default function SuggestInput({
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [externalList]);
+
+  useEffect(() => {
+    if (!dismissNonce) return;
+    clearTimeout(debounceRef.current);
+    requestSeq.current += 1;
+    setLoading(false);
+    setOpen(false);
+    setSuggestions([]);
+    setListQuery("");
+    publish({ open: false, items: [], query: "", loading: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dismissNonce]);
 
   useEffect(() => {
     if (!open || !allowCurrentLocation) return;

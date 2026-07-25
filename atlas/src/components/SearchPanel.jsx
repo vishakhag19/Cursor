@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
@@ -39,7 +39,9 @@ export default function SearchPanel({
   collapseIcon = "chevron_left",
 }) {
   const isCompact = useIsCompact();
+  const panelRef = useRef(null);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [listDismissNonce, setListDismissNonce] = useState(0);
   const [placeList, setPlaceList] = useState({
     open: false,
     items: [],
@@ -56,6 +58,16 @@ export default function SearchPanel({
       loading: false,
       select: null,
     });
+  }
+
+  function dismissSearchList() {
+    clearPlaceList();
+    setListDismissNonce((n) => n + 1);
+    setMobileExpanded(false);
+    const active = document.activeElement;
+    if (active && panelRef.current?.contains(active)) {
+      active.blur?.();
+    }
   }
 
   function handleQueryChange(next) {
@@ -79,6 +91,21 @@ export default function SearchPanel({
 
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
+
+  useEffect(() => {
+    if (!listVisible && !(isCompact && mobileExpanded && !place)) {
+      return undefined;
+    }
+    function onPointerDown(e) {
+      const root = panelRef.current;
+      if (!root) return;
+      if (root.contains(e.target)) return;
+      dismissSearchList();
+    }
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [listVisible, isCompact, mobileExpanded, place]);
+
   const hasSaved = savedRoutes.length > 0;
   const showBody =
     !isCompact ||
@@ -100,6 +127,7 @@ export default function SearchPanel({
 
   return (
     <section
+      ref={panelRef}
       className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${showBody ? "is-expanded" : "is-collapsed"} ${showPlaceCard ? "has-place" : ""} ${isSearching ? "is-searching" : ""} ${isBareSearch ? "is-bare" : ""}`}
     >
       <div className={`search-block ${listVisible ? "has-list" : ""}`}>
@@ -127,6 +155,7 @@ export default function SearchPanel({
                 bare
                 externalList
                 enterSelectsFirst={false}
+                dismissNonce={listDismissNonce}
                 onListChange={setPlaceList}
                 onFocusField={() => {
                   if (isCompact) setMobileExpanded(true);
