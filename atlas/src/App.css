@@ -3074,11 +3074,21 @@ md-text-button {
     display: none;
   }
 
-  /* Sit just under the floating stops card (not floating mid-map). */
+  /* Stay above the Drive sheet, clear of the top stops card. */
   .app:has(.panel.is-directions-chrome) .map-controls {
-    top: max(168px, calc(env(safe-area-inset-top, 0px) + 156px));
-    bottom: auto;
+    top: auto;
+    bottom: calc(min(52dvh, 480px) + 12px);
     right: 12px;
+  }
+
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-peek)
+    .map-controls {
+    bottom: 84px;
+  }
+
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-full)
+    .map-controls {
+    display: none;
   }
 
   .app.panel-collapsed .panel.is-directions-chrome {
