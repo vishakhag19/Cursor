@@ -1925,6 +1925,14 @@ md-filled-tonal-button.is-edit-active {
   line-height: 1.35;
 }
 
+.panel.is-search-chrome .landing-saved .landing-saved-rename {
+  padding: 6px 16px;
+}
+
+.panel.is-search-chrome .landing-saved .landing-saved-rename-input {
+  padding: 10px 18px;
+}
+
 .panel.is-search-chrome .landing-saved-list {
   flex: 1 1 auto;
   min-height: 0;
