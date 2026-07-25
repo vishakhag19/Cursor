@@ -1814,7 +1814,9 @@ md-filled-tonal-button.is-edit-active {
 
 .panel.is-search-chrome .landing-saved .route-option-card {
   padding: 10px 12px;
+  border: none;
   border-radius: 14px;
+  box-shadow: none;
 }
 
 .panel.is-search-chrome .landing-saved-list {
