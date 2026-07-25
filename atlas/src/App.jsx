@@ -1400,6 +1400,23 @@ export default function App() {
     setSavedRoutes((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
+  const renameSavedRoute = useCallback((id, name) => {
+    const next = (name || "").trim();
+    if (!id || !next) return false;
+    if (next.length > 80) return false;
+    let changed = false;
+    setSavedRoutes((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        if (r.name === next) return r;
+        changed = true;
+        return { ...r, name: next };
+      }),
+    );
+    if (changed) showStatus("Route name updated");
+    return true;
+  }, [showStatus]);
+
   const pushAssistant = useCallback((role, reply) => {
     const payload =
       typeof reply === "string" ? assistantReply(reply) : reply;
@@ -2350,6 +2367,7 @@ export default function App() {
             savedRoutes={savedRoutes}
             onLoadSaved={loadSavedRoute}
             onDeleteSaved={deleteSavedRoute}
+            onRenameSaved={renameSavedRoute}
             onClear={() => {
               setSearchQuery("");
               setSelectedPlace(null);

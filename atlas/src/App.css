@@ -920,11 +920,13 @@ md-icon-button.dir-add-stop:hover {
 }
 
 .landing-saved-item {
+  position: relative;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0;
   min-height: 52px;
+  overflow: visible;
   transition: background 120ms ease;
 }
 
@@ -977,6 +979,7 @@ md-icon-button.dir-add-stop:hover {
 }
 
 .landing-saved-actions {
+  position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1006,6 +1009,95 @@ md-icon-button.dir-add-stop:hover {
   font-size: 18px;
   width: 18px;
   height: 18px;
+}
+
+.landing-saved-menu {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 4px;
+  z-index: 80;
+  min-width: 168px;
+  padding: 6px 0;
+  border: 1px solid rgba(60, 64, 67, 0.16);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(60, 64, 67, 0.2);
+}
+
+.landing-saved-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: #202124;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.landing-saved-menu-item:hover,
+.landing-saved-menu-item:focus-visible {
+  background: var(--atlas-surface-hover);
+  outline: none;
+}
+
+.landing-saved-menu-item md-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  --md-icon-size: 18px;
+  color: #5f6368;
+}
+
+.landing-saved-menu-item.is-danger,
+.landing-saved-menu-item.is-danger md-icon {
+  color: #c5221f;
+}
+
+.landing-saved-rename {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 52px;
+  margin: 0;
+  padding: 6px 16px;
+  box-sizing: border-box;
+}
+
+.landing-saved-rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  margin: 0;
+  padding: 0 18px;
+  border: 1px solid var(--atlas-control-outline, rgba(60, 64, 67, 0.18));
+  border-radius: 999px;
+  background: #fff;
+  color: #202124;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.35;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.landing-saved-rename-input:focus {
+  outline: none;
+  border-color: var(--atlas-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--atlas-accent) 28%, transparent);
+}
+
+.landing-saved-item.is-renaming {
+  background: transparent;
 }
 
 .landing-saved-open-title {
