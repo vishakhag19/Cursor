@@ -3120,7 +3120,8 @@ md-text-button {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 3;
+    /* Above the floating stops card so a tall/dragged sheet isn't covered */
+    z-index: 5;
     display: flex;
     flex-direction: column;
     height: 30dvh;
@@ -3177,8 +3178,6 @@ md-text-button {
     height: 100dvh;
     max-height: 100dvh;
     border-radius: 0;
-    /* Cover the floating stops card so the drawer truly fills the screen */
-    z-index: 5;
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-travel-modes,
