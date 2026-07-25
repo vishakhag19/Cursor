@@ -61,8 +61,9 @@ export const ROUTE_OPTION_FIELDS = [
 ];
 
 /**
- * OSRM exclude flags derived from prefs.
- * Public OSRM supports motorway / toll / ferry class excludes.
+ * Preferred OSRM exclude flags derived from prefs.
+ * Public router.project-osrm.org rejects these with 400 — routing treats
+ * them as soft ranking bias and only probes hard excludes when supported.
  */
 export function excludesFromPrefs(prefs = DEFAULT_ROUTE_PREFS) {
   const out = [];

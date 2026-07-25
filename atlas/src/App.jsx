@@ -438,10 +438,11 @@ export default function App() {
             excludes,
           });
         } catch {
+          // Brief retry without hard excludes if the first attempt failed.
           await new Promise((r) => setTimeout(r, 600));
           options = await fetchShortestRoutes(filled, routeMode, {
             limit: 5,
-            excludes,
+            excludes: [],
           });
         }
         // Feature 1/2/7: enrich with traffic + reasons, re-rank by prefs / road rules.

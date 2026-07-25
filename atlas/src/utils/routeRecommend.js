@@ -124,9 +124,12 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
   // Base: blend duration (sec) with a light distance term.
   let cost = (route.duration || 0) + (route.distance || 0) / 20;
 
-  if (prefs.avoidHighways) cost += hwy * 900;
-  if (prefs.avoidTolls && route.metrics?.mayHaveTolls) cost += 800;
-  if (prefs.avoidFerries && route.metrics?.mayHaveFerry) cost += 1200;
+  // Soft avoid bias (public OSRM can't hard-exclude). Strong enough that a
+  // longer surface / toll-free / land route still ranks above a shorter
+  // highway/toll/ferry option when the toggle is on.
+  if (prefs.avoidHighways) cost += hwy * 4200;
+  if (prefs.avoidTolls && route.metrics?.mayHaveTolls) cost += 2800;
+  if (prefs.avoidFerries && route.metrics?.mayHaveFerry) cost += 5000;
   if (prefs.preferFuelEfficient) {
     // Soft eco bias: prefer less highway for hybrid/EV; diesel ok on hwy.
     const engine = prefs.engineType || "gas";
@@ -243,14 +246,15 @@ export function enrichAndRankRoutes(
     const highwayShare = estimateHighwayShare(r.steps);
     const namedShare = estimateNamedRoadShare(r.steps);
     const traffic = pickTraffic(r);
-    // ASSUMPTION: tolls unknown from OSRM — mark maybe when prefs ask for avoid.
-    const mayHaveTolls = Boolean(prefs.avoidTolls && highwayShare > 0.35);
-    const mayHaveFerry = Boolean(
-      prefs.avoidFerries &&
-        (r.steps || []).some((s) =>
-          /ferry|boat/i.test(`${s.name || ""} ${s.instruction || ""}`),
-        ),
+    const stepBlob = (r.steps || [])
+      .map((s) => `${s.name || ""} ${s.instruction || ""}`)
+      .join(" ");
+    // ASSUMPTION: tolls rarely named in OSRM steps — also treat heavy
+    // highway share as a toll risk when Avoid tolls is on.
+    const mayHaveTolls = Boolean(
+      /toll/i.test(stepBlob) || (prefs.avoidTolls && highwayShare > 0.35),
     );
+    const mayHaveFerry = /ferry|boat/i.test(stepBlob);
     return {
       ...r,
       metrics: { turns, highwayShare, namedShare, mayHaveTolls, mayHaveFerry },

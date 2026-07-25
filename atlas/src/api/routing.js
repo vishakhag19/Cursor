@@ -243,9 +243,33 @@ export async function rebuildEditedRoute(
 }
 
 /**
+ * One OSRM route request. Returns [] on HTTP/JSON failure — never throws
+ * for unsupported query flags (public OSRM rejects `exclude=` with 400).
+ */
+async function fetchOsrmRoutes(profile, path, { alternatives = "true", exclude = "" } = {}) {
+  const excludeParam = exclude ? `&exclude=${exclude}` : "";
+  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${alternatives}&continue_straight=false${excludeParam}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (data.code !== "Ok" || !data.routes?.length) return [];
+    const tag = exclude || "base";
+    return data.routes.map((r, i) => normalizeRoute(r, `${tag}-${i}`));
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Return up to `limit` distinct shortest + fastest route options.
- * Works for A→B and multi-stop. Public OSRM only returns a few
- * alternatives, so we also seed exclude/detour variants to fill the list.
+ * Works for A→B and multi-stop.
+ *
+ * Avoid tolls/highways/ferries: public OSRM does not support `exclude=`
+ * (returns 400 InvalidValue). We always fetch a base set without hard
+ * excludes, optionally probe exclude variants when a server supports them,
+ * then fill with detours so callers still get up to `limit` options.
+ * Soft ranking in enrichAndRankRoutes applies the preference bias.
  */
 export async function fetchShortestRoutes(
   coords,
@@ -261,42 +285,26 @@ export async function fetchShortestRoutes(
   // Always ask for alternatives — including multi-stop trips.
   const altParam = String(Math.max(Math.min(limit - 1, 3), 1));
 
-  // Pref-driven class excludes (Feature 2) — e.g. motorway / toll.
-  const preferExclude =
-    excludes?.length > 0 ? `&exclude=${excludes.join(",")}` : "";
+  // Base request must succeed without exclude flags.
+  let routes = await fetchOsrmRoutes(profile, path, {
+    alternatives: altParam,
+  });
 
-  const url = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=${altParam}&continue_straight=false${preferExclude}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(
-      `Routing service unavailable (${res.status}). Try again in a moment.`,
-    );
-  }
-  const data = await res.json();
-  if (data.code !== "Ok" || !data.routes?.length) {
-    throw new Error(data.message || "No route found between these stops");
+  if (!routes.length) {
+    throw new Error("No route found between these stops");
   }
 
-  let routes = data.routes.map((r, i) => normalizeRoute(r, i));
-
-  const enrichExcludes = ["motorway", "toll", "ferry"].filter(
-    (x) => !excludes?.includes(x),
-  );
-  for (const exclude of enrichExcludes) {
+  // Optional hard excludes (self-hosted OSRM). Public demo server skips these.
+  const probeExcludes = [
+    ...new Set([...(excludes || []), "motorway", "toll", "ferry"]),
+  ];
+  for (const exclude of probeExcludes) {
     if (uniqueRouteCount(routes) >= limit) break;
-    try {
-      const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&continue_straight=false&exclude=${exclude}`;
-      const localRes = await fetch(localUrl);
-      if (!localRes.ok) continue;
-      const localData = await localRes.json();
-      if (localData.code === "Ok" && localData.routes?.length) {
-        localData.routes.forEach((r, i) => {
-          routes.push(normalizeRoute(r, `${exclude}-${i}`));
-        });
-      }
-    } catch {
-      /* optional enrichment */
-    }
+    const more = await fetchOsrmRoutes(profile, path, {
+      alternatives: "true",
+      exclude,
+    });
+    routes.push(...more);
   }
 
   if (coords.length > 2 && uniqueRouteCount(routes) < limit) {
@@ -312,18 +320,23 @@ export async function fetchShortestRoutes(
     }
   }
 
-  if (uniqueRouteCount(routes) < limit) {
-    const needed = limit - uniqueRouteCount(routes);
-    const extras =
-      coords.length === 2
-        ? await fetchDetourAlternatives(
-            coords[0],
-            coords[coords.length - 1],
-            travelMode,
-            needed,
-          )
-        : await fetchMultiStopDetourAlternatives(coords, travelMode, needed);
-    routes.push(...extras);
+  // Prefer more detour variety when the user asked to avoid classes —
+  // those corridors are how we surface longer non-highway / non-toll options.
+  const wantAvoidBias = (excludes || []).length > 0;
+  if (uniqueRouteCount(routes) < limit || wantAvoidBias) {
+    const needed = Math.max(limit - uniqueRouteCount(routes), wantAvoidBias ? 3 : 0);
+    if (needed > 0) {
+      const extras =
+        coords.length === 2
+          ? await fetchDetourAlternatives(
+              coords[0],
+              coords[coords.length - 1],
+              travelMode,
+              needed,
+            )
+          : await fetchMultiStopDetourAlternatives(coords, travelMode, needed);
+      routes.push(...extras);
+    }
   }
 
   return rankShortestAndFastest(routes, limit);
