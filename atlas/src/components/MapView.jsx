@@ -54,12 +54,12 @@ function routeTimeIcon(label, active = false) {
   const key = `${label}-${active ? 1 : 0}`;
   const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
-  // Sized box + anchor so the chip sits just beside the polyline.
+  // Farther off the polyline so via × controls stay visible while editing.
   const icon = L.divIcon({
     className: "atlas-route-time",
     html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${label}</div>`,
-    iconSize: [72, 28],
-    iconAnchor: [36, 34],
+    iconSize: [88, 32],
+    iconAnchor: [-28, 56],
   });
   ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
@@ -598,9 +598,10 @@ export default function MapView({
           );
         })}
 
-      {/* Travel-time chips sit off the line and never capture pointer events */}
+      {/* Travel-time chips sit well off the line; never capture pointer events */}
       {routeOptions.map((opt, index) => {
-        const fraction = 0.38 + (index % 3) * 0.12;
+        // Keep chips away from the mid-route reshape handles.
+        const fraction = 0.22 + (index % 3) * 0.08;
         const mid = geometryLabelPoint(opt?.geometry, fraction);
         if (!mid) return null;
         const active = opt.id === selectedRouteId;
@@ -612,7 +613,7 @@ export default function MapView({
             icon={routeTimeIcon(label, active)}
             interactive={false}
             keyboard={false}
-            zIndexOffset={active ? 1600 : 1400}
+            zIndexOffset={active ? 500 : 400}
           />
         );
       })}

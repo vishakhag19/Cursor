@@ -30,7 +30,8 @@ function viaDeleteIcon() {
     className: "atlas-via-delete",
     html: `<button type="button" class="via-map-delete" aria-label="Remove reshape point">×</button>`,
     iconSize: [28, 28],
-    iconAnchor: [14, 36],
+    // Sit clearly above-right of the vertex so time chips don't cover it.
+    iconAnchor: [-2, 40],
   });
 }
 
@@ -934,17 +935,12 @@ export default function RouteEditorLayer({
               center={[via.lat, via.lng]}
               radius={selected ? 6 : 5}
               pane="routeEdit"
+              interactive={false}
               pathOptions={{
                 color: "#5f6368",
                 fillColor: "#fff",
                 fillOpacity: 1,
                 weight: selected ? 3 : 2.5,
-              }}
-              eventHandlers={{
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e.originalEvent);
-                  onSelectVia?.(via.id === selectedViaId ? null : via.id);
-                },
               }}
             />
             {selected ? (
@@ -952,10 +948,11 @@ export default function RouteEditorLayer({
                 position={[via.lat, via.lng]}
                 icon={VIA_DELETE_ICON}
                 interactive
-                zIndexOffset={2500}
+                zIndexOffset={4000}
                 eventHandlers={{
                   click: (e) => {
                     L.DomEvent.stopPropagation(e.originalEvent);
+                    L.DomEvent.preventDefault(e.originalEvent);
                     onDeleteVia?.(via.id);
                     onSelectVia?.(null);
                   },
