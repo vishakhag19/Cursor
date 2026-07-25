@@ -856,12 +856,28 @@ md-icon-button.dir-add-stop:hover {
   margin: 0;
 }
 
-/* Match delete icon to secondary label color (meta), not a third tone */
+/* Match delete icon to secondary label color (meta), not a third tone.
+   Compact tap target so the bin’s right inset closer matches the card’s left pad. */
 .landing-saved-actions md-icon-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  margin: 0;
+  --md-icon-button-state-layer-width: 28px;
+  --md-icon-button-state-layer-height: 28px;
+  --md-icon-button-state-layer-size: 28px;
+  --md-icon-button-icon-size: 18px;
   --md-icon-button-icon-color: #70757a;
   --md-icon-button-hover-icon-color: #70757a;
   --md-icon-button-pressed-icon-color: #70757a;
   --md-icon-button-focus-icon-color: #70757a;
+}
+
+.landing-saved-actions md-icon-button md-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 
 .landing-avoid-head {
