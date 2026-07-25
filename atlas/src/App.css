@@ -988,19 +988,20 @@ md-icon-button.dir-add-stop:hover {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
   min-height: 52px;
   margin: 0;
-  padding: 6px 12px;
+  padding: 6px 16px;
   box-sizing: border-box;
 }
 
 .landing-saved-rename-input {
   flex: 1 1 auto;
   min-width: 0;
+  height: 40px;
   margin: 0;
-  padding: 10px 16px;
+  padding: 0 18px;
   border: 1px solid var(--atlas-control-outline, rgba(60, 64, 67, 0.18));
   border-radius: 999px;
   background: #fff;
@@ -1009,6 +1010,8 @@ md-icon-button.dir-add-stop:hover {
   font-size: 1rem;
   line-height: 1.35;
   box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .landing-saved-rename-input:focus {
@@ -1943,7 +1946,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .panel.is-search-chrome .landing-saved .landing-saved-rename-input {
-  padding: 10px 18px;
+  padding: 0 20px;
 }
 
 .panel.is-search-chrome .landing-saved-list {

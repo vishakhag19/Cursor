@@ -155,7 +155,7 @@ export default function RouteOptionsList({
                                 beginRename(opt);
                               }}
                             >
-                              <md-icon>drive_file_rename_outline</md-icon>
+                              <md-icon>edit_square</md-icon>
                             </md-icon-button>
                           ) : null}
                           {onDelete ? (
