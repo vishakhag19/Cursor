@@ -134,27 +134,23 @@ export async function searchPlaces(query, { limit = 8, near = null } = {}) {
   const fetchLimit = Math.max(limit * 2, 16);
 
   if (near?.lat != null && near?.lng != null) {
-    // ~25km box — force nearby matches so partial queries surface local places.
-    const local = await nominatimSearch(q, {
-      near,
-      bounded: true,
-      viewboxDelta: 0.22,
-      limit: fetchLimit,
-    });
-
-    let merged = local;
-    if (local.length < limit) {
-      // Widen without requiring the box, then re-rank by distance.
-      const wider = await nominatimSearch(q, {
+    // Local + wider in parallel so typeahead feels live while typing.
+    const [local, wider] = await Promise.all([
+      nominatimSearch(q, {
+        near,
+        bounded: true,
+        viewboxDelta: 0.22,
+        limit: fetchLimit,
+      }).catch(() => []),
+      nominatimSearch(q, {
         near,
         bounded: false,
         viewboxDelta: 0.55,
         limit: fetchLimit,
-      });
-      merged = dedupePlaces([...local, ...wider]);
-    }
+      }).catch(() => []),
+    ]);
 
-    return rankByDistance(merged, near, limit);
+    return rankByDistance(dedupePlaces([...local, ...wider]), near, limit);
   }
 
   const places = await nominatimSearch(q, { limit: fetchLimit });

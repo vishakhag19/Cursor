@@ -94,13 +94,24 @@ export default function SuggestInput({
   currentLocationRef.current = currentLocation;
   recentPlacesRef.current = recentPlaces;
 
+  // Keep publish() from clobbering fresher list fields with stale closures
+  // (common after await + React 18 batching).
+  const openRef = useRef(open);
+  const suggestionsRef = useRef(suggestions);
+  const listQueryRef = useRef(listQuery);
+  const loadingRef = useRef(loading);
+  openRef.current = open;
+  suggestionsRef.current = suggestions;
+  listQueryRef.current = listQuery;
+  loadingRef.current = loading;
+
   function publish(partial) {
     if (!onListChange) return;
     onListChange({
-      open: partial.open ?? open,
-      items: partial.items ?? suggestions,
-      query: partial.query ?? listQuery,
-      loading: partial.loading ?? loading,
+      open: "open" in partial ? partial.open : openRef.current,
+      items: "items" in partial ? partial.items : suggestionsRef.current,
+      query: "query" in partial ? partial.query : listQueryRef.current,
+      loading: "loading" in partial ? partial.loading : loadingRef.current,
       select: selectRef.current,
     });
   }
@@ -210,10 +221,23 @@ export default function SuggestInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalList, open, suggestions, listQuery, loading]);
 
+  function matchingRecents(q) {
+    const qLower = q.toLowerCase();
+    return (recentPlacesRef.current || [])
+      .filter((p) => !p?.isCurrentLocation)
+      .filter((p) => {
+        const hay = `${p.name || ""} ${p.display_name || ""}`.toLowerCase();
+        return hay.includes(qLower);
+      })
+      .slice(0, 3)
+      .map((p) => ({ ...p, id: String(p.id), isRecent: true }));
+  }
+
   async function runSearch(q, { forceOpen = false } = {}) {
     const seq = ++requestSeq.current;
     setLoading(true);
     setOpen(true);
+    setListQuery(q);
     publish({ open: true, loading: true, query: q });
     try {
       const loc = currentLocationRef.current;
@@ -224,7 +248,6 @@ export default function SuggestInput({
       if (seq !== requestSeq.current) return;
       if (committedRef.current && !forceOpen) {
         setLoading(false);
-        publish({ loading: false });
         return;
       }
       const merged = [];
@@ -232,38 +255,33 @@ export default function SuggestInput({
         merged.push(currentPlace(loc));
       }
       // Keep nearby recents that still match the typed query near the top.
-      const qLower = q.toLowerCase();
-      const recent = (recentPlacesRef.current || [])
-        .filter((p) => !p?.isCurrentLocation)
-        .filter((p) => {
-          const hay = `${p.name || ""} ${p.display_name || ""}`.toLowerCase();
-          return hay.includes(qLower);
-        })
-        .slice(0, 3)
-        .map((p) => ({ ...p, id: String(p.id), isRecent: true }));
-      merged.push(...recent, ...results);
+      merged.push(...matchingRecents(q), ...results);
       const unique = dedupe(merged).slice(0, 8);
       setSuggestions(unique);
-      setOpen(unique.length > 0 || forceOpen);
+      suggestionsRef.current = unique;
+      const nextOpen = unique.length > 0 || forceOpen;
+      setOpen(nextOpen);
+      openRef.current = nextOpen;
+      setLoading(false);
+      loadingRef.current = false;
       publish({
-        open: unique.length > 0 || forceOpen,
+        open: nextOpen,
         items: unique,
         query: q,
         loading: false,
       });
     } catch {
       if (seq !== requestSeq.current) return;
+      setLoading(false);
+      loadingRef.current = false;
       if (forceOpen) {
         setSuggestions([]);
+        suggestionsRef.current = [];
         setOpen(true);
+        openRef.current = true;
         publish({ open: true, items: [], query: q, loading: false });
       } else {
         showDefaultList();
-      }
-    } finally {
-      if (seq === requestSeq.current) {
-        setLoading(false);
-        publish({ loading: false });
       }
     }
   }
@@ -272,6 +290,7 @@ export default function SuggestInput({
     clearTimeout(debounceRef.current);
     const q = raw.trim();
     setListQuery(q);
+    listQueryRef.current = q;
 
     if (committedRef.current != null) {
       if (q.toLowerCase() === committedRef.current.toLowerCase()) {
@@ -293,9 +312,25 @@ export default function SuggestInput({
       return;
     }
 
+    // Immediate feedback while typing: filter recents + show Searching…
+    // before the debounced geocode round-trip returns.
+    const preview = matchingRecents(q);
+    setSuggestions(preview);
+    suggestionsRef.current = preview;
+    setOpen(true);
+    openRef.current = true;
+    setLoading(true);
+    loadingRef.current = true;
+    publish({
+      open: true,
+      items: preview,
+      query: q,
+      loading: true,
+    });
+
     debounceRef.current = setTimeout(() => {
       void runSearch(q);
-    }, 200);
+    }, 120);
   }
 
   /** Immediate search — used when Enter should show the match list. */
