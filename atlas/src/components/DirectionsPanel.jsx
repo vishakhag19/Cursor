@@ -945,7 +945,7 @@ export default function DirectionsPanel({
               ))}
             </div>
 
-            {routePrefs && onRoutePrefsChange ? (
+            {travelMode === "driving" && routePrefs && onRoutePrefsChange ? (
               <div className="dir-avoid-chips" role="group" aria-label="Avoid">
                 {AVOID_CHIP_FIELDS.map((f) => {
                   const on = Boolean(routePrefs[f.id]);
