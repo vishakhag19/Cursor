@@ -363,6 +363,10 @@ md-icon-button.dir-add-stop {
   --md-outlined-text-field-trailing-space: 76px;
 }
 
+.dir-stop-row.has-clear .suggest-wrap md-outlined-text-field {
+  --md-outlined-text-field-trailing-space: 40px;
+}
+
 .dir-stop-reorder {
   position: absolute;
   right: 2px;
@@ -382,6 +386,10 @@ md-icon-button.dir-add-stop {
   );
   padding-left: 8px;
   border-radius: 0 999px 999px 0;
+}
+
+.dir-stop-reorder.is-clear-only {
+  padding-left: 4px;
 }
 
 .dir-stop-reorder md-icon-button {

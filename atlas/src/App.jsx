@@ -699,14 +699,19 @@ export default function App() {
   const setStopPlace = useCallback(
     (index, place) => {
       const nextStops = [...stops];
-      nextStops[index] = place;
+      nextStops[index] = place || null;
       setStops(nextStops);
       setStopTexts((prev) => {
         const next = [...prev];
-        next[index] = place.isCurrentLocation ? "Your location" : place.name;
+        if (!place) {
+          next[index] = "";
+        } else {
+          next[index] = place.isCurrentLocation ? "Your location" : place.name;
+        }
         return next;
       });
       clearRoutes();
+      if (!place) return;
       if (!place.isCurrentLocation) {
         setFlyTarget({ lat: place.lat, lng: place.lng, zoom: 13 });
       }

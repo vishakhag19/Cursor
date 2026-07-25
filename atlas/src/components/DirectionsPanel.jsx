@@ -422,6 +422,7 @@ export default function DirectionsPanel({
               const multi = stops.length > 2;
               const isStart = i === 0;
               const isDest = i === stops.length - 1;
+              const canClear = Boolean(stopTexts[i] || stop);
               const showSwap = isStart && !multi;
               const showAdd =
                 isDest &&
@@ -432,6 +433,7 @@ export default function DirectionsPanel({
               const rowClass = [
                 "dir-stop-row",
                 multi ? "has-controls" : "",
+                !multi && canClear ? "has-clear" : "",
                 dragFrom === i ? "is-dragging" : "",
                 dragOver === i && dragFrom != null && dragFrom !== i
                   ? "is-drop-target"
@@ -549,6 +551,24 @@ export default function DirectionsPanel({
                         onClick={() => {
                           clearPlaceList();
                           onRemoveStop(i);
+                        }}
+                      >
+                        <md-icon>close</md-icon>
+                      </md-icon-button>
+                    </div>
+                  ) : canClear ? (
+                    <div className="dir-stop-reorder is-clear-only">
+                      <md-icon-button
+                        type="button"
+                        aria-label={
+                          isStart
+                            ? "Clear starting point"
+                            : "Clear destination"
+                        }
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          clearPlaceList();
+                          onStopSelect(i, null);
                         }}
                       >
                         <md-icon>close</md-icon>
