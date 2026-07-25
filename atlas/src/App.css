@@ -375,6 +375,27 @@ md-icon-button.collapse-panel-btn:hover,
   min-width: 0;
 }
 
+/* Suggestions sit under the active stop row (not over the next field). */
+.dir-stop-suggest-under-field {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(40dvh, 280px);
+  margin: -2px 0 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.dir-stop-suggest-under-field .place-suggest-panel {
+  margin: 0;
+  max-height: none;
+  overflow: visible;
+  border-top: 1px solid var(--atlas-control-outline, #dadce0);
+}
+
 .dir-stop-row {
   display: flex;
   align-items: center;
@@ -3461,45 +3482,40 @@ md-text-button {
   }
 
   .panel.is-directions-chrome .dir-stops-block > .dir-stops {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-height: 0;
     overflow: visible;
   }
 
-  .panel.is-directions-chrome .dir-stop-suggest-scroll {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    margin: 4px -8px 0;
-    padding: 0 0 4px;
+  .panel.is-directions-chrome .dir-stop-suggest-under-field {
+    max-height: min(36dvh, 240px);
+    margin: 0;
+    border: 1px solid rgba(60, 64, 67, 0.08);
+    border-radius: 16px;
   }
 
-  .panel.is-directions-chrome .dir-stop-suggest-scroll .place-suggest-panel {
+  .panel.is-directions-chrome .dir-stop-suggest-under-field .place-suggest-panel {
     max-height: none;
     margin: 0;
     overflow: visible;
+    border-top: none;
   }
 
-  /* Suggest open: keep stop fields in a capped region; suggestions scroll below. */
+  /* Suggest open: keep the full stop stack (fields + under-field list) scrolling together. */
   .panel.is-directions-chrome
     .directions-panel.has-stop-suggest
     .dir-stops-block {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .panel.is-directions-chrome
     .directions-panel.has-stop-suggest
     .dir-stops-block
     > .dir-stops {
-    flex: 0 1 auto;
-    min-height: 0;
-    max-height: min(28dvh, 200px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    flex: 0 0 auto;
+    max-height: none;
+    overflow: visible;
   }
 
   /* Keep origin/destination visible like Google Maps (not hidden after routes). */

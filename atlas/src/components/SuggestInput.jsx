@@ -148,6 +148,7 @@ export default function SuggestInput({
 
   function emptySuggestions() {
     const items = [];
+    // Always lead with current location when the field allows it.
     if (allowCurrentLocation) {
       items.push(currentPlace(currentLocationRef.current));
     }
@@ -381,6 +382,15 @@ export default function SuggestInput({
       committedRef.current = null;
     }
     stopSearch();
+
+    // Cleared while focused (e.g. start-field X): keep the list open with
+    // Current location at the top.
+    const focused = Boolean(wrapRef.current?.contains(document.activeElement));
+    if (!q && allowCurrentLocation && focused) {
+      showDefaultList();
+      return;
+    }
+
     setOpen(false);
     setSuggestions([]);
     setListQuery("");

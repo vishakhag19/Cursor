@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, useState, Fragment } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
@@ -616,10 +616,14 @@ export default function DirectionsPanel({
               ]
                 .filter(Boolean)
                 .join(" ");
+              const showSuggestUnderRow =
+                placeList.open &&
+                activeStop === i &&
+                (placeList.items.length > 0 || placeList.loading);
               return (
+              <Fragment key={`stop-${i}`}>
               <div
                 className={rowClass}
-                key={`stop-${i}`}
                 onDragOver={
                   multi
                     ? (e) => {
@@ -743,7 +747,9 @@ export default function DirectionsPanel({
                         }
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
-                          clearPlaceList();
+                          /* Keep focus so SuggestInput can open defaults
+                             with Current location on top. */
+                          setActiveStopIndex(i);
                           onStopSelect(i, null);
                         }}
                       >
@@ -787,27 +793,27 @@ export default function DirectionsPanel({
                   ) : null}
                 </div>
               </div>
+              {showSuggestUnderRow ? (
+                <div className="dir-stop-suggest-under-field">
+                  <PlaceSuggestionList
+                    items={placeList.items}
+                    query={placeList.query}
+                    loading={placeList.loading}
+                    onSelect={(place) => {
+                      if (placeList.select) placeList.select(place);
+                      else if (activeStop != null) {
+                        onStopSelect(activeStop, place);
+                        clearPlaceList();
+                      }
+                    }}
+                  />
+                </div>
+              ) : null}
+              </Fragment>
               );
             })}
           </div>
         </div>
-
-        {placeList.open && (placeList.items.length > 0 || placeList.loading) ? (
-          <div className="dir-stop-suggest-scroll">
-            <PlaceSuggestionList
-              items={placeList.items}
-              query={placeList.query}
-              loading={placeList.loading}
-              onSelect={(place) => {
-                if (placeList.select) placeList.select(place);
-                else if (activeStop != null) {
-                  onStopSelect(activeStop, place);
-                  clearPlaceList();
-                }
-              }}
-            />
-          </div>
-        ) : null}
       </div>
       </div>
       </div>
