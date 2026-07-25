@@ -857,30 +857,23 @@ md-icon-button.dir-add-stop:hover {
 }
 
 .landing-saved-list {
-  background: transparent;
-  --md-list-container-color: transparent;
+  list-style: none;
   margin: 0 calc(-1 * var(--panel-pad-x, 16px));
   padding: 0;
-}
-
-.landing-saved-list md-list-item.landing-saved-item {
-  --md-list-item-container-color: transparent;
-  transition: background 120ms ease;
-}
-
-.landing-saved-list md-list-item.landing-saved-item:hover {
-  background: var(--atlas-surface-hover);
+  background: transparent;
 }
 
 .landing-saved-item {
-  --md-list-item-container-color: transparent;
-  --md-list-item-top-space: 4px;
-  --md-list-item-bottom-space: 4px;
-  --md-list-item-leading-space: 0px;
-  --md-list-item-trailing-space: 0px;
-  --md-list-item-one-line-container-height: 48px;
-  --md-list-item-two-line-container-height: 52px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 0;
+  min-height: 52px;
+  transition: background 120ms ease;
+}
+
+.landing-saved-item:hover {
+  background: var(--atlas-surface-hover);
 }
 
 .landing-saved-open {
@@ -888,9 +881,9 @@ md-icon-button.dir-add-stop:hover {
   flex-direction: row;
   align-items: center;
   gap: 12px;
-  width: 100%;
+  flex: 1 1 auto;
   min-width: 0;
-  padding: 4px var(--panel-pad-x, 16px);
+  padding: 6px var(--panel-pad-x, 16px);
   border: none;
   background: transparent;
   text-align: left;
@@ -907,20 +900,22 @@ md-icon-button.dir-add-stop:hover {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--atlas-surface-hover, #f1f3f4);
+  background: #e8eaed;
   color: #5f6368;
 }
 
-.landing-item-icon md-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  color: inherit;
+.landing-item-icon svg {
+  display: block;
 }
 
 .landing-saved-item.is-saved .landing-item-icon {
-  background: var(--atlas-accent-container, #e8f0fe);
-  color: var(--atlas-accent, #1a73e8);
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.landing-saved-item.is-recent .landing-item-icon {
+  background: #f1f3f4;
+  color: #5f6368;
 }
 
 .landing-saved-open-text {
@@ -930,6 +925,30 @@ md-icon-button.dir-add-stop:hover {
   gap: 1px;
   min-width: 0;
   flex: 1;
+}
+
+.landing-saved-actions {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding-right: 8px;
+}
+
+.landing-saved-delete {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #70757a;
+  cursor: pointer;
+}
+
+.landing-saved-delete:hover {
+  background: rgba(60, 64, 67, 0.08);
 }
 
 .landing-saved-open-title {
@@ -951,37 +970,6 @@ md-icon-button.dir-add-stop:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.landing-saved-actions {
-  display: flex;
-  align-items: center;
-  padding: 0;
-  margin: 0;
-}
-
-/* Match delete icon to secondary label color (meta), not a third tone.
-   Compact tap target so the bin’s right inset closer matches the card’s left pad. */
-.landing-saved-actions md-icon-button {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0;
-  margin: 0;
-  --md-icon-button-state-layer-width: 28px;
-  --md-icon-button-state-layer-height: 28px;
-  --md-icon-button-state-layer-size: 28px;
-  --md-icon-button-icon-size: 18px;
-  --md-icon-button-icon-color: #70757a;
-  --md-icon-button-hover-icon-color: #70757a;
-  --md-icon-button-pressed-icon-color: #70757a;
-  --md-icon-button-focus-icon-color: #70757a;
-}
-
-.landing-saved-actions md-icon-button md-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
 }
 
 .landing-avoid-head {
@@ -1780,9 +1768,9 @@ md-filled-tonal-button.is-edit-active {
 
 .panel.is-search-chrome .landing-saved {
   margin: 0;
-  padding: 6px 16px 8px;
-  /* Was 3×56 + 48; reduced by 8px */
-  max-height: calc(3 * 56px + 40px);
+  padding: 4px 12px 4px;
+  /* ~8px shorter than the previous 3×56+48 card */
+  max-height: calc(3 * 52px + 36px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1796,7 +1784,7 @@ md-filled-tonal-button.is-edit-active {
 
 .panel.is-search-chrome .landing-saved-head {
   flex: 0 0 auto;
-  padding: 4px 0 4px;
+  padding: 2px 4px 2px;
   background: #fff;
   position: sticky;
   top: 0;
@@ -1806,25 +1794,15 @@ md-filled-tonal-button.is-edit-active {
 .panel.is-search-chrome .landing-saved-list {
   flex: 1 1 auto;
   min-height: 0;
-  margin: 0;
+  margin: 0 -4px;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-.panel.is-search-chrome .landing-saved-item {
-  --md-list-item-leading-space: 0px;
-  --md-list-item-trailing-space: 0px;
-  gap: 0;
-}
-
 .panel.is-search-chrome .landing-saved-open {
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.panel.is-search-chrome .landing-item-icon {
-  display: grid;
+  padding-left: 8px;
+  padding-right: 4px;
 }
 
 /* Desktop filled: place details as their own card under the pill */
@@ -5271,9 +5249,9 @@ body:has(.nav-active .reroute-prompt) .app.nav-mode {
   outline-offset: 2px;
 }
 
-/* Keep delete on the same row wash — no separate circular chip hover */
-.landing-saved-actions md-icon-button:hover {
-  background: transparent;
+.landing-saved-delete:focus-visible {
+  outline: 2px solid var(--atlas-accent);
+  outline-offset: 2px;
 }
 
 .place-suggest-item {

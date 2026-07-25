@@ -254,11 +254,11 @@ export default function SearchPanel({
                     : "Recent"}
               </h2>
             </div>
-            <md-list class="landing-saved-list">
+            <ul className="landing-saved-list">
               {recentDestinations.map((p) => (
-                <md-list-item
+                <li
                   key={`recent-${p.id}`}
-                  class="landing-saved-item is-recent"
+                  className="landing-saved-item is-recent"
                 >
                   <button
                     type="button"
@@ -266,7 +266,12 @@ export default function SearchPanel({
                     onClick={() => pickPlace(p)}
                   >
                     <span className="landing-item-icon" aria-hidden>
-                      <md-icon>history</md-icon>
+                      <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path
+                          fill="currentColor"
+                          d="M13 3a9 9 0 1 0 8.95 10h-2.02A7 7 0 1 1 13 5V1l4.2 3.2L13 7.5V3zm-1 5h1.5v4.25l3.5 2.08-.75 1.23L12 13V8z"
+                        />
+                      </svg>
                     </span>
                     <span className="landing-saved-open-text">
                       <span className="landing-saved-open-title">
@@ -279,12 +284,12 @@ export default function SearchPanel({
                       </span>
                     </span>
                   </button>
-                </md-list-item>
+                </li>
               ))}
               {savedRoutes.map((r) => (
-                <md-list-item
+                <li
                   key={`saved-${r.id}`}
-                  class="landing-saved-item is-saved"
+                  className="landing-saved-item is-saved"
                 >
                   <button
                     type="button"
@@ -292,7 +297,12 @@ export default function SearchPanel({
                     onClick={() => onLoadSaved?.(r)}
                   >
                     <span className="landing-item-icon" aria-hidden>
-                      <md-icon>bookmark</md-icon>
+                      <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path
+                          fill="currentColor"
+                          d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"
+                        />
+                      </svg>
                     </span>
                     <span className="landing-saved-open-text">
                       <span className="landing-saved-open-title">{r.name}</span>
@@ -302,18 +312,24 @@ export default function SearchPanel({
                       </span>
                     </span>
                   </button>
-                  <div slot="end" className="landing-saved-actions">
-                    <md-icon-button
+                  <div className="landing-saved-actions">
+                    <button
                       type="button"
+                      className="landing-saved-delete"
                       aria-label={`Delete ${r.name}`}
                       onClick={() => onDeleteSaved?.(r.id)}
                     >
-                      <md-icon>delete</md-icon>
-                    </md-icon-button>
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+                        <path
+                          fill="currentColor"
+                          d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                </md-list-item>
+                </li>
               ))}
-            </md-list>
+            </ul>
           </div>
         )}
       </section>
