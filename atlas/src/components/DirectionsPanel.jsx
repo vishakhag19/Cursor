@@ -27,6 +27,8 @@ export default function DirectionsPanel({
   onMoveStop = null,
   onSwap,
   onClose,
+  onCollapsePanel = null,
+  collapseIcon = "chevron_left",
   routeOptions,
   selectedRouteId,
   onSelectRoute,
@@ -251,6 +253,18 @@ export default function DirectionsPanel({
                 </span>
               </button>
             )}
+            {onCollapsePanel ? (
+              <ActionTip tip="Collapse panel">
+                <md-icon-button
+                  type="button"
+                  class="collapse-panel-btn dir-collapse-btn"
+                  aria-label="Collapse panel"
+                  onClick={onCollapsePanel}
+                >
+                  <md-icon>{collapseIcon}</md-icon>
+                </md-icon-button>
+              </ActionTip>
+            ) : null}
           </div>
         </div>
 

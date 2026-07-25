@@ -1445,9 +1445,17 @@ md-filled-tonal-button.is-edit-active {
   background: transparent;
 }
 
-/* Landing search is the panel chrome (no brand header) */
-.panel.is-search-chrome {
+/* No brand header — search / directions own the top chrome */
+.panel.is-search-chrome,
+.panel.is-directions-chrome {
   padding-top: 10px;
+}
+
+@media (max-width: 800px) {
+  .panel.is-search-chrome,
+  .panel.is-directions-chrome {
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
+  }
 }
 
 .search-chrome {
