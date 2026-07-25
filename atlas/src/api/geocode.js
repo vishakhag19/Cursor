@@ -1,5 +1,72 @@
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 
+/** Public Nominatim allows ~1 req/s. Parallel typeahead bursts get 403. */
+const NOMINATIM_MIN_INTERVAL_MS = 1100;
+
+let nominatimChain = Promise.resolve();
+let nominatimNextAt = 0;
+
+/**
+ * Serialize every Nominatim call and space them ≥1.1s apart.
+ * Callers still get a normal Promise; aborts reject when the wait/fetch is cancelled.
+ */
+function enqueueNominatim(run, signal) {
+  const job = nominatimChain.then(async () => {
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+    const wait = Math.max(0, nominatimNextAt - Date.now());
+    if (wait > 0) {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(resolve, wait);
+        const onAbort = () => {
+          clearTimeout(timer);
+          reject(new DOMException("Aborted", "AbortError"));
+        };
+        if (signal) {
+          if (signal.aborted) {
+            onAbort();
+            return;
+          }
+          signal.addEventListener("abort", onAbort, { once: true });
+        }
+      });
+    }
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+    nominatimNextAt = Date.now() + NOMINATIM_MIN_INTERVAL_MS;
+    return run();
+  });
+  // Keep the queue alive after failures.
+  nominatimChain = job.then(
+    () => undefined,
+    () => undefined,
+  );
+  return job;
+}
+
+async function nominatimFetch(url, { signal, errorMessage = "Search failed" } = {}) {
+  const timeout = AbortSignal.timeout(8000);
+  const combined =
+    typeof AbortSignal.any === "function" && signal
+      ? AbortSignal.any([timeout, signal])
+      : timeout;
+
+  return enqueueNominatim(async () => {
+    // Do not set User-Agent — browsers forbid it and a custom value can force a
+    // CORS preflight that Nominatim rejects (fetch then fails with a blank UI).
+    const res = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
+      signal: combined,
+    });
+    if (!res.ok) throw new Error(errorMessage);
+    return res.json();
+  }, combined);
+}
+
 function mapPlace(item, fallbackLat, fallbackLng) {
   const address = item.address || {};
   const name =
@@ -113,7 +180,7 @@ function rankSearchResults(places, query, near, limit) {
 
 async function nominatimSearch(
   query,
-  { near = null, bounded = false, viewboxDelta = 0.35, limit = 12 } = {},
+  { near = null, bounded = false, viewboxDelta = 0.35, limit = 12, signal } = {},
 ) {
   const url = new URL(`${NOMINATIM}/search`);
   url.searchParams.set("q", query);
@@ -131,26 +198,17 @@ async function nominatimSearch(
     );
     url.searchParams.set("bounded", bounded ? "1" : "0");
   }
-  // Do not set User-Agent — browsers forbid it and a custom value can force a
-  // CORS preflight that Nominatim rejects (fetch then fails with a blank UI).
-  const res = await fetch(url.toString(), {
-    headers: {
-      Accept: "application/json",
-    },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) throw new Error("Search failed");
-  const data = await res.json();
+  const data = await nominatimFetch(url, { signal, errorMessage: "Search failed" });
   if (!Array.isArray(data)) throw new Error("Search failed");
   return data.map((item) => mapPlace(item));
 }
 
 /**
- * Search places. Uses a single Nominatim request (usage-policy friendly).
+ * Search places. Uses serialized Nominatim requests (usage-policy friendly).
  * When `near` is set, bias with an unbounded viewbox, then fall back to a
  * global query if that returns nothing — never swallow both into [].
  */
-export async function searchPlaces(query, { limit = 8, near = null } = {}) {
+export async function searchPlaces(query, { limit = 8, near = null, signal } = {}) {
   const q = query.trim();
   if (!q) return [];
 
@@ -163,21 +221,39 @@ export async function searchPlaces(query, { limit = 8, near = null } = {}) {
       bounded: false,
       viewboxDelta: 0.55,
       limit: fetchLimit,
-    }).catch(() => []);
+      signal,
+    }).catch((err) => {
+      if (err?.name === "AbortError") throw err;
+      return [];
+    });
 
     if (!biased.length) {
-      biased = await nominatimSearch(q, { limit: fetchLimit });
-    } else if (biased.length < limit) {
-      const global = await nominatimSearch(q, { limit: fetchLimit }).catch(
-        () => [],
+      biased = await nominatimSearch(q, { limit: fetchLimit, signal }).catch(
+        (err) => {
+          if (err?.name === "AbortError") throw err;
+          return [];
+        },
       );
+    } else if (biased.length < limit) {
+      const global = await nominatimSearch(q, {
+        limit: fetchLimit,
+        signal,
+      }).catch((err) => {
+        if (err?.name === "AbortError") throw err;
+        return [];
+      });
       biased = dedupePlaces([...biased, ...global]);
     }
 
     return rankSearchResults(biased, q, near, limit);
   }
 
-  const places = await nominatimSearch(q, { limit: fetchLimit });
+  const places = await nominatimSearch(q, { limit: fetchLimit, signal }).catch(
+    (err) => {
+      if (err?.name === "AbortError") throw err;
+      return [];
+    },
+  );
   return rankSearchResults(places, q, null, limit);
 }
 
@@ -228,7 +304,7 @@ function roadNameKey(name) {
 
 async function nominatimStreetSearch(
   query,
-  { near = null, bounded = false, viewboxDelta = 0.35, limit = 12 } = {},
+  { near = null, bounded = false, viewboxDelta = 0.35, limit = 12, signal } = {},
 ) {
   const url = new URL(`${NOMINATIM}/search`);
   // Structured street query biases Nominatim toward highway ways.
@@ -248,14 +324,10 @@ async function nominatimStreetSearch(
     );
     url.searchParams.set("bounded", bounded ? "1" : "0");
   }
-  const res = await fetch(url.toString(), {
-    headers: {
-      Accept: "application/json",
-    },
-    signal: AbortSignal.timeout(8000),
+  const data = await nominatimFetch(url, {
+    signal,
+    errorMessage: "Road search failed",
   });
-  if (!res.ok) throw new Error("Road search failed");
-  const data = await res.json();
   if (!Array.isArray(data)) throw new Error("Road search failed");
   return data
     .filter((item) => isRoadResult(mapPlace(item), item))
@@ -272,31 +344,22 @@ async function nominatimStreetSearch(
 
 const ROAD_SUFFIXES = ["Street", "Road", "Avenue", "Drive", "Boulevard", "Lane"];
 
-function roadQueryVariants(query) {
-  const q = query.trim();
-  const variants = [q];
-  const lower = q.toLowerCase();
-  const hasSuffix = ROAD_SUFFIXES.some(
+function hasRoadSuffix(query) {
+  const lower = query.toLowerCase();
+  return ROAD_SUFFIXES.some(
     (s) =>
       lower.endsWith(` ${s.toLowerCase()}`) ||
-      lower.endsWith(` ${s.slice(0, 2).toLowerCase()}`) ||
-      lower.endsWith(" st") ||
-      lower.endsWith(" rd") ||
-      lower.endsWith(" ave") ||
-      lower.endsWith(" dr") ||
-      lower.endsWith(" blvd") ||
-      lower.endsWith(" ln"),
-  );
-  if (!hasSuffix && q.length >= 2) {
-    // Nominatim often needs a street-type word for short stems like "Main".
-    for (const suffix of ROAD_SUFFIXES.slice(0, 3)) {
-      variants.push(`${q} ${suffix}`);
-    }
-  }
-  return variants;
+      lower.endsWith(` ${s.slice(0, 2).toLowerCase()}`),
+  ) ||
+    lower.endsWith(" st") ||
+    lower.endsWith(" rd") ||
+    lower.endsWith(" ave") ||
+    lower.endsWith(" dr") ||
+    lower.endsWith(" blvd") ||
+    lower.endsWith(" ln");
 }
 
-async function collectStreetCandidates(query, near, fetchLimit) {
+async function collectStreetCandidates(query, near, fetchLimit, signal) {
   if (near?.lat != null && near?.lng != null) {
     // Prefer nearby, but don't hard-bound — short stems often miss otherwise.
     return nominatimStreetSearch(query, {
@@ -304,47 +367,13 @@ async function collectStreetCandidates(query, near, fetchLimit) {
       bounded: false,
       viewboxDelta: 0.45,
       limit: fetchLimit,
+      signal,
     });
   }
-  return nominatimStreetSearch(query, { limit: fetchLimit });
+  return nominatimStreetSearch(query, { limit: fetchLimit, signal });
 }
 
-/**
- * Search named roads near `near`, returning distinct road names (3–5 typical).
- * Prefer structured Nominatim `street=` results; fall back to free-form filter.
- */
-export async function searchRoads(query, { limit = 5, near = null } = {}) {
-  const q = query.trim();
-  if (!q || q.length < 2) return [];
-
-  const fetchLimit = Math.max(limit * 4, 16);
-  const variants = roadQueryVariants(q);
-
-  const streetBatches = await Promise.all(
-    variants.map((variant) =>
-      collectStreetCandidates(variant, near, fetchLimit).catch(() => []),
-    ),
-  );
-  let candidates = dedupePlaces(streetBatches.flat());
-
-  // Free-form fallback when structured street search is thin.
-  if (candidates.length < limit) {
-    const placeBatches = await Promise.all(
-      variants.map((variant) =>
-        searchPlaces(variant, { near, limit: fetchLimit }).catch(() => []),
-      ),
-    );
-    const roads = placeBatches
-      .flat()
-      .filter((p) => isRoadResult(p) || p.address?.road)
-      .map((p) => ({
-        ...p,
-        name: roadLabel(p) || p.name,
-        isRoad: true,
-      }));
-    candidates = dedupePlaces([...candidates, ...roads]);
-  }
-
+function finalizeRoadResults(candidates, q, near, limit) {
   const qLower = q.toLowerCase();
   const matched = candidates.filter((place) => {
     const name = (place.name || "").toLowerCase();
@@ -355,7 +384,7 @@ export async function searchRoads(query, { limit = 5, near = null } = {}) {
   });
   const pool = matched.length ? matched : candidates;
 
-  const ranked = rankSearchResults(pool, q, near, fetchLimit);
+  const ranked = rankSearchResults(pool, q, near, Math.max(limit * 4, 16));
   const seen = new Set();
   const out = [];
   for (const place of ranked) {
@@ -373,7 +402,65 @@ export async function searchRoads(query, { limit = 5, near = null } = {}) {
   return out;
 }
 
-export async function reverseGeocode(lat, lng) {
+/**
+ * Search named roads near `near`, returning distinct road names (3–5 typical).
+ * One structured `street=` query first; only then a single suffix / free-form
+ * fallback — never parallel Nominatim fan-out.
+ */
+export async function searchRoads(query, { limit = 5, near = null, signal } = {}) {
+  const q = query.trim();
+  if (!q || q.length < 2) return [];
+
+  const fetchLimit = Math.max(limit * 4, 16);
+
+  let candidates = await collectStreetCandidates(
+    q,
+    near,
+    fetchLimit,
+    signal,
+  ).catch((err) => {
+    if (err?.name === "AbortError") throw err;
+    return [];
+  });
+
+  // One suffix retry for short stems like "Main" — sequential, not parallel.
+  if (candidates.length < limit && !hasRoadSuffix(q)) {
+    const withStreet = await collectStreetCandidates(
+      `${q} Street`,
+      near,
+      fetchLimit,
+      signal,
+    ).catch((err) => {
+      if (err?.name === "AbortError") throw err;
+      return [];
+    });
+    candidates = dedupePlaces([...candidates, ...withStreet]);
+  }
+
+  // Free-form fallback when structured street search is still thin.
+  if (candidates.length < Math.min(2, limit)) {
+    const places = await searchPlaces(q, {
+      near,
+      limit: fetchLimit,
+      signal,
+    }).catch((err) => {
+      if (err?.name === "AbortError") throw err;
+      return [];
+    });
+    const roads = places
+      .filter((p) => isRoadResult(p) || p.address?.road)
+      .map((p) => ({
+        ...p,
+        name: roadLabel(p) || p.name,
+        isRoad: true,
+      }));
+    candidates = dedupePlaces([...candidates, ...roads]);
+  }
+
+  return finalizeRoadResults(candidates, q, near, limit);
+}
+
+export async function reverseGeocode(lat, lng, { signal } = {}) {
   const url = new URL(`${NOMINATIM}/reverse`);
   url.searchParams.set("lat", String(lat));
   url.searchParams.set("lon", String(lng));
@@ -382,11 +469,10 @@ export async function reverseGeocode(lat, lng) {
   url.searchParams.set("extratags", "1");
   url.searchParams.set("namedetails", "1");
   url.searchParams.set("zoom", "18");
-  const res = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
+  const item = await nominatimFetch(url, {
+    signal,
+    errorMessage: "Reverse geocode failed",
   });
-  if (!res.ok) throw new Error("Reverse geocode failed");
-  const item = await res.json();
   return mapPlace(item, lat, lng);
 }
 

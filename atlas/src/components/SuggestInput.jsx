@@ -346,7 +346,7 @@ export default function SuggestInput({
 
     debounceRef.current = setTimeout(() => {
       void runSearch(q);
-    }, 120);
+    }, 400);
   }
 
   /** Immediate search — used when Enter should show the match list. */

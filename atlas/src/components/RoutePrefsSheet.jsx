@@ -218,7 +218,7 @@ export default function RoutePrefsSheet({
     }
     debounceRef.current = setTimeout(() => {
       void runRoadSearch(raw);
-    }, 220);
+    }, 400);
   }
 
   function chooseRoad(road) {
