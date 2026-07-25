@@ -2300,49 +2300,7 @@ md-icon-button.expand-panel:hover,
   background: #ffffff;
 }
 
-/* Top-center of the visible map (offsets past the left panel when open) */
-.route-reshape-bar {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  translate: -50% 0;
-  z-index: 1105;
-  display: flex;
-  align-items: center;
-  gap: 0;
-  height: 36px;
-  min-height: 36px;
-  padding: 2px;
-  box-sizing: border-box;
-  background: #fff;
-  border: 1px solid var(--atlas-surface-pressed);
-  border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
-  pointer-events: auto;
-}
-
-.app:not(.panel-collapsed) .route-reshape-bar {
-  /* Horizontal center of the map to the right of the floating left panel */
-  left: calc(50% + (var(--atlas-panel-width, 400px) + 12px) / 2);
-}
-
-.route-reshape-bar md-icon-button {
-  width: 32px;
-  height: 32px;
-  margin: 0;
-  --md-icon-button-state-layer-size: 32px;
-  --md-icon-button-icon-size: 18px;
-  --md-icon-button-icon-color: #5f6368;
-}
-
-.route-reshape-bar md-icon-button md-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  --md-icon-size: 18px;
-}
-
-/* Mobile: panel is a top sheet — keep bar at top center of the viewport */
+/* Mobile: panel is a top sheet — hide desktop panel expand/collapse chrome */
 @media (max-width: 800px) {
   .app {
     /* Same inset as the collapsed-panel expand chevron (top / right). */
@@ -2350,15 +2308,10 @@ md-icon-button.expand-panel:hover,
   }
 
   .expand-panel-tip,
-.expand-panel,
-.collapse-panel-btn,
-.search-chrome-collapse,
-.dir-collapse-btn {
-  display: none !important;
-}
-
-  .app:not(.panel-collapsed) .route-reshape-bar,
-  .app.panel-collapsed .route-reshape-bar {
+  .expand-panel,
+  .collapse-panel-btn,
+  .search-chrome-collapse,
+  .dir-collapse-btn {
     display: none !important;
   }
 }
@@ -2450,11 +2403,17 @@ md-icon-button.expand-panel:hover,
   border-bottom: none;
 }
 
-.map-ctrl-btn:hover {
+.map-ctrl-btn:disabled {
+  opacity: 0.38;
+  cursor: default;
+  pointer-events: none;
+}
+
+.map-ctrl-btn:hover:not(:disabled) {
   background: var(--atlas-surface-hover);
 }
 
-.map-ctrl-btn:active {
+.map-ctrl-btn:active:not(:disabled) {
   background: var(--atlas-surface-pressed);
 }
 
@@ -2753,8 +2712,7 @@ md-icon-button.expand-panel:hover,
     bottom: 84px;
   }
 
-  .app.nav-mode .assistant-fab-tip,
-  .app:has(.route-reshape-bar) .assistant-fab-tip {
+  .app.nav-mode .assistant-fab-tip {
     display: none;
   }
 }
@@ -3173,39 +3131,6 @@ md-text-button {
     pointer-events: auto;
     isolation: isolate;
     transition: opacity 0.18s ease;
-  }
-
-  .panel.is-directions-chrome .dir-mobile-reshape-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    flex: 0 0 auto;
-    height: 36px;
-    min-height: 36px;
-    padding: 2px;
-    box-sizing: border-box;
-    background: #fff;
-    border: 1px solid var(--atlas-surface-pressed);
-    border-radius: 999px;
-    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
-    pointer-events: auto;
-  }
-
-  .panel.is-directions-chrome .dir-mobile-reshape-bar md-icon-button {
-    width: 32px;
-    height: 32px;
-    margin: 0;
-    --md-icon-button-state-layer-size: 32px;
-    --md-icon-button-icon-size: 18px;
-    --md-icon-button-icon-color: #5f6368;
-  }
-
-  .panel.is-directions-chrome .dir-mobile-reshape-bar md-icon-button md-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    --md-icon-size: 18px;
   }
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
