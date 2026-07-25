@@ -1467,10 +1467,121 @@ md-filled-tonal-button.is-edit-active {
   background: transparent;
 }
 
-/* No brand header — search / directions own the top chrome */
-.panel.is-search-chrome,
+/* No brand header — directions keep a little top pad on desktop */
 .panel.is-directions-chrome {
   padding-top: 10px;
+}
+
+/*
+ * Search chrome (all viewports): strip the .panel card entirely.
+ * Default / typing / filled = floating Search here pill only; lists & place
+ * details are sibling surfaces, never wrapped in a parent white card.
+ */
+.panel.is-search-chrome {
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  pointer-events: none;
+  display: block;
+  box-sizing: border-box;
+}
+
+.panel.is-search-chrome .search-panel {
+  --search-card-inset: 12px;
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: var(--atlas-panel-width, 400px);
+  max-width: calc(100vw - (2 * var(--search-card-inset)));
+  max-height: min(72dvh, 640px);
+  min-height: 0;
+  margin: var(--search-card-inset) 0 0 var(--search-card-inset);
+  padding: 0;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel.is-search-chrome .search-panel .search-bar {
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(60, 64, 67, 0.12);
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.12),
+    0 4px 16px rgba(60, 64, 67, 0.18);
+}
+
+.panel.is-search-chrome .landing-suggest {
+  margin: 0;
+  padding: 8px 4px;
+  background: #fff;
+  border: 1px solid rgba(60, 64, 67, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.12),
+    0 8px 28px rgba(60, 64, 67, 0.18);
+  overflow: hidden;
+  max-height: min(52dvh, 420px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.panel.is-search-chrome .landing-saved {
+  margin: 0;
+  padding: 8px 12px 10px;
+  max-height: calc(3 * 56px + 40px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1px solid rgba(60, 64, 67, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.12),
+    0 4px 16px rgba(60, 64, 67, 0.16);
+}
+
+.panel.is-search-chrome .landing-saved-head {
+  padding: 6px 4px 4px;
+}
+
+.panel.is-search-chrome .landing-saved-icon {
+  display: none;
+}
+
+/* Desktop filled: place details as their own card under the pill */
+.panel.is-search-chrome .search-panel > .place-card.place-details,
+.panel.is-search-chrome .search-panel > .place-details.m3-card {
+  margin: 0;
+  padding: 14px 16px 12px;
+  background: #fff;
+  border: 1px solid rgba(60, 64, 67, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.12),
+    0 8px 28px rgba(60, 64, 67, 0.18);
+}
+
+.app.panel-collapsed .panel.is-search-chrome {
+  transform: none;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 @media (max-width: 800px) {
@@ -2719,101 +2830,29 @@ md-text-button {
     box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
   }
 
-  /*
-   * Search: transparent full-screen host. No parent card around the field —
-   * only the floating Search here pill (+ optional sibling surfaces).
-   * Top / left / right inset: --atlas-mobile-chrome-inset (12px).
-   */
+  /* Mobile: search host spans the viewport; stack uses chrome insets */
   .panel.is-search-chrome {
     inset: 0;
     width: auto;
     max-width: none;
     max-height: none;
     transform: none;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    overflow: visible;
-    pointer-events: none;
-    display: block;
-    box-sizing: border-box;
   }
 
-  /*
-   * Search host is never a card — only the Search here pill floats.
-   * Default, typing (suggestions), and filled states share this chrome.
-   */
   .panel.is-search-chrome .search-panel {
     --search-card-inset: var(--atlas-mobile-chrome-inset, 12px);
-    pointer-events: auto;
-    box-sizing: border-box;
     width: calc(100% - (2 * var(--search-card-inset)));
     max-width: calc(100% - (2 * var(--search-card-inset)));
     max-height: min(72dvh, 560px);
-    min-height: 0;
     margin: max(var(--search-card-inset), env(safe-area-inset-top, 0px))
       var(--search-card-inset) 0;
-    padding: 0;
     gap: 8px;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
   }
 
-  /* Pill always floats on its own — default, typing, and filled */
-  .panel.is-search-chrome .search-panel .search-bar {
-    border-radius: 999px;
-    background: #fff;
-    border: 1px solid rgba(60, 64, 67, 0.12);
-    box-shadow:
-      0 1px 2px rgba(60, 64, 67, 0.12),
-      0 4px 16px rgba(60, 64, 67, 0.18);
-  }
-
-  /* Suggestions list — its own surface under the pill, not a parent wrap */
-  .panel.is-search-chrome .landing-suggest {
-    margin: 0;
-    padding: 8px 4px 8px;
-    background: #fff;
-    border: 1px solid rgba(60, 64, 67, 0.12);
-    border-radius: 24px;
-    box-shadow:
-      0 1px 2px rgba(60, 64, 67, 0.12),
-      0 8px 28px rgba(60, 64, 67, 0.18);
-    overflow: hidden;
-    max-height: min(52dvh, 420px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Saved routes — separate card under the pill */
-  .panel.is-search-chrome .landing-saved {
-    margin: 0;
-    padding: 8px 12px 10px;
-    max-height: calc(3 * 56px + 40px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    background: #fff;
-    border: 1px solid rgba(60, 64, 67, 0.12);
-    border-radius: 24px;
-    box-shadow:
-      0 1px 2px rgba(60, 64, 67, 0.12),
-      0 4px 16px rgba(60, 64, 67, 0.16);
-  }
-
-  .panel.is-search-chrome .landing-saved-head {
-    padding: 6px 4px 4px;
-  }
-
-  .panel.is-search-chrome .landing-saved-icon {
-    display: none;
+  .panel.is-search-chrome .search-panel.is-searching,
+  .panel.is-search-chrome .search-panel.has-suggest,
+  .panel.is-search-chrome .search-panel.has-place {
+    max-height: min(70dvh, 560px);
   }
 
   /* Selected place — bottom sheet on mobile so the map stays visible */
@@ -2843,16 +2882,6 @@ md-text-button {
     padding: 14px 16px 12px;
   }
 
-  /*
-   * Focused / suggestions / place: same inset as the default pill —
-   * never expand to a parent card or strip the pill shadow.
-   */
-  .panel.is-search-chrome .search-panel.is-searching,
-  .panel.is-search-chrome .search-panel.has-suggest,
-  .panel.is-search-chrome .search-panel.has-place {
-    max-height: min(70dvh, 560px);
-  }
-
   .app.panel-collapsed .panel {
     transform: translateY(calc(-100% - 12px));
   }
@@ -2861,25 +2890,6 @@ md-text-button {
     transform: none;
     opacity: 0;
     pointer-events: none;
-  }
-
-  .panel.is-search-chrome .search-block,
-  .panel.is-search-chrome .search-suggest,
-  .panel.is-search-chrome .place-card,
-  .panel.is-search-chrome .landing-saved {
-    min-height: 0;
-  }
-
-  .panel.is-search-chrome .search-suggest,
-  .panel.is-search-chrome .place-card,
-  .panel.is-search-chrome .landing-saved {
-    overflow: auto;
-  }
-
-  .panel.is-search-chrome .place-card.place-details,
-  .panel.is-search-chrome .place-details.m3-card {
-    margin-left: 0;
-    margin-right: 0;
   }
 
   /*
