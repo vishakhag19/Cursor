@@ -2938,8 +2938,11 @@ md-text-button {
     display: flex;
     flex-direction: column;
     max-height: min(42dvh, 360px);
-    /* Top pad clears the floating MD label above the outline notch */
-    padding: 16px 10px 10px;
+    /*
+     * Floating MD labels sit on the outline notch and extend above the field.
+     * Keep ≥24px top pad so "Starting point" never meets the card edge.
+     */
+    padding: 24px 12px 12px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
     border-radius: 24px;
