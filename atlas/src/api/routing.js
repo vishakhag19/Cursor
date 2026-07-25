@@ -244,8 +244,8 @@ export async function rebuildEditedRoute(
 
 /**
  * Return up to `limit` distinct shortest + fastest route options.
- * Public OSRM only returns a few alternatives, so we also seed detour
- * vias to produce additional distinct corridors when needed.
+ * Works for A→B and multi-stop. Public OSRM only returns a few
+ * alternatives, so we also seed exclude/detour variants to fill the list.
  */
 export async function fetchShortestRoutes(
   coords,
@@ -258,8 +258,8 @@ export async function fetchShortestRoutes(
   const profile = profileOf(travelMode);
   const path = coords.map((c) => `${c.lng},${c.lat}`).join(";");
 
-  const altCount = coords.length === 2 ? Math.min(limit - 1, 3) : false;
-  const altParam = altCount === false ? "false" : String(Math.max(altCount, 1));
+  // Always ask for alternatives — including multi-stop trips.
+  const altParam = String(Math.max(Math.min(limit - 1, 3), 1));
 
   // Pref-driven class excludes (Feature 2) — e.g. motorway / toll.
   const preferExclude =
@@ -279,39 +279,27 @@ export async function fetchShortestRoutes(
 
   let routes = data.routes.map((r, i) => normalizeRoute(r, i));
 
-  if (coords.length === 2) {
-    const enrichExcludes = ["motorway", "toll", "ferry"].filter(
-      (x) => !excludes?.includes(x),
-    );
-    for (const exclude of enrichExcludes) {
-      if (uniqueRouteCount(routes) >= limit) break;
-      try {
-        const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&continue_straight=false&exclude=${exclude}`;
-        const localRes = await fetch(localUrl);
-        if (!localRes.ok) continue;
-        const localData = await localRes.json();
-        if (localData.code === "Ok" && localData.routes?.length) {
-          localData.routes.forEach((r, i) => {
-            routes.push(normalizeRoute(r, `${exclude}-${i}`));
-          });
-        }
-      } catch {
-        /* optional enrichment */
+  const enrichExcludes = ["motorway", "toll", "ferry"].filter(
+    (x) => !excludes?.includes(x),
+  );
+  for (const exclude of enrichExcludes) {
+    if (uniqueRouteCount(routes) >= limit) break;
+    try {
+      const localUrl = `${OSRM}/route/v1/${profile}/${path}?overview=full&geometries=geojson&steps=true&alternatives=true&continue_straight=false&exclude=${exclude}`;
+      const localRes = await fetch(localUrl);
+      if (!localRes.ok) continue;
+      const localData = await localRes.json();
+      if (localData.code === "Ok" && localData.routes?.length) {
+        localData.routes.forEach((r, i) => {
+          routes.push(normalizeRoute(r, `${exclude}-${i}`));
+        });
       }
-    }
-
-    if (uniqueRouteCount(routes) < limit) {
-      const extras = await fetchDetourAlternatives(
-        coords[0],
-        coords[coords.length - 1],
-        travelMode,
-        limit - uniqueRouteCount(routes),
-      );
-      routes.push(...extras);
+    } catch {
+      /* optional enrichment */
     }
   }
 
-  if (coords.length > 2) {
+  if (coords.length > 2 && uniqueRouteCount(routes) < limit) {
     try {
       const legs = await routeLegByLegShortest(coords, travelMode);
       routes.push({
@@ -322,6 +310,20 @@ export async function fetchShortestRoutes(
     } catch {
       /* ignore */
     }
+  }
+
+  if (uniqueRouteCount(routes) < limit) {
+    const needed = limit - uniqueRouteCount(routes);
+    const extras =
+      coords.length === 2
+        ? await fetchDetourAlternatives(
+            coords[0],
+            coords[coords.length - 1],
+            travelMode,
+            needed,
+          )
+        : await fetchMultiStopDetourAlternatives(coords, travelMode, needed);
+    routes.push(...extras);
   }
 
   return rankShortestAndFastest(routes, limit);
@@ -347,21 +349,22 @@ function offsetAlong(a, b, t, offsetMeters) {
   return { lat: lat + pLat * degLat, lng: lng + pLng * degLng };
 }
 
+const DETOUR_SEEDS = [
+  { t: 0.5, offset: 800 },
+  { t: 0.5, offset: -800 },
+  { t: 0.35, offset: 1600 },
+  { t: 0.65, offset: -1600 },
+  { t: 0.5, offset: 2800 },
+  { t: 0.5, offset: -2800 },
+  { t: 0.4, offset: 4000 },
+  { t: 0.6, offset: -4000 },
+];
+
 async function fetchDetourAlternatives(origin, destination, travelMode, needed) {
   if (needed <= 0) return [];
-  const seeds = [
-    { t: 0.5, offset: 800 },
-    { t: 0.5, offset: -800 },
-    { t: 0.35, offset: 1600 },
-    { t: 0.65, offset: -1600 },
-    { t: 0.5, offset: 2800 },
-    { t: 0.5, offset: -2800 },
-    { t: 0.4, offset: 4000 },
-    { t: 0.6, offset: -4000 },
-  ];
   const out = [];
-  for (let i = 0; i < seeds.length && out.length < needed; i++) {
-    const { t, offset } = seeds[i];
+  for (let i = 0; i < DETOUR_SEEDS.length && out.length < needed; i++) {
+    const { t, offset } = DETOUR_SEEDS[i];
     const via = offsetAlong(origin, destination, t, offset);
     try {
       const snapped = await nearestRoadPoint(via.lat, via.lng, travelMode);
@@ -373,6 +376,39 @@ async function fetchDetourAlternatives(origin, destination, travelMode, needed) 
         ...route,
         id: `detour-${i}-${Math.round(route.distance)}`,
         label: route.label || `via alternate roads`,
+      });
+    } catch {
+      /* skip failed detour */
+    }
+  }
+  return out;
+}
+
+/**
+ * Extra corridors for multi-stop trips: keep every stop, insert a lateral
+ * detour via so we can still surface up to `limit` distinct options.
+ */
+async function fetchMultiStopDetourAlternatives(coords, travelMode, needed) {
+  if (needed <= 0 || !coords || coords.length < 3) return [];
+  const origin = coords[0];
+  const destination = coords[coords.length - 1];
+  const insertAt = Math.max(1, Math.floor(coords.length / 2));
+  const out = [];
+  for (let i = 0; i < DETOUR_SEEDS.length && out.length < needed; i++) {
+    const { t, offset } = DETOUR_SEEDS[i];
+    const via = offsetAlong(origin, destination, t, offset);
+    try {
+      const snapped = await nearestRoadPoint(via.lat, via.lng, travelMode);
+      const chain = [
+        ...coords.slice(0, insertAt),
+        snapped,
+        ...coords.slice(insertAt),
+      ];
+      const route = await fetchSingleRoute(chain, travelMode);
+      out.push({
+        ...route,
+        id: `ms-detour-${i}-${Math.round(route.distance)}`,
+        label: route.label || "via alternate roads",
       });
     } catch {
       /* skip failed detour */
