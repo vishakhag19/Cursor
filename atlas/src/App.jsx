@@ -1479,13 +1479,20 @@ export default function App() {
     return { name, ...focus };
   }, [travelMode]);
 
+  const highlightTimerRef = useRef(null);
   const openPrefsWithRoadRules = useCallback((ruleId = null) => {
     setRoadPickMode(false);
     setCtx(null);
     setAssistantOpen(false);
     setRoadRulesOpen(false);
     setPanelOpen(true);
-    if (ruleId) setHighlightedRoadRuleId(ruleId);
+    if (ruleId) {
+      setHighlightedRoadRuleId(ruleId);
+      clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedRoadRuleId(null);
+      }, 4500);
+    }
     setPrefsOpen(true);
   }, []);
 
