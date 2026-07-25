@@ -55,6 +55,14 @@
   transform: translateX(calc(-100% - 24px));
   opacity: 0;
   pointer-events: none;
+  /* Children (e.g. Drive sheet) set pointer-events: auto — force them off too
+     so an invisible panel can’t steal taps from map / nav chrome. */
+  visibility: hidden;
+}
+
+.app.panel-collapsed .panel,
+.app.panel-collapsed .panel * {
+  pointer-events: none !important;
 }
 
 .panel-header {
@@ -3128,6 +3136,7 @@ md-text-button {
     transform: none;
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
   }
 
   .panel-header {
@@ -3619,6 +3628,11 @@ md-text-button {
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
+}
+
+/* During nav, keep map chrome above the (hidden) side panel stacking context */
+.app.nav-mode .map-stage {
+  z-index: 6;
 }
 
 /* Hide menu FAB during nav — Exit covers leaving; avoids floating chrome clash */
@@ -4294,7 +4308,7 @@ md-text-button {
   left: 50%;
   right: auto;
   bottom: calc(94px + env(safe-area-inset-bottom, 0px));
-  z-index: 1250;
+  z-index: 1300;
   box-sizing: border-box;
   width: min(
     var(--reroute-card-max),
@@ -4312,6 +4326,13 @@ md-text-button {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  pointer-events: auto;
+}
+
+.reroute-prompt-actions md-outlined-button,
+.reroute-prompt-actions md-filled-button {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 @keyframes reroute-in {
