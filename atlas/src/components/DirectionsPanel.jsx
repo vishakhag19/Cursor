@@ -169,6 +169,7 @@ export default function DirectionsPanel({
   const isCompact = useIsCompact();
   const saveTapRef = useRef(null);
   const saveOpenTokenRef = useRef(0);
+  const saveGestureLockRef = useRef(0);
   const sheetRef = useRef(null);
   const sheetHandleRef = useRef(null);
   const sheetBodyRef = useRef(null);
@@ -291,16 +292,38 @@ export default function DirectionsPanel({
     });
   }, [stops]);
 
+  /**
+   * Bookmark logic:
+   * - Filled (already saved) → unsave immediately; never open the save sheet
+   * - Outline (not saved) → open the save sheet
+   * Touch often delivers pointerup then a leftover click; lock the gesture so
+   * the leftover click cannot reverse the action (unsave → open sheet).
+   */
+  function lockSaveGesture(ms = 500) {
+    saveGestureLockRef.current = Date.now() + ms;
+  }
+
   function activateSaveButton() {
-    if (routeIsSaved && savedMatch?.id) {
-      onUnsaveRoute?.(savedMatch.id);
+    if (Date.now() < saveGestureLockRef.current) return;
+
+    // Prefer the saved state captured at pointerdown for this gesture.
+    const tap = saveTapRef.current;
+    const unsaveId =
+      (tap?.wasSaved && tap.savedId) ||
+      (routeIsSaved && savedMatch?.id) ||
+      null;
+
+    if (unsaveId) {
+      onUnsaveRoute?.(unsaveId);
       closeSaveForm();
+      lockSaveGesture();
       return;
     }
-    // Guard against pointerup + residual click in the same gesture.
-    if (saving || saveTapRef.current?.opened) return;
-    if (saveTapRef.current) saveTapRef.current.opened = true;
+
+    if (saving) return;
+    if (tap) tap.opened = true;
     openSaveForm();
+    lockSaveGesture();
   }
 
   function onSavePointerDown(e) {
@@ -321,6 +344,8 @@ export default function DirectionsPanel({
       y: e.clientY,
       moved: false,
       opened: false,
+      wasSaved: routeIsSaved,
+      savedId: savedMatch?.id || null,
     };
   }
 
@@ -338,21 +363,26 @@ export default function DirectionsPanel({
     if (e.pointerType === "mouse") return;
     const tap = saveTapRef.current;
     if (!tap || tap.id !== e.pointerId) return;
-    saveTapRef.current = null;
     try {
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     } catch {
       /* ignore */
     }
-    if (tap.moved) return;
+    if (tap.moved) {
+      saveTapRef.current = null;
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     activateSaveButton();
+    // Keep tap intent until after any residual click, then clear.
+    window.setTimeout(() => {
+      if (saveTapRef.current?.id === tap.id) saveTapRef.current = null;
+    }, 500);
   }
 
   function onSaveClick(e) {
-    // Mouse click + keyboard activation. Touch is handled in pointerup and
-    // preventDefault on pointerdown suppresses the synthetic click.
+    // Mouse click + keyboard activation. Touch residual clicks are locked out.
     e.preventDefault();
     e.stopPropagation();
     activateSaveButton();
