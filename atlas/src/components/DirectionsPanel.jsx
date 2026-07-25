@@ -603,7 +603,9 @@ export default function DirectionsPanel({
                 isDest &&
                 !(
                   placeList.open &&
-                  (placeList.items.length > 0 || placeList.loading)
+                  (placeList.items.length > 0 ||
+                    placeList.loading ||
+                    Boolean((placeList.query || "").trim()))
                 );
               const rowClass = [
                 "dir-stop-row",
@@ -795,7 +797,10 @@ export default function DirectionsPanel({
         </div>
 
         {/* Always below start / mid / destination fields. */}
-        {placeList.open && (placeList.items.length > 0 || placeList.loading) ? (
+        {placeList.open &&
+        (placeList.items.length > 0 ||
+          placeList.loading ||
+          Boolean((placeList.query || "").trim())) ? (
           <div className="dir-stop-suggest-scroll">
             <PlaceSuggestionList
               items={placeList.items}

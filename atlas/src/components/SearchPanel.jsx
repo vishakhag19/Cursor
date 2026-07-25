@@ -1,4 +1,5 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import { agentLog } from "../debugAgentLog";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
@@ -62,6 +63,9 @@ export default function SearchPanel({
   }
 
   function dismissSearchList() {
+    // #region agent log
+    agentLog({location:'SearchPanel.jsx:dismissSearchList',message:'dismissing search list',data:{listVisible,query},hypothesisId:'F'});
+    // #endregion
     clearPlaceList();
     setListDismissNonce((n) => n + 1);
     setMobileExpanded(false);
@@ -90,8 +94,31 @@ export default function SearchPanel({
     setMobileExpanded(false);
   }
 
+  // Include typed-query empty states (no matches / geocode failure) so the
+  // suggest panel does not vanish after "Searching…".
   const listVisible =
-    placeList.open && (placeList.items.length > 0 || placeList.loading);
+    placeList.open &&
+    (placeList.items.length > 0 ||
+      placeList.loading ||
+      Boolean((placeList.query || "").trim()));
+
+  // #region agent log
+  useEffect(() => {
+    agentLog({
+      location: "SearchPanel.jsx:listVisible",
+      message: "list visibility derived",
+      data: {
+        listVisible,
+        open: placeList.open,
+        loading: placeList.loading,
+        itemCount: placeList.items?.length ?? 0,
+        query: placeList.query,
+        searchQuery: query,
+      },
+      hypothesisId: "D",
+    });
+  }, [listVisible, placeList, query]);
+  // #endregion
 
   function handleSystemBack() {
     if (listVisible) {
@@ -143,6 +170,16 @@ export default function SearchPanel({
       /* Place card is outside the top panel on mobile — don't dismiss for it. */
       if (e.target?.closest?.(".place-bottom-sheet")) return;
       dismissSearchList();
+      // Outside tap on the map tiles must not also reverse-geocode into the
+      // field (that replaces the query and makes search look broken). Keep
+      // map chrome (.map-controls) working.
+      if (
+        e.target?.closest?.(".leaflet-container") &&
+        !e.target?.closest?.(".map-controls")
+      ) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
     }
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
@@ -214,7 +251,32 @@ export default function SearchPanel({
         </div>
 
         {listVisible && (
-          <div className="landing-suggest">
+          <div
+            className="landing-suggest"
+            ref={(el) => {
+              // #region agent log
+              if (!el) return;
+              const r = el.getBoundingClientRect();
+              const cs = window.getComputedStyle(el);
+              agentLog({
+                location: "SearchPanel.jsx:landing-suggest",
+                message: "suggest DOM metrics",
+                data: {
+                  w: r.width,
+                  h: r.height,
+                  top: r.top,
+                  display: cs.display,
+                  visibility: cs.visibility,
+                  opacity: cs.opacity,
+                  overflow: cs.overflow,
+                  itemCount: placeList.items?.length ?? 0,
+                  loading: placeList.loading,
+                },
+                hypothesisId: "E",
+              });
+              // #endregion
+            }}
+          >
             <PlaceSuggestionList
               items={placeList.items}
               query={placeList.query}

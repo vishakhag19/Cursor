@@ -41,7 +41,8 @@ export default function PlaceSuggestionList({
   onSelect,
   loading = false,
 }) {
-  if (!items.length && !loading) return null;
+  const q = (query || "").trim();
+  if (!items.length && !loading && !q) return null;
 
   return (
     <div className="place-suggest-panel" role="listbox" aria-label="Places">
@@ -50,6 +51,11 @@ export default function PlaceSuggestionList({
           Searching…
         </div>
       )}
+      {!loading && !items.length && q ? (
+        <div className="place-suggest-empty md-typescale-body-small">
+          No places found. Check your connection and try again.
+        </div>
+      ) : null}
       <ul className="place-suggest-list">
         {items.map((s) => {
           const key = s.isCurrentLocation

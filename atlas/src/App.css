@@ -2094,7 +2094,8 @@ md-outlined-text-field {
   overflow: auto;
 }
 
-.place-suggest-loading {
+.place-suggest-loading,
+.place-suggest-empty {
   padding: 10px 16px;
   color: var(--md-sys-color-on-surface-variant);
 }
