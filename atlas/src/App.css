@@ -540,48 +540,6 @@ md-icon-button.collapse-panel-btn:hover,
   z-index: 2;
 }
 
-.dir-route-more {
-  position: relative;
-}
-
-.dir-route-menu {
-  position: absolute;
-  top: calc(100% - 4px);
-  right: 0;
-  z-index: 20;
-  min-width: 188px;
-  padding: 6px 0;
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid var(--atlas-surface-pressed);
-  box-shadow: 0 4px 16px rgba(60, 64, 67, 0.18);
-}
-
-.dir-route-menu button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 10px 14px;
-  text-align: left;
-  font: inherit;
-  font-size: 0.875rem;
-  color: #202124;
-  cursor: pointer;
-}
-
-.dir-route-menu button:hover {
-  background: var(--atlas-surface-hover);
-}
-
-.dir-route-menu md-icon {
-  font-size: 18px;
-  --md-icon-size: 18px;
-  color: #5f6368;
-}
-
 .dir-drag-hint {
   margin: 4px 0 0;
   color: #70757a;
@@ -622,6 +580,15 @@ md-icon-button.collapse-panel-btn:hover,
 
 .dir-start-btn {
   --md-filled-button-container-color: var(--atlas-accent);
+}
+
+.dir-save-btn.is-saved {
+  --md-icon-button-icon-color: var(--atlas-accent);
+  color: var(--atlas-accent);
+}
+
+.dir-save-btn.is-saved md-icon {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
 .dir-inline-steps {

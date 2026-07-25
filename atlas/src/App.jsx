@@ -2173,6 +2173,7 @@ export default function App() {
             comparison={hasCustomEdits ? comparison : null}
             editBusy={editBusy || Boolean(editPreview?.active)}
             onSaveRoute={saveCurrentRoute}
+            savedRoutes={savedRoutes}
             onStart={startNavigation}
             onOpenAssistant={() => {
               setPrefsOpen(false);
@@ -2181,7 +2182,6 @@ export default function App() {
             assistantOpen={assistantOpen}
             onOpenPrefs={() => setPrefsOpen((open) => !open)}
             prefsOpen={prefsOpen}
-            onOpenRoadRules={() => setPrefsOpen(true)}
             hasCustomEdits={hasCustomEdits}
             travelMode={travelMode}
             onTravelMode={handleTravelModeChange}

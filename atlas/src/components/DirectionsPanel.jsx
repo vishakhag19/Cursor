@@ -117,11 +117,11 @@ export default function DirectionsPanel({
   onShowSteps = null,
   onStart = null,
   onSaveRoute = null,
+  savedRoutes = [],
   onOpenAssistant = null,
   assistantOpen = false,
   onOpenPrefs = null,
   prefsOpen = false,
-  onOpenRoadRules = null,
   hasCustomEdits = false,
   travelMode = "driving",
   onTravelMode = null,
@@ -134,10 +134,8 @@ export default function DirectionsPanel({
   const [forceShowStops, setForceShowStops] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveName, setSaveName] = useState("");
-  const [menuFor, setMenuFor] = useState(null);
   const [dragFrom, setDragFrom] = useState(null);
   const [dragOver, setDragOver] = useState(null);
-  const menuRef = useRef(null);
   const dragGhostRef = useRef(null);
   const [placeList, setPlaceList] = useState({
     open: false,
@@ -302,17 +300,6 @@ export default function DirectionsPanel({
     }
   }, []);
 
-  useEffect(() => {
-    if (menuFor == null) return undefined;
-    function onDoc(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuFor(null);
-      }
-    }
-    document.addEventListener("pointerdown", onDoc);
-    return () => document.removeEventListener("pointerdown", onDoc);
-  }, [menuFor]);
-
   const bothEndsSet = stops.filter(Boolean).length >= 2;
   const hasRouteResults = bothEndsSet && routeOptions.length > 0;
   const modeMeta = travelModeMeta(travelMode);
@@ -322,6 +309,24 @@ export default function DirectionsPanel({
     routeOptions[0] ||
     null;
   const sheetChromeOnly = sheetSnap === "s10" && sheetDragPx == null;
+
+  const routeIsSaved = Boolean(
+    selectedRoute &&
+      savedRoutes.some(
+        (s) =>
+          s.route &&
+          s.route.distance === selectedRoute.distance &&
+          s.route.duration === selectedRoute.duration &&
+          (s.route.geometry?.length || 0) ===
+            (selectedRoute.geometry?.length || 0) &&
+          s.route.geometry?.[0]?.[0] === selectedRoute.geometry?.[0]?.[0] &&
+          s.route.geometry?.[0]?.[1] === selectedRoute.geometry?.[0]?.[1] &&
+          s.route.geometry?.at?.(-1)?.[0] ===
+            selectedRoute.geometry?.at?.(-1)?.[0] &&
+          s.route.geometry?.at?.(-1)?.[1] ===
+            selectedRoute.geometry?.at?.(-1)?.[1],
+      ),
+  );
 
   useEffect(() => {
     const root = modesRef.current;
@@ -824,68 +829,35 @@ export default function DirectionsPanel({
                   Start
                 </md-filled-button>
               ) : null}
-              <div className="dir-route-more" ref={menuRef}>
-                <ActionTip tip="More">
+              {onSaveRoute ? (
+                <ActionTip tip={routeIsSaved ? "Saved" : "Save route"}>
                   <md-icon-button
                     type="button"
-                    aria-label="More route actions"
-                    aria-haspopup="menu"
-                    aria-expanded={menuFor ? "true" : "false"}
-                    onClick={() =>
-                      setMenuFor((v) => (v ? null : "selected"))
-                    }
+                    class={`dir-save-btn${routeIsSaved ? " is-saved" : ""}`}
+                    aria-label={routeIsSaved ? "Route saved" : "Save route"}
+                    aria-pressed={routeIsSaved ? "true" : "false"}
+                    onClick={() => {
+                      if (routeIsSaved) return;
+                      if (saving) {
+                        setSaving(false);
+                        setSaveName("");
+                        setSaveNameError("");
+                        return;
+                      }
+                      const from = stops[0]?.name || "Start";
+                      const to =
+                        stops[stops.length - 1]?.name || "Destination";
+                      setSaveName(`${from} to ${to}`);
+                      setSaveNameError("");
+                      setSaving(true);
+                    }}
                   >
-                    <md-icon>more_vert</md-icon>
+                    <md-icon>
+                      {routeIsSaved ? "bookmark" : "bookmark_border"}
+                    </md-icon>
                   </md-icon-button>
                 </ActionTip>
-                {menuFor ? (
-                  <div className="dir-route-menu" role="menu">
-                    {onSaveRoute ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setMenuFor(null);
-                          const from = stops[0]?.name || "Start";
-                          const to =
-                            stops[stops.length - 1]?.name || "Destination";
-                          setSaveName(`${from} to ${to}`);
-                          setSaving(true);
-                        }}
-                      >
-                        <md-icon>bookmark</md-icon>
-                        Save route
-                      </button>
-                    ) : null}
-                    {onOpenRoadRules ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setMenuFor(null);
-                          onOpenRoadRules();
-                        }}
-                      >
-                        <md-icon>rule</md-icon>
-                        Your road rules
-                      </button>
-                    ) : null}
-                    {onOpenAssistant ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setMenuFor(null);
-                          onOpenAssistant();
-                        }}
-                      >
-                        <md-icon>auto_awesome</md-icon>
-                        Ask assistant
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
+              ) : null}
             </div>
           </div>
 
