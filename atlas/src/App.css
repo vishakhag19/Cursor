@@ -2634,19 +2634,6 @@ md-icon-button.expand-panel:hover,
   .app:has(.route-reshape-bar) .assistant-fab-tip {
     display: none;
   }
-
-  .route-assistant {
-    inset: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: 0;
-    width: 100%;
-    max-height: none;
-    height: 100%;
-    border-radius: 0;
-    z-index: 1500;
-  }
 }
 
 .assistant-fab {
@@ -2673,6 +2660,10 @@ md-icon-button.expand-panel:hover,
   --md-icon-size: 22px;
 }
 
+.route-assistant-backdrop {
+  display: none;
+}
+
 .route-assistant {
   position: absolute;
   right: 16px;
@@ -2687,6 +2678,40 @@ md-icon-button.expand-panel:hover,
   box-shadow: var(--atlas-elevation-3, 0 8px 28px rgba(0, 0, 0, 0.18));
   overflow: hidden;
   border: 1px solid var(--atlas-surface-pressed);
+}
+
+/* Full-screen assistant (must follow base rules so it wins the cascade) */
+@media (max-width: 800px) {
+  .route-assistant-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1490;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(32, 33, 36, 0.45);
+    cursor: pointer;
+  }
+
+  .route-assistant {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1500;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 .route-assistant-header {
