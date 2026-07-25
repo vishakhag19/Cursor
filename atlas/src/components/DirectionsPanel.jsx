@@ -703,33 +703,6 @@ export default function DirectionsPanel({
                 key={`stop-${i}`}
               >
                 <div className="dir-stop-field">
-                  {canReorder ? (
-                    <button
-                      type="button"
-                      className="dir-stop-drag"
-                      aria-label="Drag to reorder stop"
-                      title="Drag to reorder"
-                      onPointerDown={(e) => beginStopPointerDrag(e, i)}
-                      onPointerMove={moveStopPointerDrag}
-                      onPointerUp={endStopPointerDrag}
-                      onPointerCancel={endStopPointerDrag}
-                      onKeyDown={(e) => {
-                        if (!onMoveStop) return;
-                        if (e.key === "ArrowUp" && i > 0) {
-                          e.preventDefault();
-                          onMoveStop(i, i - 1);
-                        } else if (
-                          e.key === "ArrowDown" &&
-                          i < stops.length - 1
-                        ) {
-                          e.preventDefault();
-                          onMoveStop(i, i + 1);
-                        }
-                      }}
-                    >
-                      <md-icon>drag_indicator</md-icon>
-                    </button>
-                  ) : null}
                     <SuggestInput
                     id={`dir-stop-${i}`}
                     label={
@@ -762,39 +735,74 @@ export default function DirectionsPanel({
                     onFocusField={() => setActiveStopIndex(i)}
                     onListChange={(payload) => handleListChange(i, payload)}
                   />
-                  {multi ? (
-                    <div className="dir-stop-reorder">
-                      <md-icon-button
-                        type="button"
-                        aria-label="Remove stop"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          clearPlaceList();
-                          onRemoveStop(i);
-                        }}
-                      >
-                        <md-icon>close</md-icon>
-                      </md-icon-button>
-                    </div>
-                  ) : canClear ? (
-                    <div className="dir-stop-reorder is-clear-only">
-                      <md-icon-button
-                        type="button"
-                        aria-label={
-                          isStart
-                            ? "Clear starting point"
-                            : "Clear destination"
-                        }
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          /* Keep focus so SuggestInput can open defaults
-                             with Current location on top. */
-                          setActiveStopIndex(i);
-                          onStopSelect(i, null);
-                        }}
-                      >
-                        <md-icon>close</md-icon>
-                      </md-icon-button>
+                  {canReorder || multi || canClear ? (
+                    <div
+                      className={`dir-stop-reorder${
+                        !canReorder && !multi && canClear
+                          ? " is-clear-only"
+                          : ""
+                      }`}
+                    >
+                      {canReorder ? (
+                        <button
+                          type="button"
+                          className="dir-stop-drag"
+                          aria-label="Drag to reorder stop"
+                          title="Drag to reorder"
+                          onPointerDown={(e) => beginStopPointerDrag(e, i)}
+                          onPointerMove={moveStopPointerDrag}
+                          onPointerUp={endStopPointerDrag}
+                          onPointerCancel={endStopPointerDrag}
+                          onKeyDown={(e) => {
+                            if (!onMoveStop) return;
+                            if (e.key === "ArrowUp" && i > 0) {
+                              e.preventDefault();
+                              onMoveStop(i, i - 1);
+                            } else if (
+                              e.key === "ArrowDown" &&
+                              i < stops.length - 1
+                            ) {
+                              e.preventDefault();
+                              onMoveStop(i, i + 1);
+                            }
+                          }}
+                        >
+                          <md-icon>drag_indicator</md-icon>
+                        </button>
+                      ) : null}
+                      {multi ? (
+                        <md-icon-button
+                          type="button"
+                          class="dir-stop-clear"
+                          aria-label="Remove stop"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            clearPlaceList();
+                            onRemoveStop(i);
+                          }}
+                        >
+                          <md-icon>close</md-icon>
+                        </md-icon-button>
+                      ) : canClear ? (
+                        <md-icon-button
+                          type="button"
+                          class="dir-stop-clear"
+                          aria-label={
+                            isStart
+                              ? "Clear starting point"
+                              : "Clear destination"
+                          }
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            /* Keep focus so SuggestInput can open defaults
+                               with Current location on top. */
+                            setActiveStopIndex(i);
+                            onStopSelect(i, null);
+                          }}
+                        >
+                          <md-icon>close</md-icon>
+                        </md-icon-button>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

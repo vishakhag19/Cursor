@@ -420,7 +420,7 @@ md-icon-button.collapse-panel-btn:hover,
 }
 
 .dir-stop-row.can-reorder .dir-stop-field {
-  padding-left: 4px;
+  padding-left: 16px;
 }
 
 .dir-stop-field .suggest-wrap {
@@ -489,7 +489,7 @@ md-icon-button.collapse-panel-btn:hover,
   gap: 0;
   z-index: 50;
   background: transparent;
-  padding-left: 0;
+  padding: 0 4px 0 0;
   border-radius: 0;
 }
 
@@ -520,26 +520,39 @@ md-icon-button.dir-add-stop {
   margin: 0;
 }
 
-.dir-stop-reorder md-icon-button {
-  width: 34px;
-  height: 34px;
+.dir-stop-reorder md-icon-button.dir-stop-clear {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
   margin: 0;
+  padding: 0;
+  --md-icon-button-state-layer-width: 28px;
+  --md-icon-button-state-layer-height: 28px;
+  --md-icon-button-state-layer-size: 28px;
+  --md-icon-button-icon-size: 16px;
+  --md-icon-button-icon-color: #70757a;
 }
 
-/* Large in-field grabber — easy for mouse and touch */
+.dir-stop-reorder md-icon-button.dir-stop-clear md-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Compact grabber beside the clear/close control */
 .dir-stop-drag {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
   margin: 0;
   padding: 0;
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #5f6368;
+  color: #70757a;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
@@ -551,21 +564,21 @@ md-icon-button.dir-add-stop {
 .dir-stop-drag:active {
   cursor: grabbing;
   background: var(--atlas-surface-hover);
-  color: #202124;
+  color: #3c4043;
 }
 
 .dir-stop-drag:hover,
 .dir-stop-drag:focus-visible {
   background: var(--atlas-surface-hover);
-  color: #202124;
+  color: #3c4043;
   outline: none;
 }
 
 .dir-stop-drag md-icon {
-  font-size: 24px;
-  width: 24px;
-  height: 24px;
-  --md-icon-size: 24px;
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  --md-icon-size: 16px;
   pointer-events: none;
 }
 
