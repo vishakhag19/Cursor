@@ -2167,7 +2167,7 @@ export default function App() {
 
         <div className="map-controls">
           <div className="map-ctrl-stack" role="group" aria-label="Map controls">
-            <ActionTip tip="Map">
+            <ActionTip tip="Map" className="map-ctrl-desktop-only">
               <button
                 type="button"
                 className={layer === "map" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"}
@@ -2178,7 +2178,7 @@ export default function App() {
                 <md-icon>map</md-icon>
               </button>
             </ActionTip>
-            <ActionTip tip="Satellite">
+            <ActionTip tip="Satellite" className="map-ctrl-desktop-only">
               <button
                 type="button"
                 className={
@@ -2189,6 +2189,21 @@ export default function App() {
                 onClick={() => setLayer("satellite")}
               >
                 <md-icon>satellite_alt</md-icon>
+              </button>
+            </ActionTip>
+            <ActionTip tip="Layers" className="map-ctrl-mobile-only">
+              <button
+                type="button"
+                className={
+                  layer === "satellite" ? "map-ctrl-btn is-selected" : "map-ctrl-btn"
+                }
+                aria-label="Layers"
+                aria-pressed={layer === "satellite" ? "true" : "false"}
+                onClick={() =>
+                  setLayer((prev) => (prev === "satellite" ? "map" : "satellite"))
+                }
+              >
+                <md-icon>layers</md-icon>
               </button>
             </ActionTip>
             <ActionTip tip="My location">
@@ -2202,7 +2217,7 @@ export default function App() {
                 <md-icon>my_location</md-icon>
               </button>
             </ActionTip>
-            <ActionTip tip="Zoom in">
+            <ActionTip tip="Zoom in" className="map-ctrl-desktop-only">
               <button
                 type="button"
                 className="map-ctrl-btn"
@@ -2215,7 +2230,7 @@ export default function App() {
                 <md-icon>add</md-icon>
               </button>
             </ActionTip>
-            <ActionTip tip="Zoom out">
+            <ActionTip tip="Zoom out" className="map-ctrl-desktop-only">
               <button
                 type="button"
                 className="map-ctrl-btn"

@@ -2197,6 +2197,10 @@ md-icon-button.expand-panel:hover,
   pointer-events: none;
 }
 
+.map-ctrl-mobile-only {
+  display: none;
+}
+
 .map-controls > * {
   pointer-events: auto;
 }
@@ -3229,6 +3233,15 @@ md-text-button {
     top: auto;
     bottom: 16px;
     right: 12px;
+  }
+
+  /* Mobile: only layers + recenter (hide map/satellite pair and zoom). */
+  .map-ctrl-desktop-only {
+    display: none !important;
+  }
+
+  .map-ctrl-mobile-only {
+    display: flex;
   }
 
   /* MD3 snackbar — pinned to the bottom edge on mobile */
