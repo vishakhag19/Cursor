@@ -2289,10 +2289,10 @@ md-icon-button.expand-panel:hover,
   z-index: 1105;
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 48px;
-  min-height: 48px;
-  padding: 4px;
+  gap: 0;
+  height: 36px;
+  min-height: 36px;
+  padding: 2px;
   box-sizing: border-box;
   background: #fff;
   border: 1px solid var(--atlas-surface-pressed);
@@ -2307,10 +2307,19 @@ md-icon-button.expand-panel:hover,
 }
 
 .route-reshape-bar md-icon-button {
-  width: var(--panel-control-size);
-  height: var(--panel-control-size);
+  width: 32px;
+  height: 32px;
   margin: 0;
+  --md-icon-button-state-layer-size: 32px;
+  --md-icon-button-icon-size: 18px;
   --md-icon-button-icon-color: #5f6368;
+}
+
+.route-reshape-bar md-icon-button md-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  --md-icon-size: 18px;
 }
 
 /* Mobile: panel is a top sheet — keep bar at top center of the viewport */
@@ -3150,11 +3159,11 @@ md-text-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 0;
     flex: 0 0 auto;
-    height: 48px;
-    min-height: 48px;
-    padding: 4px;
+    height: 36px;
+    min-height: 36px;
+    padding: 2px;
     box-sizing: border-box;
     background: #fff;
     border: 1px solid var(--atlas-surface-pressed);
@@ -3164,10 +3173,19 @@ md-text-button {
   }
 
   .panel.is-directions-chrome .dir-mobile-reshape-bar md-icon-button {
-    width: var(--panel-control-size);
-    height: var(--panel-control-size);
+    width: 32px;
+    height: 32px;
     margin: 0;
+    --md-icon-button-state-layer-size: 32px;
+    --md-icon-button-icon-size: 18px;
     --md-icon-button-icon-color: #5f6368;
+  }
+
+  .panel.is-directions-chrome .dir-mobile-reshape-bar md-icon-button md-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    --md-icon-size: 18px;
   }
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
