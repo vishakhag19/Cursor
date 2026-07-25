@@ -1906,7 +1906,33 @@ md-outlined-text-field {
 
 .place-action-pill {
   flex-shrink: 0;
-  border-radius: 999px;
+  /* Stadium shape via MD tokens — border-radius alone clips slot icons */
+  --md-filled-button-container-shape: 999px;
+  --md-outlined-button-container-shape: 999px;
+  --md-filled-button-icon-size: 18px;
+  --md-outlined-button-icon-size: 18px;
+  --md-filled-button-with-leading-icon-leading-space: 16px;
+  --md-filled-button-with-leading-icon-trailing-space: 20px;
+  --md-outlined-button-with-leading-icon-leading-space: 16px;
+  --md-outlined-button-with-leading-icon-trailing-space: 20px;
+  --md-outlined-button-outline-color: var(--atlas-control-outline);
+  --md-outlined-button-label-text-color: var(--atlas-accent);
+  --md-outlined-button-icon-color: var(--atlas-accent);
+  --md-outlined-button-hover-label-text-color: var(--atlas-accent-pressed);
+  --md-outlined-button-hover-icon-color: var(--atlas-accent-pressed);
+  --md-outlined-button-hover-state-layer-color: var(--atlas-accent);
+}
+
+.place-action-pill md-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 1;
+  overflow: visible;
+  --md-icon-size: 18px;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20;
 }
 
 .stop-row {
@@ -3623,13 +3649,12 @@ md-text-button {
   --md-list-item-container-color: transparent;
   border-radius: 12px;
   margin: 0 8px;
-  transition: background 160ms ease, box-shadow 160ms ease;
+  transition: background 160ms ease;
 }
 
 .road-rules-list md-list-item.road-rule-item.is-highlighted {
   --md-list-item-container-color: var(--atlas-accent-container);
   background: var(--atlas-accent-container);
-  box-shadow: inset 3px 0 0 var(--atlas-accent);
 }
 
 .road-rules-actions {
@@ -3970,8 +3995,7 @@ md-text-button {
   background: var(--atlas-surface-hover);
 }
 
-.place-actions md-filled-button:hover,
-.place-actions md-outlined-button:hover {
+.place-actions md-filled-button:hover {
   filter: brightness(0.97);
 }
 
