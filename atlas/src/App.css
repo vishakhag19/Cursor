@@ -465,16 +465,8 @@ md-icon-button.collapse-panel-btn:hover,
   padding-right: 2px;
 }
 
-.dir-stop-row.has-clear .dir-stop-field {
-  padding-right: 2px;
-}
-
 .dir-stop-row.has-controls .suggest-wrap md-outlined-text-field {
   --md-outlined-text-field-trailing-space: 72px;
-}
-
-.dir-stop-row.has-clear .suggest-wrap md-outlined-text-field {
-  --md-outlined-text-field-trailing-space: 36px;
 }
 
 .dir-stop-reorder {
@@ -482,9 +474,10 @@ md-icon-button.collapse-panel-btn:hover,
   right: auto;
   top: auto;
   translate: none;
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 36px 32px;
   align-items: center;
+  justify-items: center;
   flex-shrink: 0;
   gap: 0;
   z-index: 50;
@@ -493,8 +486,10 @@ md-icon-button.collapse-panel-btn:hover,
   border-radius: 0;
 }
 
-.dir-stop-reorder.is-clear-only {
-  padding-left: 0;
+.dir-stop-drag-spacer {
+  display: block;
+  width: 36px;
+  height: 40px;
 }
 
 .dir-stop-row-action {

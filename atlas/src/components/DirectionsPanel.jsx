@@ -736,7 +736,7 @@ export default function DirectionsPanel({
               const canReorder = Boolean(onMoveStop) && stops.length >= 2;
               const isStart = i === 0;
               const isDest = i === stops.length - 1;
-              const canClear = Boolean(stopTexts[i] || stop);
+              const showTrailing = canReorder || multi;
               const showSwap = isStart && !multi;
               const showAdd =
                 isDest &&
@@ -748,8 +748,7 @@ export default function DirectionsPanel({
                 );
               const rowClass = [
                 "dir-stop-row",
-                multi || canReorder ? "has-controls" : "",
-                !multi && canClear && !canReorder ? "has-clear" : "",
+                showTrailing ? "has-controls" : "",
                 canReorder ? "can-reorder" : "",
                 dragFrom === i ? "is-dragging" : "",
                 dragOver === i && dragFrom != null && dragFrom !== i
@@ -796,14 +795,8 @@ export default function DirectionsPanel({
                     onFocusField={() => setActiveStopIndex(i)}
                     onListChange={(payload) => handleListChange(i, payload)}
                   />
-                  {canReorder || multi || canClear ? (
-                    <div
-                      className={`dir-stop-reorder${
-                        !canReorder && !multi && canClear
-                          ? " is-clear-only"
-                          : ""
-                      }`}
-                    >
+                  {showTrailing ? (
+                    <div className="dir-stop-reorder">
                       {canReorder ? (
                         <button
                           type="button"
@@ -827,7 +820,9 @@ export default function DirectionsPanel({
                         >
                           <md-icon>drag_indicator</md-icon>
                         </button>
-                      ) : null}
+                      ) : (
+                        <span className="dir-stop-drag-spacer" aria-hidden />
+                      )}
                       {multi ? (
                         <md-icon-button
                           type="button"
@@ -841,7 +836,7 @@ export default function DirectionsPanel({
                         >
                           <md-icon>close</md-icon>
                         </md-icon-button>
-                      ) : canClear ? (
+                      ) : (
                         <md-icon-button
                           type="button"
                           class="dir-stop-clear"
@@ -860,7 +855,7 @@ export default function DirectionsPanel({
                         >
                           <md-icon>close</md-icon>
                         </md-icon-button>
-                      ) : null}
+                      )}
                     </div>
                   ) : null}
                 </div>
