@@ -108,6 +108,18 @@ md-icon-button.collapse-panel-btn:hover,
   box-sizing: border-box;
 }
 
+/* Desktop: wrappers are transparent; mobile repositions them (≤800px). */
+.dir-sheet-grabber,
+.dir-close-btn {
+  display: none;
+}
+
+.dir-mobile-stop-card,
+.dir-drive-sheet,
+.dir-drive-body {
+  display: contents;
+}
+
 .dir-top-bar {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -2766,6 +2778,179 @@ md-text-button {
     margin-right: 0;
   }
 
+  /*
+   * Google Maps–style directions: floating stops card on top + Drive sheet
+   * anchored to the bottom (rounded top corners only). Map shows between.
+   */
+  .panel.is-directions-chrome {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .panel.is-directions-chrome .directions-panel {
+    position: absolute;
+    inset: 0;
+    display: block;
+    padding: 0;
+    gap: 0;
+    overflow: visible;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .panel.is-directions-chrome .dir-mobile-stop-card {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top, 0px));
+    left: 12px;
+    right: 12px;
+    z-index: 3;
+    display: block;
+    max-height: min(42dvh, 360px);
+    padding: 6px 8px 8px;
+    background: #fff;
+    border: 1px solid rgba(60, 64, 67, 0.12);
+    border-radius: 24px;
+    box-shadow:
+      0 1px 2px rgba(60, 64, 67, 0.12),
+      0 4px 16px rgba(60, 64, 67, 0.18);
+    overflow: auto;
+    pointer-events: auto;
+  }
+
+  .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
+    max-height: min(56dvh, 480px);
+  }
+
+  .panel.is-directions-chrome .dir-stops-block {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Keep origin/destination visible like Google Maps (not hidden after routes). */
+  .panel.is-directions-chrome
+    .directions-panel.has-route-results:not(.show-stops)
+    .dir-stops-block {
+    display: block;
+  }
+
+  .panel.is-directions-chrome .dir-change-stops {
+    display: none !important;
+  }
+
+  .panel.is-directions-chrome .dir-drive-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    max-height: min(52dvh, 480px);
+    padding: 0;
+    background: #fff;
+    border: none;
+    border-radius: 28px 28px 0 0;
+    box-shadow:
+      0 -1px 2px rgba(60, 64, 67, 0.08),
+      0 -8px 28px rgba(60, 64, 67, 0.18);
+    overflow: hidden;
+    pointer-events: auto;
+  }
+
+  .panel.is-directions-chrome .dir-sheet-grabber {
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 10px auto 6px;
+    border-radius: 2px;
+    background: #dadce0;
+    flex-shrink: 0;
+  }
+
+  .panel.is-directions-chrome .dir-sticky-chrome {
+    position: static;
+    z-index: auto;
+    margin: 0;
+    padding: 0 12px 4px;
+    flex-shrink: 0;
+  }
+
+  .panel.is-directions-chrome .dir-top-bar > md-icon-button:first-child,
+  .panel.is-directions-chrome .dir-collapse-btn {
+    display: none;
+  }
+
+  .panel.is-directions-chrome .dir-close-btn {
+    display: inline-flex;
+  }
+
+  .panel.is-directions-chrome .dir-title {
+    padding-inline-start: 4px;
+  }
+
+  .panel.is-directions-chrome .dir-travel-modes {
+    margin: 0 -4px 2px;
+    padding: 2px 4px 6px;
+    width: auto;
+  }
+
+  .panel.is-directions-chrome .dir-avoid-chips {
+    margin: 0 -4px 4px;
+    padding: 2px 4px 8px;
+  }
+
+  .panel.is-directions-chrome .dir-drive-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 6px;
+    padding: 0 16px;
+    overflow: auto;
+  }
+
+  .panel.is-directions-chrome .dir-bottom-actions {
+    position: sticky;
+    bottom: 0;
+    margin: auto 0 0;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--atlas-surface-pressed);
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  .panel.is-directions-chrome .dir-inline-steps {
+    display: none;
+  }
+
+  .panel.is-directions-chrome .dir-drag-hint {
+    display: none;
+  }
+
+  .app:has(.panel.is-directions-chrome) .map-controls {
+    top: auto;
+    bottom: calc(min(52dvh, 480px) + 12px);
+    right: 12px;
+  }
+
+  .app.panel-collapsed .panel.is-directions-chrome {
+    transform: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .panel-header {
     padding: 10px 8px 10px 16px;
   }
@@ -2976,6 +3161,30 @@ md-text-button {
 @media (min-width: 801px) {
   .dir-change-stops {
     display: none !important;
+  }
+
+  /* Restore desktop stack order: chrome → stops → body content */
+  .directions-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dir-mobile-stop-card,
+  .dir-drive-sheet,
+  .dir-drive-body {
+    display: contents;
+  }
+
+  .dir-sticky-chrome {
+    order: 1;
+  }
+
+  .dir-stops-block {
+    order: 2;
+  }
+
+  .dir-drive-body > * {
+    order: 3;
   }
 }
 

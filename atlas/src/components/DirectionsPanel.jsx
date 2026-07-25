@@ -204,122 +204,10 @@ export default function DirectionsPanel({
 
   return (
     <section
-      className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""}`}
+      className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""} ${placeList.open ? "has-stop-suggest" : ""}`}
     >
-      <div className="dir-sticky-chrome">
-        <div className="dir-top-bar">
-          <md-icon-button
-            type="button"
-            aria-label="Back to search"
-            onClick={onClose}
-          >
-            <md-icon>arrow_back</md-icon>
-          </md-icon-button>
-          <span className="md-typescale-title-medium dir-title">
-            {hasRouteResults ? modeMeta.label || "Directions" : "Directions"}
-          </span>
-          <div className="dir-top-actions">
-            {onOpenPrefs ? (
-              <ActionTip tip={prefsOpen ? "Close route options" : "Route options"}>
-                <md-icon-button
-                  type="button"
-                  class={`dir-prefs-btn ${prefsOpen ? "is-active" : ""}`}
-                  aria-label={prefsOpen ? "Close route options" : "Route options"}
-                  aria-pressed={prefsOpen ? "true" : "false"}
-                  onClick={onOpenPrefs}
-                >
-                  <md-icon>tune</md-icon>
-                </md-icon-button>
-              </ActionTip>
-            ) : null}
-            {hasRouteResults && (
-              <button
-                type="button"
-                className="dir-change-stops"
-                onClick={() => {
-                  if (forceShowStops) {
-                    setForceShowStops(false);
-                    clearPlaceList();
-                  } else {
-                    setForceShowStops(true);
-                  }
-                }}
-              >
-                <md-icon>
-                  {forceShowStops ? "check" : "edit_location_alt"}
-                </md-icon>
-                <span className="md-typescale-label-large">
-                  {forceShowStops ? "Done" : "Change"}
-                </span>
-              </button>
-            )}
-            {onCollapsePanel ? (
-              <ActionTip tip="Collapse panel">
-                <md-icon-button
-                  type="button"
-                  class="collapse-panel-btn dir-collapse-btn"
-                  aria-label="Collapse panel"
-                  onClick={onCollapsePanel}
-                >
-                  <md-icon>{collapseIcon}</md-icon>
-                </md-icon-button>
-              </ActionTip>
-            ) : null}
-          </div>
-        </div>
-
-        <div
-          className="dir-travel-modes"
-          role="tablist"
-          aria-label="Travel mode"
-          ref={modesRef}
-        >
-          {TRAVEL_MODES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              role="tab"
-              aria-selected={travelMode === m.id ? "true" : "false"}
-              className={`dir-travel-mode ${travelMode === m.id ? "is-active" : ""}`}
-              title={m.label}
-              onClick={() => onTravelMode?.(m.id)}
-            >
-              <md-icon>{m.icon}</md-icon>
-              <span className="dir-travel-mode-label">{m.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {routePrefs && onRoutePrefsChange ? (
-          <div className="dir-avoid-chips" role="group" aria-label="Avoid">
-            {AVOID_CHIP_FIELDS.map((f) => {
-              const on = Boolean(routePrefs[f.id]);
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  className={`dir-avoid-chip ${on ? "is-on" : ""}`}
-                  aria-pressed={on ? "true" : "false"}
-                  onClick={() =>
-                    onRoutePrefsChange({ ...routePrefs, [f.id]: !on })
-                  }
-                >
-                  {on ? <md-icon>check</md-icon> : null}
-                  <span>{f.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
-      </div>
-
-      {modeMeta.unsupported ? (
-        <p className="hint tight md-typescale-body-medium" role="status">
-          Public transit isn’t available in this prototype yet. Try Drive,
-          Walk, or Bicycle.
-        </p>
-      ) : null}
-
+      {/* Mobile: floating top card. Desktop: flattened via display:contents + order. */}
+      <div className="dir-mobile-stop-card">
       <div className="dir-stops-block">
         <div
           className={`dir-stops ${stops.length > 2 ? "has-mid-stops" : ""}`}
@@ -505,6 +393,135 @@ export default function DirectionsPanel({
           </button>
         ) : null}
       </div>
+      </div>
+
+      {/* Mobile: bottom Drive sheet. Desktop: flattened via display:contents + order. */}
+      <div className="dir-drive-sheet">
+        <div className="dir-sheet-grabber" aria-hidden />
+        <div className="dir-sticky-chrome">
+          <div className="dir-top-bar">
+            <md-icon-button
+              type="button"
+              aria-label="Back to search"
+              onClick={onClose}
+            >
+              <md-icon>arrow_back</md-icon>
+            </md-icon-button>
+            <span className="md-typescale-title-medium dir-title">
+              {modeMeta.label || "Directions"}
+            </span>
+            <div className="dir-top-actions">
+              {onOpenPrefs ? (
+                <ActionTip tip={prefsOpen ? "Close route options" : "Route options"}>
+                  <md-icon-button
+                    type="button"
+                    class={`dir-prefs-btn ${prefsOpen ? "is-active" : ""}`}
+                    aria-label={prefsOpen ? "Close route options" : "Route options"}
+                    aria-pressed={prefsOpen ? "true" : "false"}
+                    onClick={onOpenPrefs}
+                  >
+                    <md-icon>tune</md-icon>
+                  </md-icon-button>
+                </ActionTip>
+              ) : null}
+              {hasRouteResults && (
+                <button
+                  type="button"
+                  className="dir-change-stops"
+                  onClick={() => {
+                    if (forceShowStops) {
+                      setForceShowStops(false);
+                      clearPlaceList();
+                    } else {
+                      setForceShowStops(true);
+                    }
+                  }}
+                >
+                  <md-icon>
+                    {forceShowStops ? "check" : "edit_location_alt"}
+                  </md-icon>
+                  <span className="md-typescale-label-large">
+                    {forceShowStops ? "Done" : "Change"}
+                  </span>
+                </button>
+              )}
+              {onCollapsePanel ? (
+                <ActionTip tip="Collapse panel">
+                  <md-icon-button
+                    type="button"
+                    class="collapse-panel-btn dir-collapse-btn"
+                    aria-label="Collapse panel"
+                    onClick={onCollapsePanel}
+                  >
+                    <md-icon>{collapseIcon}</md-icon>
+                  </md-icon-button>
+                </ActionTip>
+              ) : null}
+              <ActionTip tip="Close">
+                <md-icon-button
+                  type="button"
+                  class="dir-close-btn"
+                  aria-label="Close directions"
+                  onClick={onClose}
+                >
+                  <md-icon>close</md-icon>
+                </md-icon-button>
+              </ActionTip>
+            </div>
+          </div>
+
+          <div
+            className="dir-travel-modes"
+            role="tablist"
+            aria-label="Travel mode"
+            ref={modesRef}
+          >
+            {TRAVEL_MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="tab"
+                aria-selected={travelMode === m.id ? "true" : "false"}
+                className={`dir-travel-mode ${travelMode === m.id ? "is-active" : ""}`}
+                title={m.label}
+                onClick={() => onTravelMode?.(m.id)}
+              >
+                <md-icon>{m.icon}</md-icon>
+                <span className="dir-travel-mode-label">{m.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {routePrefs && onRoutePrefsChange ? (
+            <div className="dir-avoid-chips" role="group" aria-label="Avoid">
+              {AVOID_CHIP_FIELDS.map((f) => {
+                const on = Boolean(routePrefs[f.id]);
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    className={`dir-avoid-chip ${on ? "is-on" : ""}`}
+                    aria-pressed={on ? "true" : "false"}
+                    onClick={() =>
+                      onRoutePrefsChange({ ...routePrefs, [f.id]: !on })
+                    }
+                  >
+                    {on ? <md-icon>check</md-icon> : null}
+                    <span>{f.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="dir-drive-body">
+      {modeMeta.unsupported ? (
+        <p className="hint tight md-typescale-body-medium" role="status">
+          Public transit isn’t available in this prototype yet. Try Drive,
+          Walk, or Bicycle.
+        </p>
+      ) : null}
 
       {loading && (
         <p className="hint tight md-typescale-body-medium" role="status">
@@ -724,6 +741,8 @@ export default function DirectionsPanel({
           </md-filled-button>
         </div>
       ) : null}
+        </div>
+      </div>
     </section>
   );
 }

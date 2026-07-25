@@ -1911,10 +1911,14 @@ export default function App() {
       return { top: 72, right: 72, bottom: 72, left: 72 };
     }
     if (mobile) {
+      /* Floating stops card on top + Drive sheet on bottom */
+      if (view === "directions") {
+        return { top: 140, right: 28, bottom: 300, left: 28 };
+      }
       return { top: 280, right: 28, bottom: 56, left: 28 };
     }
     return { top: 48, right: 72, bottom: 48, left: 420 };
-  }, [panelOpen]);
+  }, [panelOpen, view]);
 
   return (
     <div
