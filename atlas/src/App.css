@@ -1,6 +1,32 @@
 /* Maps layout — Material Design 3 surfaces & elevation
    Panel overlays the map (Google Maps–style) so collapsing never blanks tiles. */
 
+/* Hide scrollbars on every overflow container in the app surface. */
+.app,
+.app *,
+.nav-active,
+.nav-active *,
+.route-assistant,
+.route-assistant *,
+.leaflet-container,
+.leaflet-container * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.app::-webkit-scrollbar,
+.app *::-webkit-scrollbar,
+.nav-active::-webkit-scrollbar,
+.nav-active *::-webkit-scrollbar,
+.route-assistant::-webkit-scrollbar,
+.route-assistant *::-webkit-scrollbar,
+.leaflet-container::-webkit-scrollbar,
+.leaflet-container *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
 .app {
   position: relative;
   height: 100%;
