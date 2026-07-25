@@ -6,6 +6,7 @@ import {
   nearestRoadPoint,
   rebuildEditedRoute,
 } from "../api/routing";
+import { sampleRouteMidpoints } from "../utils/routeEdit";
 
 function isCoarsePointer() {
   try {
@@ -882,6 +883,14 @@ export default function RouteEditorLayer({
 
   const isDragging = Boolean(dragState?.active);
   const isCommitting = Boolean(dragState?.committing);
+  // Soft midpoints teach that the line is editable before any vias exist.
+  const ghostMids =
+    !isDragging &&
+    !isCommitting &&
+    !(vias || []).length &&
+    geometry?.length > 1
+      ? sampleRouteMidpoints(geometry, 3)
+      : [];
 
   return (
     <>
@@ -922,6 +931,25 @@ export default function RouteEditorLayer({
         }}
         interactive={false}
       />
+
+      {/* Discoverability: faint grab dots on an untouched route. */}
+      {ghostMids.map((p) => (
+        <CircleMarker
+          key={p.id}
+          center={[p.lat, p.lng]}
+          radius={5}
+          pane="routeEdit"
+          interactive={false}
+          pathOptions={{
+            color: "#1A73E8",
+            fillColor: "#fff",
+            fillOpacity: 0.95,
+            weight: 2.5,
+            opacity: 0.9,
+            className: "atlas-route-ghost-handle",
+          }}
+        />
+      ))}
 
       {/* Persistent vector points for reshape vias — tap to select + delete.
           Not stop pins; small vertices on the route. */}

@@ -746,8 +746,26 @@ md-icon-button.dir-add-stop:hover {
 }
 
 .dir-drag-hint {
-  margin: 4px 0 0;
-  color: #70757a;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 8px;
+  color: #5f6368;
+}
+
+.dir-drag-hint md-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--atlas-accent, #1a73e8);
+  --md-icon-size: 18px;
+}
+
+.dir-drag-hint-copy {
+  min-width: 0;
+  line-height: 1.35;
 }
 
 .dir-selected-route {
@@ -1591,8 +1609,14 @@ md-icon-button.dir-add-stop:hover {
 }
 
 .leaflet-container.is-route-edit {
-  cursor: crosshair;
+  /* Default map cursor — grab appears on the route hit target */
+  cursor: default;
   touch-action: manipulation;
+}
+
+/* Soft midpoint dots that signal the blue line can be dragged */
+.atlas-route-ghost-handle {
+  pointer-events: none;
 }
 
 .leaflet-container.is-route-edit.is-route-dragging,
@@ -4108,12 +4132,16 @@ md-text-button {
   }
 
   .panel.is-directions-chrome .dir-drag-hint {
-    display: block;
-    margin: 0 0 8px;
-    padding: 8px 10px;
+    display: flex;
+    margin: 0 0 10px;
+    padding: 10px 12px;
     border-radius: 12px;
-    background: var(--atlas-surface-hover, #f1f3f4);
-    color: #5f6368;
+    background: var(--atlas-accent-container, #e8f0fe);
+    color: #174ea6;
+  }
+
+  .panel.is-directions-chrome .dir-drag-hint md-icon {
+    color: var(--atlas-accent, #1a73e8);
   }
 
   /* Stay above the Drive sheet, clear of the top stops card.

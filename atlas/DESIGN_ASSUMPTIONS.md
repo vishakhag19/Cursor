@@ -15,3 +15,5 @@ Flagged guesses from the route-control suite implementation (not product-final):
 11. **Prefs sheet Y** — desktop top-aligned with the tune icon (~64px); X unchanged (beside the panel).
 
 Ranking weights that actually change order live in `utils/routeRecommend.js` (`scoreRoute`) with inline comments.
+
+12. **Reshape discoverability** — ghost midpoints on an untouched selected route, panel hint (“Drag the blue route…”), and a one-shot status toast. Hint hides after the first reshape in the session.

@@ -1095,14 +1095,16 @@ export default function DirectionsPanel({
         </p>
       ) : null}
 
-      {hasRouteResults && (
-        <p className="dir-drag-hint md-typescale-body-small">
-          Drag the selected route to edit
-        </p>
-      )}
-
       {selectedRoute ? (
         <div className="dir-selected-route">
+          {hasRouteResults && !hasCustomEdits ? (
+            <p className="dir-drag-hint md-typescale-body-small" role="note">
+              <md-icon aria-hidden>open_with</md-icon>
+              <span className="dir-drag-hint-copy">
+                Drag the blue route on the map to reshape
+              </span>
+            </p>
+          ) : null}
           <div className="dir-selected-summary">
             <div className="dir-selected-stats">
               <span className="dir-route-time md-typescale-headline-small">
