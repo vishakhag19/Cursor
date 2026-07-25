@@ -19,8 +19,8 @@ function useIsCompact(query = "(max-width: 800px)") {
 }
 
 /**
- * Landing search — Search + Saved routes in one card (Google Maps–style).
- * Selected place details sit in a bottom sheet on mobile.
+ * Landing search — floating Search here pill; suggestions and Saved routes
+ * are separate surfaces. Selected place details sit in a bottom sheet on mobile.
  */
 export default function SearchPanel({
   query,
@@ -156,10 +156,6 @@ export default function SearchPanel({
     listVisible &&
     !(placeList.query || "").trim() &&
     placeList.items.some((p) => p?.isRecent || p?.fromRecent);
-  /* Pill-only when idle with nothing saved; otherwise one grouped card. */
-  const isBareSearch = !listVisible && !showPlaceCard && !hasSaved;
-  const isGroupedCard = hasSaved && !listVisible && !showPlaceCard;
-
   const placeCard = showPlaceCard ? (
     <PlaceDetailsCard
       place={place}
@@ -172,7 +168,7 @@ export default function SearchPanel({
     <>
       <section
         ref={panelRef}
-        className={`mode-panel search-panel ${listVisible ? "has-suggest" : ""} ${isSearching ? "is-searching" : ""} ${isBareSearch ? "is-bare" : ""} ${isGroupedCard ? "has-saved-group" : ""} ${showPlaceCard && !isCompact ? "has-place" : ""}`}
+        className={`mode-panel search-panel is-bare ${listVisible ? "has-suggest" : ""} ${isSearching ? "is-searching" : ""} ${showSaved ? "has-saved" : ""} ${showPlaceCard && !isCompact ? "has-place" : ""}`}
       >
         <div className={`search-block ${listVisible ? "has-list" : ""}`}>
           <div className="search-chrome">
