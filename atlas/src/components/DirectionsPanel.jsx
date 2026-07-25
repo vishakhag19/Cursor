@@ -13,6 +13,50 @@ const AVOID_CHIP_FIELDS = ROUTE_OPTION_FIELDS.filter((f) =>
   ["avoidTolls", "avoidHighways", "avoidFerries"].includes(f.id),
 );
 
+const SHEET_SNAPS = ["peek", "mid", "full"];
+
+function isMobileSheetViewport() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 800px)").matches
+  );
+}
+
+function sheetSnapHeights(handleEl) {
+  const vh = window.innerHeight;
+  const topBar = handleEl?.querySelector?.(".dir-top-bar");
+  const grabber = handleEl?.querySelector?.(".dir-sheet-grabber");
+  const peek = Math.max(
+    56,
+    Math.round(
+      (grabber?.getBoundingClientRect?.().height || 4) +
+        (topBar?.getBoundingClientRect?.().height || 40) +
+        16,
+    ),
+  );
+  const mid = Math.round(Math.min(vh * 0.52, 480));
+  const full = Math.round(Math.max(mid, vh - 12));
+  return { peek, mid, full };
+}
+
+function nearestSheetSnap(height, heights, velocityY) {
+  // Negative velocityY = finger moving up → prefer taller snap
+  if (velocityY < -0.55) {
+    if (height > heights.mid - 24) return "full";
+    return "mid";
+  }
+  if (velocityY > 0.55) {
+    if (height < heights.mid + 24) return "peek";
+    return "mid";
+  }
+  const entries = SHEET_SNAPS.map((id) => ({
+    id,
+    dist: Math.abs(heights[id] - height),
+  }));
+  entries.sort((a, b) => a.dist - b.dist);
+  return entries[0].id;
+}
+
 /**
  * Directions panel — recommendations with traffic + reasons (Features 1, 7),
  * prefs entry (2), multi-stop reorder (3), save exact path (5).
@@ -72,6 +116,12 @@ export default function DirectionsPanel({
     select: null,
   });
   const wasLoadingRef = useRef(false);
+  const [sheetSnap, setSheetSnap] = useState("mid");
+  const [sheetDragPx, setSheetDragPx] = useState(null);
+  const sheetRef = useRef(null);
+  const sheetHandleRef = useRef(null);
+  const sheetBodyRef = useRef(null);
+  const sheetDragRef = useRef(null);
 
   function setActiveStopIndex(index) {
     activeStopRef.current = index;
@@ -202,9 +252,84 @@ export default function DirectionsPanel({
     });
   }, [travelMode]);
 
+  useEffect(() => {
+    if (!isMobileSheetViewport()) {
+      setSheetSnap("mid");
+      setSheetDragPx(null);
+    }
+  }, []);
+
+  function onSheetHandlePointerDown(e) {
+    if (!isMobileSheetViewport()) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Don't start a sheet drag from interactive controls inside the handle.
+    if (
+      e.target?.closest?.(
+        "md-icon-button, button, a, input, textarea, md-filled-button, md-outlined-button, md-text-button",
+      )
+    ) {
+      return;
+    }
+    const heights = sheetSnapHeights(sheetHandleRef.current);
+    const measured = sheetRef.current?.getBoundingClientRect?.().height;
+    const startHeight = Math.round(measured || heights[sheetSnap] || heights.mid);
+    sheetDragRef.current = {
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      startHeight,
+      lastY: e.clientY,
+      lastT: performance.now(),
+      velocityY: 0,
+      heights,
+    };
+    setSheetDragPx(startHeight);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }
+
+  function onSheetHandlePointerMove(e) {
+    const drag = sheetDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const now = performance.now();
+    const dt = Math.max(1, now - drag.lastT);
+    const dy = e.clientY - drag.lastY;
+    drag.velocityY = dy / dt;
+    drag.lastY = e.clientY;
+    drag.lastT = now;
+    // Finger down → shorter sheet
+    const next = Math.min(
+      drag.heights.full,
+      Math.max(drag.heights.peek, drag.startHeight - (e.clientY - drag.startY)),
+    );
+    drag.currentHeight = next;
+    setSheetDragPx(next);
+  }
+
+  function endSheetDrag(e) {
+    const drag = sheetDragRef.current;
+    if (!drag || (e && drag.pointerId !== e.pointerId)) return;
+    const height =
+      drag.currentHeight ??
+      Math.min(
+        drag.heights.full,
+        Math.max(
+          drag.heights.peek,
+          drag.startHeight - (drag.lastY - drag.startY),
+        ),
+      );
+    const snap = nearestSheetSnap(height, drag.heights, drag.velocityY);
+    sheetDragRef.current = null;
+    setSheetSnap(snap);
+    setSheetDragPx(null);
+  }
+
+  const sheetStyle =
+    sheetDragPx != null
+      ? { height: `${sheetDragPx}px`, maxHeight: `${sheetDragPx}px` }
+      : undefined;
+
   return (
     <section
-      className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""} ${placeList.open ? "has-stop-suggest" : ""}`}
+      className={`mode-panel directions-panel ${hasCustomEdits ? "has-custom-edits" : ""} ${hasRouteResults ? "has-route-results" : ""} ${forceShowStops ? "show-stops" : ""} ${placeList.open ? "has-stop-suggest" : ""} is-sheet-${sheetSnap}${sheetDragPx != null ? " is-sheet-dragging" : ""}`}
     >
       {/* Mobile: floating top card. Desktop: flattened via display:contents + order. */}
       <div className="dir-mobile-stop-card">
@@ -398,126 +523,139 @@ export default function DirectionsPanel({
       </div>
 
       {/* Mobile: bottom Drive sheet. Desktop: flattened via display:contents + order. */}
-      <div className="dir-drive-sheet">
-        <div className="dir-sheet-grabber" aria-hidden />
-        <div className="dir-sticky-chrome">
-          <div className="dir-top-bar">
-            <md-icon-button
-              type="button"
-              aria-label="Back to search"
-              onClick={onClose}
-            >
-              <md-icon>arrow_back</md-icon>
-            </md-icon-button>
-            <span className="md-typescale-title-medium dir-title">
-              {modeMeta.label || "Directions"}
-            </span>
-            <div className="dir-top-actions">
-              {onOpenPrefs ? (
-                <ActionTip tip={prefsOpen ? "Close route options" : "Route options"}>
-                  <md-icon-button
-                    type="button"
-                    class={`dir-prefs-btn ${prefsOpen ? "is-active" : ""}`}
-                    aria-label={prefsOpen ? "Close route options" : "Route options"}
-                    aria-pressed={prefsOpen ? "true" : "false"}
-                    onClick={onOpenPrefs}
-                  >
-                    <md-icon>tune</md-icon>
-                  </md-icon-button>
-                </ActionTip>
-              ) : null}
-              {hasRouteResults && (
-                <button
-                  type="button"
-                  className="dir-change-stops"
-                  onClick={() => {
-                    if (forceShowStops) {
-                      setForceShowStops(false);
-                      clearPlaceList();
-                    } else {
-                      setForceShowStops(true);
-                    }
-                  }}
-                >
-                  <md-icon>
-                    {forceShowStops ? "check" : "edit_location_alt"}
-                  </md-icon>
-                  <span className="md-typescale-label-large">
-                    {forceShowStops ? "Done" : "Change"}
-                  </span>
-                </button>
-              )}
-              {onCollapsePanel ? (
-                <ActionTip tip="Collapse panel">
-                  <md-icon-button
-                    type="button"
-                    class="collapse-panel-btn dir-collapse-btn"
-                    aria-label="Collapse panel"
-                    onClick={onCollapsePanel}
-                  >
-                    <md-icon>{collapseIcon}</md-icon>
-                  </md-icon-button>
-                </ActionTip>
-              ) : null}
-              <ActionTip tip="Close">
-                <md-icon-button
-                  type="button"
-                  class="dir-close-btn"
-                  aria-label="Close directions"
-                  onClick={onClose}
-                >
-                  <md-icon>close</md-icon>
-                </md-icon-button>
-              </ActionTip>
-            </div>
-          </div>
-
-          <div
-            className="dir-travel-modes"
-            role="tablist"
-            aria-label="Travel mode"
-            ref={modesRef}
-          >
-            {TRAVEL_MODES.map((m) => (
-              <button
-                key={m.id}
+      <div
+        ref={sheetRef}
+        className={`dir-drive-sheet is-${sheetSnap}`}
+        style={sheetStyle}
+      >
+        <div
+          ref={sheetHandleRef}
+          className="dir-sheet-handle"
+          onPointerDown={onSheetHandlePointerDown}
+          onPointerMove={onSheetHandlePointerMove}
+          onPointerUp={endSheetDrag}
+          onPointerCancel={endSheetDrag}
+        >
+          <div className="dir-sheet-grabber" aria-hidden />
+          <div className="dir-sticky-chrome">
+            <div className="dir-top-bar">
+              <md-icon-button
                 type="button"
-                role="tab"
-                aria-selected={travelMode === m.id ? "true" : "false"}
-                className={`dir-travel-mode ${travelMode === m.id ? "is-active" : ""}`}
-                title={m.label}
-                onClick={() => onTravelMode?.(m.id)}
+                aria-label="Back to search"
+                onClick={onClose}
               >
-                <md-icon>{m.icon}</md-icon>
-                <span className="dir-travel-mode-label">{m.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {routePrefs && onRoutePrefsChange ? (
-            <div className="dir-avoid-chips" role="group" aria-label="Avoid">
-              {AVOID_CHIP_FIELDS.map((f) => {
-                const on = Boolean(routePrefs[f.id]);
-                return (
+                <md-icon>arrow_back</md-icon>
+              </md-icon-button>
+              <span className="md-typescale-title-medium dir-title">
+                {modeMeta.label || "Directions"}
+              </span>
+              <div className="dir-top-actions">
+                {onOpenPrefs ? (
+                  <ActionTip tip={prefsOpen ? "Close route options" : "Route options"}>
+                    <md-icon-button
+                      type="button"
+                      class={`dir-prefs-btn ${prefsOpen ? "is-active" : ""}`}
+                      aria-label={prefsOpen ? "Close route options" : "Route options"}
+                      aria-pressed={prefsOpen ? "true" : "false"}
+                      onClick={onOpenPrefs}
+                    >
+                      <md-icon>tune</md-icon>
+                    </md-icon-button>
+                  </ActionTip>
+                ) : null}
+                {hasRouteResults && (
                   <button
-                    key={f.id}
                     type="button"
-                    className={`dir-avoid-chip ${on ? "is-on" : ""}`}
-                    aria-pressed={on ? "true" : "false"}
-                    onClick={() =>
-                      onRoutePrefsChange({ ...routePrefs, [f.id]: !on })
-                    }
+                    className="dir-change-stops"
+                    onClick={() => {
+                      if (forceShowStops) {
+                        setForceShowStops(false);
+                        clearPlaceList();
+                      } else {
+                        setForceShowStops(true);
+                      }
+                    }}
                   >
-                    {on ? <md-icon>check</md-icon> : null}
-                    <span>{f.label}</span>
+                    <md-icon>
+                      {forceShowStops ? "check" : "edit_location_alt"}
+                    </md-icon>
+                    <span className="md-typescale-label-large">
+                      {forceShowStops ? "Done" : "Change"}
+                    </span>
                   </button>
-                );
-              })}
+                )}
+                {onCollapsePanel ? (
+                  <ActionTip tip="Collapse panel">
+                    <md-icon-button
+                      type="button"
+                      class="collapse-panel-btn dir-collapse-btn"
+                      aria-label="Collapse panel"
+                      onClick={onCollapsePanel}
+                    >
+                      <md-icon>{collapseIcon}</md-icon>
+                    </md-icon-button>
+                  </ActionTip>
+                ) : null}
+                <ActionTip tip="Close">
+                  <md-icon-button
+                    type="button"
+                    class="dir-close-btn"
+                    aria-label="Close directions"
+                    onClick={onClose}
+                  >
+                    <md-icon>close</md-icon>
+                  </md-icon-button>
+                </ActionTip>
+              </div>
             </div>
-          ) : null}
+
+            <div
+              className="dir-travel-modes"
+              role="tablist"
+              aria-label="Travel mode"
+              ref={modesRef}
+            >
+              {TRAVEL_MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={travelMode === m.id ? "true" : "false"}
+                  className={`dir-travel-mode ${travelMode === m.id ? "is-active" : ""}`}
+                  title={m.label}
+                  onClick={() => onTravelMode?.(m.id)}
+                >
+                  <md-icon>{m.icon}</md-icon>
+                  <span className="dir-travel-mode-label">{m.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {routePrefs && onRoutePrefsChange ? (
+              <div className="dir-avoid-chips" role="group" aria-label="Avoid">
+                {AVOID_CHIP_FIELDS.map((f) => {
+                  const on = Boolean(routePrefs[f.id]);
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      className={`dir-avoid-chip ${on ? "is-on" : ""}`}
+                      aria-pressed={on ? "true" : "false"}
+                      onClick={() =>
+                        onRoutePrefsChange({ ...routePrefs, [f.id]: !on })
+                      }
+                    >
+                      {on ? <md-icon>check</md-icon> : null}
+                      <span>{f.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        <div className="dir-drive-body">
+        <div className="dir-drive-body" ref={sheetBodyRef}>
       {modeMeta.unsupported ? (
         <p className="hint tight md-typescale-body-medium" role="status">
           Public transit isn’t available in this prototype yet. Try Drive,
