@@ -49,8 +49,8 @@ export default function RoadRulesSheet({
         <div className="route-sheet-body">
           {rules.length === 0 ? (
             <p className="hint tight md-typescale-body-medium">
-              Tap + then tap a road on the map, or long-press / right-click a
-              road and choose Prefer, Avoid, or Never use.
+              Tap + then tap a road on the map, and choose Prefer, Avoid, or
+              Never use.
             </p>
           ) : (
             <md-list class="road-rules-list">

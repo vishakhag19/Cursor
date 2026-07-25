@@ -771,7 +771,7 @@ export default function DirectionsPanel({
       {hasRouteResults && (
         <p className="dir-drag-hint md-typescale-body-small">
           Drag the blue route to reshape · tap another route on the map to
-          switch · long-press a road for Prefer / Avoid / Never
+          switch · use Route options → Pick on map for Prefer / Avoid / Never
         </p>
       )}
 

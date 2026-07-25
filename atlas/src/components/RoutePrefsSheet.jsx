@@ -497,8 +497,8 @@ export default function RoutePrefsSheet({
 
             {!addingRoad && roadRules.length === 0 ? (
               <p className="hint tight md-typescale-body-medium route-pref-section-empty">
-                Tap + to type a road name, pick one on the map, or long-press a
-                road and choose Prefer, Avoid, or Never use.
+                Tap + to type a road name, or use Pick on map and choose Prefer,
+                Avoid, or Never use.
               </p>
             ) : null}
 

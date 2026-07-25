@@ -1,34 +1,23 @@
-import { useEffect, useState } from "react";
-
-function useIsCompact(query = "(max-width: 800px)") {
-  const [compact, setCompact] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const onChange = () => setCompact(mq.matches);
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, [query]);
-  return compact;
-}
+import { useEffect } from "react";
 
 /**
- * Map long-press / right-click menu.
- * Mobile: bottom sheet. Desktop: floating card at the press point.
+ * Road-rule chooser after "Pick on map" — always a bottom sheet.
+ * Prefer / Avoid / Never only (no Directions actions).
  */
-export default function ContextMenu({ position, onClose, actions }) {
-  const isCompact = useIsCompact();
-
+export default function ContextMenu({
+  position,
+  onClose,
+  actions,
+  title = "Choose a road rule",
+}) {
   useEffect(() => {
-    if (!position || !isCompact) return undefined;
+    if (!position) return undefined;
     function onKey(e) {
       if (e.key === "Escape") onClose?.();
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [position, isCompact, onClose]);
+  }, [position, onClose]);
 
   if (!position) return null;
 
@@ -36,41 +25,24 @@ export default function ContextMenu({ position, onClose, actions }) {
     <>
       <button
         type="button"
-        className={`ctx-backdrop${isCompact ? " is-sheet" : ""}`}
+        className="ctx-backdrop is-sheet"
         onClick={onClose}
-        aria-label="Dismiss map options"
+        aria-label="Dismiss road rule options"
       />
       <div
-        className={`context-menu m3-card${isCompact ? " is-sheet" : ""}`}
-        style={
-          isCompact
-            ? undefined
-            : { left: position.x, top: position.y }
-        }
-        role={isCompact ? "dialog" : "menu"}
-        aria-label="Map options"
+        className="context-menu m3-card is-sheet"
+        role="dialog"
+        aria-label={title}
       >
-        {isCompact ? (
-          <div className="ctx-sheet-handle" aria-hidden>
-            <div className="ctx-sheet-grabber" />
-          </div>
-        ) : null}
-        {isCompact ? (
-          <div className="ctx-sheet-header">
-            <h2 className="md-typescale-title-medium ctx-sheet-title">
-              Map options
-            </h2>
-            <md-icon-button
-              type="button"
-              aria-label="Close"
-              onClick={onClose}
-            >
-              <md-icon>close</md-icon>
-            </md-icon-button>
-          </div>
-        ) : (
-          <md-elevation aria-hidden="true" />
-        )}
+        <div className="ctx-sheet-handle" aria-hidden>
+          <div className="ctx-sheet-grabber" />
+        </div>
+        <div className="ctx-sheet-header">
+          <h2 className="md-typescale-title-medium ctx-sheet-title">{title}</h2>
+          <md-icon-button type="button" aria-label="Close" onClick={onClose}>
+            <md-icon>close</md-icon>
+          </md-icon-button>
+        </div>
         <md-list class="ctx-sheet-list">
           {actions.map((a) => (
             <md-list-item
@@ -78,8 +50,8 @@ export default function ContextMenu({ position, onClose, actions }) {
               type="button"
               role="menuitem"
               onClick={() => {
+                /* Action owns dismiss / navigation (e.g. reopen prefs). */
                 a.onClick();
-                onClose();
               }}
             >
               {a.icon ? (

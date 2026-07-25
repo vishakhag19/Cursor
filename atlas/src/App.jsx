@@ -137,6 +137,8 @@ export default function App() {
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [roadRulesOpen, setRoadRulesOpen] = useState(false);
   const [roadPickMode, setRoadPickMode] = useState(false);
+  /** Where to restore after Pick-on-map: "prefs" | "roadRules" | null */
+  const [roadPickReturnTo, setRoadPickReturnTo] = useState(null);
   /** Road rule id to emphasize when Route options opens after a map add. */
   const [highlightedRoadRuleId, setHighlightedRoadRuleId] = useState(null);
   const [rerouteSuggestion, setRerouteSuggestion] = useState(null);
@@ -1348,7 +1350,7 @@ export default function App() {
               pushAssistant(
                 "agent",
                 assistantReply(
-                  `I couldn’t find “${intent.street}” near this trip. Long-press the map on that road and choose Avoid this road.`,
+                  `I couldn’t find “${intent.street}” near this trip. Open Route options → Your road rules → Pick on map, then tap that road.`,
                 ),
               );
               return;
@@ -1359,7 +1361,7 @@ export default function App() {
           pushAssistant(
             "agent",
             assistantReply(
-              `Avoiding ${name}. The route now detours around it. You can also right‑click / long‑press a road to block it.`,
+              `Avoiding ${name}. The route now detours around it. You can also use Route options → Pick on map to Prefer, Avoid, or Never a road.`,
             ),
           );
           return;
@@ -1492,9 +1494,41 @@ export default function App() {
   }, [travelMode]);
 
   const highlightTimerRef = useRef(null);
+
+  const enterRoadPickMode = useCallback((returnTo = "prefs") => {
+    setRoadPickReturnTo(returnTo);
+    setPrefsOpen(false);
+    setRoadRulesOpen(false);
+    setAssistantOpen(false);
+    setCtx(null);
+    setPanelOpen(false);
+    setRoadPickMode(true);
+    showStatus(
+      "Tap a road on the map to Prefer, Avoid, or Never use it",
+      5000,
+    );
+  }, [showStatus]);
+
+  const restoreAfterRoadPick = useCallback((returnTo = roadPickReturnTo) => {
+    setRoadPickMode(false);
+    setCtx(null);
+    setRoadPickReturnTo(null);
+    clearStatus();
+    if (returnTo === "roadRules") {
+      setRoadRulesOpen(true);
+      setPanelOpen(true);
+      return;
+    }
+    if (returnTo === "prefs") {
+      setPrefsOpen(true);
+      setPanelOpen(true);
+    }
+  }, [roadPickReturnTo, clearStatus]);
+
   const openPrefsWithRoadRules = useCallback((ruleId = null) => {
     setRoadPickMode(false);
     setCtx(null);
+    setRoadPickReturnTo(null);
     setAssistantOpen(false);
     setRoadRulesOpen(false);
     setPanelOpen(true);
@@ -1606,6 +1640,7 @@ export default function App() {
               openPrefsWithRoadRules(id);
             } catch (err) {
               showStatus(err.message || "Could not set road rule");
+              restoreAfterRoadPick();
             }
           },
         },
@@ -1620,6 +1655,7 @@ export default function App() {
               openPrefsWithRoadRules(id);
             } catch (err) {
               showStatus(err.message || "Could not set road rule");
+              restoreAfterRoadPick();
             }
           },
         },
@@ -1634,50 +1670,8 @@ export default function App() {
               openPrefsWithRoadRules(id);
             } catch (err) {
               showStatus(err.message || "Could not set road rule");
+              restoreAfterRoadPick();
             }
-          },
-        },
-        {
-          id: "directions-to",
-          label: "Directions to here",
-          icon: "directions",
-          onClick: async () => {
-            const place = await reverseGeocode(
-              ctx.latlng.lat,
-              ctx.latlng.lng,
-            ).catch(() => ({
-              name: "Point",
-              display_name: "Selected point",
-              lat: ctx.latlng.lat,
-              lng: ctx.latlng.lng,
-            }));
-            openDirections({ to: place });
-          },
-        },
-        {
-          id: "directions-from",
-          label: "Directions from here",
-          icon: "near_me",
-          onClick: async () => {
-            const place = await reverseGeocode(
-              ctx.latlng.lat,
-              ctx.latlng.lng,
-            ).catch(() => ({
-              name: "Point",
-              display_name: "Selected point",
-              lat: ctx.latlng.lat,
-              lng: ctx.latlng.lng,
-            }));
-            openDirections({ from: place });
-          },
-        },
-        {
-          id: "road-rules",
-          label: "Your road rules",
-          icon: "rule",
-          onClick: () => {
-            setPrefsOpen(true);
-            setPanelOpen(true);
           },
         },
       ]
@@ -1933,6 +1927,7 @@ export default function App() {
   mobileUiRef.current = {
     ctx,
     roadPickMode,
+    roadPickReturnTo,
     rerouteSuggestion,
     assistantOpen,
     prefsOpen,
@@ -1975,14 +1970,21 @@ export default function App() {
     function dismissTopLayer() {
       const s = mobileUiRef.current;
       if (s.ctx) {
-        setCtx(null);
-        return countBackable({ ctx: null }) > 0;
+        restoreAfterRoadPick(s.roadPickReturnTo || "prefs");
+        return countBackable({
+          ctx: null,
+          roadPickMode: false,
+          prefsOpen: (s.roadPickReturnTo || "prefs") === "prefs",
+          roadRulesOpen: s.roadPickReturnTo === "roadRules",
+        }) > 0;
       }
       if (s.roadPickMode) {
-        setRoadPickMode(false);
-        setPanelOpen(true);
-        clearStatus();
-        return countBackable({ roadPickMode: false }) > 0;
+        restoreAfterRoadPick(s.roadPickReturnTo || "prefs");
+        return countBackable({
+          roadPickMode: false,
+          prefsOpen: (s.roadPickReturnTo || "prefs") === "prefs",
+          roadRulesOpen: s.roadPickReturnTo === "roadRules",
+        }) > 0;
       }
       if (s.rerouteSuggestion) {
         setRerouteSuggestion(null);
@@ -2047,6 +2049,7 @@ export default function App() {
     isCompact,
     ctx,
     roadPickMode,
+    roadPickReturnTo,
     rerouteSuggestion,
     assistantOpen,
     prefsOpen,
@@ -2057,6 +2060,7 @@ export default function App() {
     searchBackable,
     exitNavigation,
     clearStatus,
+    restoreAfterRoadPick,
   ]);
 
   const fitPadding = useMemo(() => {
@@ -2270,9 +2274,6 @@ export default function App() {
           fitKey={fitKey}
           fitPadding={fitPadding}
           onMapClick={handleMapClick}
-          onContextMenu={(latlng, pos) => {
-            setCtx({ latlng, ...pos });
-          }}
           onWaypointDrag={async (stopIndex, lat, lng) => {
             try {
               const place = await reverseGeocode(lat, lng);
@@ -2421,8 +2422,9 @@ export default function App() {
 
       <ContextMenu
         position={ctx}
-        onClose={() => setCtx(null)}
+        onClose={() => restoreAfterRoadPick()}
         actions={ctxActions}
+        title="Choose a road rule"
       />
 
       <RouteAssistant
@@ -2450,15 +2452,7 @@ export default function App() {
         }
         routeRoadHints={routeRoadHints}
         onAddTypedRoadRule={applyTypedRoadRule}
-        onPickRoadOnMap={() => {
-          setPrefsOpen(false);
-          setPanelOpen(false);
-          setRoadPickMode(true);
-          showStatus(
-            "Tap a road on the map to Prefer, Avoid, or Never use it",
-            5000,
-          );
-        }}
+        onPickRoadOnMap={() => enterRoadPickMode("prefs")}
         onRemoveRoadRule={(id) => {
           const rule = roadRules.find((r) => r.id === id);
           setRoadRules((prev) => removeRoadRule(prev, id));
@@ -2483,16 +2477,7 @@ export default function App() {
           open={roadRulesOpen}
           rules={roadRules}
           onClose={() => setRoadRulesOpen(false)}
-          onAdd={() => {
-            setRoadRulesOpen(false);
-            setPrefsOpen(false);
-            setPanelOpen(false);
-            setRoadPickMode(true);
-            showStatus(
-              "Tap a road on the map to Prefer, Avoid, or Never use it",
-              5000,
-            );
-          }}
+          onAdd={() => enterRoadPickMode("roadRules")}
           onRemove={(id) => {
             const rule = roadRules.find((r) => r.id === id);
             setRoadRules((prev) => removeRoadRule(prev, id));
