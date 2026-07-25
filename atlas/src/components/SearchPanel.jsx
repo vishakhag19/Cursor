@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceDetailsCard from "./PlaceDetailsCard";
 import PlaceSuggestionList from "./PlaceSuggestionList";
@@ -37,6 +37,10 @@ export default function SearchPanel({
   onDeleteSaved = null,
   onCollapsePanel = null,
   collapseIcon = "chevron_left",
+  /** Imperative handle: { handleBack(): boolean, isBackable(): boolean } */
+  backRef = null,
+  /** Notify App when search has a system-back layer (for history sync). */
+  onBackableChange = null,
 }) {
   const isCompact = useIsCompact();
   const panelRef = useRef(null);
@@ -92,6 +96,46 @@ export default function SearchPanel({
   const listVisible =
     placeList.open && (placeList.items.length > 0 || placeList.loading);
 
+  /** @returns {boolean} true if another search layer remains after this peel */
+  function handleSystemBack() {
+    if (listVisible) {
+      dismissSearchList();
+      return Boolean(place);
+    }
+    if (place) {
+      onDismissPlace?.();
+      setMobileExpanded(false);
+      return false;
+    }
+    if (isCompact && mobileExpanded) {
+      setMobileExpanded(false);
+      const active = document.activeElement;
+      if (active && panelRef.current?.contains(active)) {
+        active.blur?.();
+      }
+      return false;
+    }
+    return false;
+  }
+
+  const searchBackable =
+    listVisible || Boolean(place) || (isCompact && mobileExpanded);
+
+  useImperativeHandle(
+    backRef,
+    () => ({
+      handleBack: handleSystemBack,
+      isBackable: () => searchBackable,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searchBackable, listVisible, place, isCompact, mobileExpanded],
+  );
+
+  useEffect(() => {
+    onBackableChange?.(searchBackable);
+    return () => onBackableChange?.(false);
+  }, [searchBackable, onBackableChange]);
+
   useEffect(() => {
     if (!listVisible && !(isCompact && mobileExpanded && !place)) {
       return undefined;
@@ -120,8 +164,8 @@ export default function SearchPanel({
     listVisible &&
     !(placeList.query || "").trim() &&
     placeList.items.some((p) => p?.isRecent || p?.fromRecent);
-  /* Search stays open — no collapse chevron on idle, Recent, or place card. */
-  const showCollapse = false;
+  /* Mobile: no collapse chevron — system back handles leaving overlays. */
+  const showCollapse = Boolean(onCollapsePanel) && !isCompact;
   /* Default landing: only the search pill floats (no padded card chrome). */
   const isBareSearch = !listVisible && !showPlaceCard;
 

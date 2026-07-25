@@ -160,6 +160,8 @@ export default function App() {
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
   const [ctx, setCtx] = useState(null);
+  /** Search panel list / place / focus — drives mobile history sync. */
+  const [searchBackable, setSearchBackable] = useState(false);
   const [followingLocation, setFollowingLocation] = useState(false);
   const suppressMapClickUntil = useRef(0);
   const locateFn = useRef(null);
@@ -173,6 +175,10 @@ export default function App() {
   const editHistoryRef = useRef([]);
   const editEpochRef = useRef(0);
   const editCommitChain = useRef(Promise.resolve());
+  const searchBackRef = useRef(null);
+  const dirBackRef = useRef(null);
+  const ignoreMobilePopRef = useRef(false);
+  const mobileUiRef = useRef({});
 
   const {
     location: userLocation,
@@ -1903,6 +1909,144 @@ export default function App() {
     }
   }, [view, navigating]);
 
+  const closeDirectionsView = useCallback(() => {
+    setPrefsOpen(false);
+    setRoadRulesOpen(false);
+    setAssistantOpen(false);
+    setView("search");
+    clearRoutes();
+  }, [clearRoutes]);
+
+  // Keep a sync snapshot for the mobile system-back handler.
+  mobileUiRef.current = {
+    ctx,
+    roadPickMode,
+    rerouteSuggestion,
+    assistantOpen,
+    prefsOpen,
+    roadRulesOpen,
+    showSteps,
+    navigating,
+    view,
+    searchBackable,
+  };
+
+  /**
+   * Mobile: Android / browser back peels one UI layer.
+   * A single history marker stays armed while any layer is open.
+   */
+  useEffect(() => {
+    if (!isCompact) return undefined;
+
+    const MARK = { mapsUi: true };
+
+    function countBackable(overrides = {}) {
+      const s = { ...mobileUiRef.current, ...overrides };
+      let n = 0;
+      if (s.ctx) n += 1;
+      if (s.roadPickMode) n += 1;
+      if (s.rerouteSuggestion) n += 1;
+      if (s.assistantOpen) n += 1;
+      if (s.prefsOpen || s.roadRulesOpen) n += 1;
+      if (s.showSteps) n += 1;
+      if (s.navigating) n += 1;
+      if (s.view === "directions") n += 1;
+      else if (s.searchBackable || searchBackRef.current?.isBackable?.()) n += 1;
+      return n;
+    }
+
+    function hasBackableUi() {
+      return countBackable() > 0;
+    }
+
+    /** @returns {boolean} true if another layer remains after this peel */
+    function dismissTopLayer() {
+      const s = mobileUiRef.current;
+      if (s.ctx) {
+        setCtx(null);
+        return countBackable({ ctx: null }) > 0;
+      }
+      if (s.roadPickMode) {
+        setRoadPickMode(false);
+        setPanelOpen(true);
+        clearStatus();
+        return countBackable({ roadPickMode: false }) > 0;
+      }
+      if (s.rerouteSuggestion) {
+        setRerouteSuggestion(null);
+        return countBackable({ rerouteSuggestion: null }) > 0;
+      }
+      if (s.assistantOpen) {
+        setAssistantOpen(false);
+        return countBackable({ assistantOpen: false }) > 0;
+      }
+      if (s.prefsOpen || s.roadRulesOpen) {
+        setPrefsOpen(false);
+        setRoadRulesOpen(false);
+        setHighlightedRoadRuleId(null);
+        return countBackable({ prefsOpen: false, roadRulesOpen: false }) > 0;
+      }
+      if (s.showSteps) {
+        setShowSteps(false);
+        return countBackable({ showSteps: false }) > 0;
+      }
+      if (s.navigating) {
+        exitNavigation();
+        return countBackable({ navigating: false }) > 0;
+      }
+      if (s.view === "directions") {
+        const kept = dirBackRef.current?.handleBack?.() ?? false;
+        if (kept) return true;
+        return Boolean(searchBackRef.current?.isBackable?.());
+      }
+      if (searchBackRef.current?.isBackable?.()) {
+        return Boolean(searchBackRef.current.handleBack());
+      }
+      return false;
+    }
+
+    function syncHistoryMarker() {
+      if (ignoreMobilePopRef.current) return;
+      const marked = Boolean(window.history.state?.mapsUi);
+      const has = hasBackableUi();
+      if (has && !marked) {
+        window.history.pushState(MARK, "");
+      } else if (!has && marked) {
+        ignoreMobilePopRef.current = true;
+        window.history.back();
+      }
+    }
+
+    function onPopState() {
+      if (ignoreMobilePopRef.current) {
+        ignoreMobilePopRef.current = false;
+        return;
+      }
+      const still = dismissTopLayer();
+      if (still) {
+        window.history.pushState(MARK, "");
+      }
+    }
+
+    syncHistoryMarker();
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [
+    isCompact,
+    ctx,
+    roadPickMode,
+    rerouteSuggestion,
+    assistantOpen,
+    prefsOpen,
+    roadRulesOpen,
+    showSteps,
+    navigating,
+    view,
+    searchBackable,
+    exitNavigation,
+    clearStatus,
+  ]);
+
   const fitPadding = useMemo(() => {
     const mobile =
       typeof window !== "undefined" &&
@@ -1952,13 +2096,19 @@ export default function App() {
               if (!selectedPlace) return;
               openDirections({ from: selectedPlace });
             }}
-            collapseIcon={isCompact ? "expand_less" : "chevron_left"}
-            onCollapsePanel={() => {
-              setPanelOpen(false);
-              setPrefsOpen(false);
-              setRoadRulesOpen(false);
-              setAssistantOpen(false);
-            }}
+            backRef={searchBackRef}
+            onBackableChange={setSearchBackable}
+            collapseIcon="chevron_left"
+            onCollapsePanel={
+              isCompact
+                ? null
+                : () => {
+                    setPanelOpen(false);
+                    setPrefsOpen(false);
+                    setRoadRulesOpen(false);
+                    setAssistantOpen(false);
+                  }
+            }
           />
         )}
 
@@ -1975,18 +2125,19 @@ export default function App() {
             onRemoveStop={removeStop}
             onMoveStop={moveStop}
             onSwap={swapStops}
-            collapseIcon={isCompact ? "expand_less" : "chevron_left"}
-            onCollapsePanel={() => {
-              setPanelOpen(false);
-              setPrefsOpen(false);
-              setRoadRulesOpen(false);
-              setAssistantOpen(false);
-            }}
-            onClose={() => {
-              setPrefsOpen(false);
-              setView("search");
-              clearRoutes();
-            }}
+            backRef={dirBackRef}
+            collapseIcon="chevron_left"
+            onCollapsePanel={
+              isCompact
+                ? null
+                : () => {
+                    setPanelOpen(false);
+                    setPrefsOpen(false);
+                    setRoadRulesOpen(false);
+                    setAssistantOpen(false);
+                  }
+            }
+            onClose={closeDirectionsView}
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
             onSelectRoute={(opt) => {
@@ -2034,7 +2185,7 @@ export default function App() {
         )}
       </aside>
 
-      {!panelOpen && (
+      {!panelOpen && !isCompact && (
         <ActionTip tip="Open panel" className="expand-panel-tip">
           <md-icon-button
             type="button"
@@ -2042,7 +2193,7 @@ export default function App() {
             aria-label="Open panel"
             onClick={() => setPanelOpen(true)}
           >
-            <md-icon>{isCompact ? "expand_more" : "chevron_right"}</md-icon>
+            <md-icon>chevron_right</md-icon>
           </md-icon-button>
         </ActionTip>
       )}

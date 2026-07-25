@@ -2150,15 +2150,15 @@ md-icon-button.expand-panel:hover,
     --atlas-mobile-chrome-inset: 12px;
   }
 
+  /* Mobile: no expand/collapse chevrons — system back handles navigation. */
   .expand-panel-tip {
-    top: var(--atlas-mobile-chrome-inset);
-    left: auto;
-    right: var(--atlas-mobile-chrome-inset);
+    display: none !important;
   }
 
-  .expand-panel {
-    width: var(--panel-control-size);
-    height: var(--panel-control-size);
+  .collapse-panel-btn,
+  .search-chrome-collapse,
+  .dir-collapse-btn {
+    display: none !important;
   }
 
   .app:not(.panel-collapsed) .route-reshape-bar,

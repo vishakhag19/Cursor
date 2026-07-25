@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
@@ -74,6 +74,8 @@ export default function DirectionsPanel({
   onClose,
   onCollapsePanel = null,
   collapseIcon = "chevron_left",
+  /** Imperative handle: { handleBack(): boolean, isBackable(): boolean } */
+  backRef = null,
   routeOptions,
   selectedRouteId,
   onSelectRoute,
@@ -210,6 +212,41 @@ export default function DirectionsPanel({
     });
     setActiveStopIndex(null);
   }
+
+  function handleSystemBack() {
+    if (saving) {
+      setSaving(false);
+      return true;
+    }
+    if (placeList.open) {
+      clearPlaceList();
+      return true;
+    }
+    if (forceShowStops) {
+      setForceShowStops(false);
+      clearPlaceList();
+      return true;
+    }
+    if (
+      isMobileSheetViewport() &&
+      (sheetSnap === "full" || sheetSnap === "mid")
+    ) {
+      setSheetSnap("peek");
+      return true;
+    }
+    onClose?.();
+    return false;
+  }
+
+  useImperativeHandle(
+    backRef,
+    () => ({
+      handleBack: handleSystemBack,
+      isBackable: () => true,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [saving, placeList.open, forceShowStops, sheetSnap, onClose],
+  );
 
   useEffect(() => {
     if (loading) {
