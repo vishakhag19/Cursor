@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatDistance, formatDuration } from "../utils/format";
 
 /**
@@ -21,10 +22,12 @@ export default function RouteOptionsList({
   hint = "Pick the route you want. Maps will not switch it mid-trip unless you choose another option.",
 }) {
   const [menuId, setMenuId] = useState(null);
+  const [menuPos, setMenuPos] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const renameInputRef = useRef(null);
   const menuRef = useRef(null);
+  const menuButtonRefs = useRef(new Map());
 
   useEffect(() => {
     if (!editingId) return undefined;
@@ -42,17 +45,65 @@ export default function RouteOptionsList({
     }
     if (menuId && !options.some((o) => o.id === menuId)) {
       setMenuId(null);
+      setMenuPos(null);
     }
   }, [options, editingId, menuId]);
+
+  useLayoutEffect(() => {
+    if (!menuId) {
+      setMenuPos(null);
+      return undefined;
+    }
+    const btn = menuButtonRefs.current.get(menuId);
+    if (!btn) return undefined;
+
+    function placeMenu() {
+      const el = menuButtonRefs.current.get(menuId);
+      const panel = menuRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const menuW = panel?.offsetWidth || 176;
+      const menuH = panel?.offsetHeight || 96;
+      const pad = 8;
+      let top = rect.bottom + 4;
+      let left = rect.right - menuW;
+      if (left < pad) left = pad;
+      if (left + menuW > window.innerWidth - pad) {
+        left = Math.max(pad, window.innerWidth - menuW - pad);
+      }
+      // Flip above the button when there isn't room below (card / viewport edge).
+      if (top + menuH > window.innerHeight - pad && rect.top - menuH - 4 > pad) {
+        top = rect.top - menuH - 4;
+      }
+      setMenuPos({ top, left });
+    }
+
+    placeMenu();
+    // Re-measure after paint once the menu has real dimensions.
+    const raf = requestAnimationFrame(placeMenu);
+    window.addEventListener("resize", placeMenu);
+    window.addEventListener("scroll", placeMenu, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", placeMenu);
+      window.removeEventListener("scroll", placeMenu, true);
+    };
+  }, [menuId]);
 
   useEffect(() => {
     if (!menuId) return undefined;
     function onDocPointer(e) {
+      const btn = menuButtonRefs.current.get(menuId);
       if (menuRef.current?.contains?.(e.target)) return;
+      if (btn?.contains?.(e.target)) return;
       setMenuId(null);
+      setMenuPos(null);
     }
     function onKey(e) {
-      if (e.key === "Escape") setMenuId(null);
+      if (e.key === "Escape") {
+        setMenuId(null);
+        setMenuPos(null);
+      }
     }
     document.addEventListener("pointerdown", onDocPointer, true);
     document.addEventListener("keydown", onKey);
@@ -62,8 +113,13 @@ export default function RouteOptionsList({
     };
   }, [menuId]);
 
-  function beginRename(opt) {
+  function closeMenu() {
     setMenuId(null);
+    setMenuPos(null);
+  }
+
+  function beginRename(opt) {
+    closeMenu();
     setEditingId(opt.id);
     setEditName(opt.label || "");
   }
@@ -87,6 +143,7 @@ export default function RouteOptionsList({
 
   if (embedded) {
     const showActions = Boolean(onRename || onDelete);
+    const menuOpt = menuId ? options.find((o) => o.id === menuId) : null;
     return (
       <div className="route-options is-embedded">
         <ul className="place-suggest-list route-option-list" role="listbox">
@@ -156,7 +213,7 @@ export default function RouteOptionsList({
                           active ? " is-active" : ""
                         }`}
                         onClick={() => {
-                          setMenuId(null);
+                          closeMenu();
                           onSelect(opt);
                         }}
                       >
@@ -173,59 +230,33 @@ export default function RouteOptionsList({
                         ) : null}
                       </button>
                       {showActions ? (
-                        <div
-                          className="landing-saved-actions"
-                          ref={menuOpen ? menuRef : null}
-                        >
-                          <md-icon-button
-                            type="button"
-                            aria-label={`More actions for ${opt.label}`}
-                            aria-haspopup="menu"
-                            aria-expanded={menuOpen ? "true" : "false"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMenuId((id) => (id === opt.id ? null : opt.id));
+                        <div className="landing-saved-actions">
+                          <div
+                            className="landing-saved-more-wrap"
+                            ref={(el) => {
+                              if (el) menuButtonRefs.current.set(opt.id, el);
+                              else menuButtonRefs.current.delete(opt.id);
                             }}
                           >
-                            <md-icon>more_vert</md-icon>
-                          </md-icon-button>
-                          {menuOpen ? (
-                            <div
-                              className="landing-saved-menu"
-                              role="menu"
-                              aria-label={`${opt.label} actions`}
+                            <md-icon-button
+                              type="button"
+                              aria-label={`More actions for ${opt.label}`}
+                              aria-haspopup="menu"
+                              aria-expanded={menuOpen ? "true" : "false"}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuId((id) => {
+                                  if (id === opt.id) {
+                                    setMenuPos(null);
+                                    return null;
+                                  }
+                                  return opt.id;
+                                });
+                              }}
                             >
-                              {onRename ? (
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  className="landing-saved-menu-item"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    beginRename(opt);
-                                  }}
-                                >
-                                  <md-icon>edit</md-icon>
-                                  <span>Edit name</span>
-                                </button>
-                              ) : null}
-                              {onDelete ? (
-                                <button
-                                  type="button"
-                                  role="menuitem"
-                                  className="landing-saved-menu-item is-danger"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setMenuId(null);
-                                    onDelete(opt);
-                                  }}
-                                >
-                                  <md-icon>delete</md-icon>
-                                  <span>Delete</span>
-                                </button>
-                              ) : null}
-                            </div>
-                          ) : null}
+                              <md-icon>more_vert</md-icon>
+                            </md-icon-button>
+                          </div>
                         </div>
                       ) : null}
                     </>
@@ -235,6 +266,52 @@ export default function RouteOptionsList({
             );
           })}
         </ul>
+        {menuOpt && typeof document !== "undefined"
+          ? createPortal(
+              <div
+                ref={menuRef}
+                className="landing-saved-menu is-portal"
+                role="menu"
+                aria-label={`${menuOpt.label} actions`}
+                style={
+                  menuPos
+                    ? { top: `${menuPos.top}px`, left: `${menuPos.left}px` }
+                    : { top: "-9999px", left: "-9999px", visibility: "hidden" }
+                }
+              >
+                {onRename ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="landing-saved-menu-item"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      beginRename(menuOpt);
+                    }}
+                  >
+                    <md-icon>edit</md-icon>
+                    <span>Edit name</span>
+                  </button>
+                ) : null}
+                {onDelete ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="landing-saved-menu-item is-danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeMenu();
+                      onDelete(menuOpt);
+                    }}
+                  >
+                    <md-icon>delete</md-icon>
+                    <span>Delete</span>
+                  </button>
+                ) : null}
+              </div>,
+              document.body,
+            )
+          : null}
       </div>
     );
   }

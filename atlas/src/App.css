@@ -1011,6 +1011,11 @@ md-icon-button.dir-add-stop:hover {
   height: 18px;
 }
 
+.landing-saved-more-wrap {
+  display: grid;
+  place-items: center;
+}
+
 .landing-saved-menu {
   position: absolute;
   top: calc(100% - 4px);
@@ -1022,6 +1027,15 @@ md-icon-button.dir-add-stop:hover {
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 4px 16px rgba(60, 64, 67, 0.2);
+}
+
+/* Escapes the overflow:hidden saved-routes card */
+.landing-saved-menu.is-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  z-index: 10050;
 }
 
 .landing-saved-menu-item {
