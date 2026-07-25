@@ -708,10 +708,6 @@ export default function DirectionsPanel({
             </span>
             Start
           </md-filled-button>
-          <md-outlined-button type="button" onClick={onAddStop}>
-            <md-icon slot="icon">add</md-icon>
-            Add stops
-          </md-outlined-button>
         </div>
       ) : null}
     </section>

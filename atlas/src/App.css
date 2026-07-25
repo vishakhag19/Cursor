@@ -2748,11 +2748,10 @@ md-text-button {
     border-top: 1px solid #e8eaed;
   }
 
-  .dir-bottom-actions md-filled-button,
-  .dir-bottom-actions md-outlined-button {
+  .dir-bottom-actions md-filled-button {
     flex: 1;
+    width: 100%;
     --md-filled-button-container-shape: 999px;
-    --md-outlined-button-container-shape: 999px;
   }
 
   /* Compact route option rows on phones */
