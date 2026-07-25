@@ -1773,9 +1773,9 @@ md-filled-tonal-button.is-edit-active {
 
 .panel.is-search-chrome .landing-saved {
   margin: 0;
-  padding: 4px 12px 8px;
-  /* ~2 route-option cards + heading; scroll for more */
-  max-height: calc(2 * 72px + 8px + 40px);
+  padding: 4px 12px 4px;
+  /* ~3 system list rows + heading */
+  max-height: calc(3 * 52px + 28px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1796,33 +1796,54 @@ md-filled-tonal-button.is-edit-active {
   z-index: 1;
 }
 
-.panel.is-search-chrome .landing-saved .route-options {
+.panel.is-search-chrome .landing-saved .route-options.is-embedded {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  margin: 0 -12px;
 }
 
-.panel.is-search-chrome .landing-saved .route-option-cards {
+.panel.is-search-chrome .landing-saved .route-option-list.place-suggest-list {
   flex: 1 1 auto;
   min-height: 0;
-  gap: 6px;
+  margin: 0;
+  padding: 0 0 4px;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-.panel.is-search-chrome .landing-saved .route-option-card {
-  padding: 10px 12px;
-  border: none;
-  border-radius: 14px;
-  box-shadow: none;
+/* Flat system rows — not bordered option cards */
+.panel.is-search-chrome .landing-saved .place-suggest-list > li:not(:last-child) .place-suggest-item {
+  border-bottom: none;
 }
 
-.panel.is-search-chrome .landing-saved .route-option-card:hover,
-.panel.is-search-chrome .landing-saved .route-option-card.is-active,
-.panel.is-search-chrome .landing-saved .route-option-row.is-active .route-option-card {
-  border: none;
+.panel.is-search-chrome .landing-saved .landing-saved-item .place-suggest-item {
+  padding: 6px 16px;
+  gap: 0;
+}
+
+.panel.is-search-chrome .landing-saved .landing-saved-item .place-suggest-text {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.panel.is-search-chrome .landing-saved .landing-saved-item .place-suggest-title {
+  max-width: 100%;
+  flex-shrink: 1;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.panel.is-search-chrome .landing-saved .landing-saved-item .place-suggest-sub {
+  flex: 0 1 auto;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .panel.is-search-chrome .landing-saved-list {
@@ -1835,7 +1856,7 @@ md-filled-tonal-button.is-edit-active {
 }
 
 .panel.is-search-chrome .landing-saved-open {
-  padding-left: 4px;
+  padding-left: 16px;
   padding-right: 4px;
 }
 
