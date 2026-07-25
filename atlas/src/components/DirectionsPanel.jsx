@@ -419,6 +419,15 @@ export default function DirectionsPanel({
           <div className="dir-stops-fields">
             {stops.map((stop, i) => {
               const multi = stops.length > 2;
+              const isStart = i === 0;
+              const isDest = i === stops.length - 1;
+              const showSwap = isStart && !multi;
+              const showAdd =
+                isDest &&
+                !(
+                  placeList.open &&
+                  (placeList.items.length > 0 || placeList.loading)
+                );
               const rowClass = [
                 "dir-stop-row",
                 multi ? "has-controls" : "",
@@ -477,9 +486,9 @@ export default function DirectionsPanel({
                   <SuggestInput
                     id={`dir-stop-${i}`}
                     label={
-                      i === 0
+                      isStart
                         ? "Starting point"
-                        : i === stops.length - 1
+                        : isDest
                           ? "Destination"
                           : `Stop ${i}`
                     }
@@ -490,9 +499,9 @@ export default function DirectionsPanel({
                       clearPlaceList();
                     }}
                     placeholder={
-                      i === 0
+                      isStart
                         ? "Choose starting point"
-                        : i === stops.length - 1
+                        : isDest
                           ? "Choose destination"
                           : "Add stop"
                     }
@@ -546,36 +555,45 @@ export default function DirectionsPanel({
                     </div>
                   ) : null}
                 </div>
+
+                {showSwap ? (
+                  <div className="dir-stop-row-action">
+                    <ActionTip tip="Swap start and destination">
+                      <md-icon-button
+                        class="dir-swap"
+                        type="button"
+                        aria-label="Swap start and destination"
+                        onClick={onSwap}
+                      >
+                        <md-icon>swap_vert</md-icon>
+                      </md-icon-button>
+                    </ActionTip>
+                  </div>
+                ) : null}
+
+                {showAdd ? (
+                  <div className="dir-stop-row-action">
+                    <ActionTip tip="Add stop">
+                      <md-icon-button
+                        class="dir-add-stop"
+                        type="button"
+                        aria-label="Add stop"
+                        onClick={() => {
+                          onAddStop?.();
+                          setForceShowStops(true);
+                          if (isMobileSheetViewport()) setSheetSnap("s20");
+                        }}
+                      >
+                        <md-icon>add</md-icon>
+                      </md-icon-button>
+                    </ActionTip>
+                  </div>
+                ) : null}
               </div>
               );
             })}
           </div>
-
-          {stops.length <= 2 ? (
-            <ActionTip tip="Swap start and destination">
-              <md-icon-button
-                class="dir-swap"
-                type="button"
-                aria-label="Swap start and destination"
-                onClick={onSwap}
-              >
-                <md-icon>swap_vert</md-icon>
-              </md-icon-button>
-            </ActionTip>
-          ) : null}
         </div>
-
-        {/* Keep Add stop with the fixed stop fields (not inside the scrolling list). */}
-        {!(placeList.open && (placeList.items.length > 0 || placeList.loading)) ? (
-          <button type="button" className="dir-add-stop" onClick={() => {
-            onAddStop?.();
-            setForceShowStops(true);
-            if (isMobileSheetViewport()) setSheetSnap("s20");
-          }}>
-            <md-icon>add</md-icon>
-            <span className="md-typescale-body-medium">Add stop</span>
-          </button>
-        ) : null}
 
         {placeList.open && (placeList.items.length > 0 || placeList.loading) ? (
           <div className="dir-stop-suggest-scroll">

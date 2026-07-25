@@ -249,8 +249,7 @@ md-icon-button.collapse-panel-btn:hover,
 
 .dir-stops {
   display: grid;
-  /* Equal side columns so left rail and right swap share the same gutter */
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 40px 1fr;
   gap: 4px 8px;
   align-items: stretch;
 }
@@ -307,7 +306,7 @@ md-icon-button.collapse-panel-btn:hover,
 .dir-stop-row {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex-wrap: nowrap;
   min-width: 0;
   width: 100%;
@@ -318,6 +317,29 @@ md-icon-button.collapse-panel-btn:hover,
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
+}
+
+.dir-stop-row-action {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 40px;
+  min-height: 56px;
+}
+
+.dir-stop-row-action .action-tip-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dir-swap,
+md-icon-button.dir-add-stop {
+  width: 40px;
+  height: 40px;
+  margin: 0;
 }
 
 .dir-stop-row .suggest-wrap {
@@ -451,24 +473,11 @@ md-icon-button.collapse-panel-btn:hover,
   align-self: center;
 }
 
-.dir-stops > .action-tip-wrap {
-  align-self: center;
-  justify-self: center;
-}
-
 .dir-add-stop {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: transparent;
   color: var(--md-sys-color-on-surface);
-  padding: 8px 4px;
-  cursor: pointer;
-  font: inherit;
 }
 
-.dir-add-stop:hover {
+md-icon-button.dir-add-stop:hover {
   color: var(--md-sys-color-primary);
 }
 
@@ -3081,9 +3090,8 @@ md-text-button {
     overflow: visible;
   }
 
-  /* Stop fields + Add stop stay pinned; only the place list scrolls. */
-  .panel.is-directions-chrome .dir-stops-block > .dir-stops,
-  .panel.is-directions-chrome .dir-stops-block > .dir-add-stop {
+  /* Stop fields stay pinned; only the place list scrolls. */
+  .panel.is-directions-chrome .dir-stops-block > .dir-stops {
     flex: 0 0 auto;
   }
 
@@ -3101,12 +3109,6 @@ md-text-button {
     max-height: none;
     margin: 0;
     overflow: visible;
-  }
-
-  /* Compact stop fields inside the floating card */
-  .panel.is-directions-chrome .dir-mobile-stop-card .dir-add-stop {
-    display: inline-flex;
-    padding: 6px 8px 4px;
   }
 
   /* Keep origin/destination visible like Google Maps (not hidden after routes). */
@@ -3619,11 +3621,17 @@ md-text-button {
 
 @media (max-width: 480px) {
   .dir-stops {
-    grid-template-columns: 36px 1fr 36px;
+    grid-template-columns: 36px 1fr;
   }
 
-  .dir-stops.has-mid-stops {
-    grid-template-columns: 36px 1fr;
+  .dir-stop-row-action {
+    width: 36px;
+  }
+
+  .dir-swap,
+  md-icon-button.dir-add-stop {
+    width: 36px;
+    height: 36px;
   }
 }
 
@@ -4731,14 +4739,6 @@ md-text-button {
 .dir-route-card.is-active:hover {
   background: var(--atlas-accent-container);
   border-color: var(--atlas-accent);
-}
-
-.dir-add-stop {
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.dir-add-stop:hover {
-  background: var(--atlas-surface-hover);
 }
 
 .route-pref-link:hover {
