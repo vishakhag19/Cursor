@@ -2934,14 +2934,15 @@ md-text-button {
     display: flex;
     flex-direction: column;
     max-height: min(42dvh, 360px);
-    padding: 14px 10px 10px;
+    /* Extra top pad so MD outlined labels ("Starting point") aren't clipped */
+    padding: 22px 10px 10px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
     border-radius: 24px;
     box-shadow:
       0 1px 2px rgba(60, 64, 67, 0.12),
       0 4px 16px rgba(60, 64, 67, 0.18);
-    overflow: hidden;
+    overflow: visible;
     pointer-events: auto;
     isolation: isolate;
     transition: opacity 0.18s ease;
@@ -2949,6 +2950,7 @@ md-text-button {
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
     max-height: min(56dvh, 480px);
+    overflow: hidden;
   }
 
   .panel.is-directions-chrome .dir-stops-block {
@@ -2956,9 +2958,19 @@ md-text-button {
     padding: 0;
     min-height: 0;
     max-height: 100%;
-    overflow: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
+  }
+
+  .panel.is-directions-chrome .dir-stops-block > .dir-stops {
+    overflow: visible;
+  }
+
+  .panel.is-directions-chrome .dir-mobile-stop-card .dir-stop-field,
+  .panel.is-directions-chrome .dir-mobile-stop-card .dir-stop-row,
+  .panel.is-directions-chrome .dir-mobile-stop-card .dir-stops-fields {
+    overflow: visible;
   }
 
   /* Stop fields + Add stop stay pinned; only the place list scrolls. */
@@ -3005,7 +3017,7 @@ md-text-button {
     display: flex;
     flex-direction: column;
     height: 30dvh;
-    max-height: 50dvh;
+    max-height: 100dvh;
     padding: 0;
     background: #fff;
     border: none;
@@ -3015,7 +3027,7 @@ md-text-button {
       0 -8px 28px rgba(60, 64, 67, 0.18);
     overflow: hidden;
     pointer-events: auto;
-    transition: height 0.22s ease, max-height 0.22s ease;
+    transition: height 0.22s ease, max-height 0.22s ease, border-radius 0.22s ease;
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-s10 {
@@ -3037,6 +3049,29 @@ md-text-button {
   .panel.is-directions-chrome .dir-drive-sheet.is-s50 {
     height: 50dvh;
     max-height: 50dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s60 {
+    height: 60dvh;
+    max-height: 60dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s70 {
+    height: 70dvh;
+    max-height: 70dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s80 {
+    height: 80dvh;
+    max-height: 80dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s90 {
+    height: 90dvh;
+    max-height: 90dvh;
+  }
+  .panel.is-directions-chrome .dir-drive-sheet.is-s100 {
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    /* Cover the floating stops card so the drawer truly fills the screen */
+    z-index: 5;
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-travel-modes,
@@ -3178,6 +3213,27 @@ md-text-button {
   .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s50)
     .map-controls {
     bottom: calc(50dvh + 12px);
+  }
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s60)
+    .map-controls {
+    bottom: calc(60dvh + 12px);
+  }
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s70)
+    .map-controls {
+    bottom: calc(70dvh + 12px);
+  }
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s80)
+    .map-controls {
+    bottom: calc(80dvh + 12px);
+  }
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s90)
+    .map-controls {
+    bottom: calc(90dvh + 12px);
+  }
+  .app:has(.panel.is-directions-chrome):has(.directions-panel.is-sheet-s100)
+    .map-controls {
+    bottom: auto;
+    top: max(12px, env(safe-area-inset-top, 0px));
   }
 
   .app.panel-collapsed .panel.is-directions-chrome {

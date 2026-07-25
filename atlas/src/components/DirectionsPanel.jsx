@@ -14,15 +14,32 @@ const AVOID_CHIP_FIELDS = ROUTE_OPTION_FIELDS.filter((f) =>
   ["avoidTolls", "avoidHighways", "avoidFerries"].includes(f.id),
 );
 
-/** Sheet heights as fractions of the viewport — max 50% so the map stays visible. */
-const SHEET_SNAPS = ["s10", "s20", "s30", "s40", "s50"];
+/** Sheet heights as fractions of the viewport — 10% steps up to full screen. */
+const SHEET_SNAPS = [
+  "s10",
+  "s20",
+  "s30",
+  "s40",
+  "s50",
+  "s60",
+  "s70",
+  "s80",
+  "s90",
+  "s100",
+];
 const SHEET_FRACTIONS = {
   s10: 0.1,
   s20: 0.2,
   s30: 0.3,
   s40: 0.4,
   s50: 0.5,
+  s60: 0.6,
+  s70: 0.7,
+  s80: 0.8,
+  s90: 0.9,
+  s100: 1,
 };
+const SHEET_MAX_SNAP = SHEET_SNAPS[SHEET_SNAPS.length - 1];
 
 function isMobileSheetViewport() {
   return (
@@ -341,7 +358,7 @@ export default function DirectionsPanel({
     drag.lastY = e.clientY;
     drag.lastT = now;
     const minH = drag.heights.s10;
-    const maxH = drag.heights.s50;
+    const maxH = drag.heights[SHEET_MAX_SNAP];
     const next = Math.min(
       maxH,
       Math.max(minH, drag.startHeight - (e.clientY - drag.startY)),
@@ -354,7 +371,7 @@ export default function DirectionsPanel({
     const drag = sheetDragRef.current;
     if (!drag || (e && drag.pointerId !== e.pointerId)) return;
     const minH = drag.heights.s10;
-    const maxH = drag.heights.s50;
+    const maxH = drag.heights[SHEET_MAX_SNAP];
     const height =
       drag.currentHeight ??
       Math.min(

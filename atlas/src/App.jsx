@@ -162,7 +162,7 @@ export default function App() {
   const [ctx, setCtx] = useState(null);
   /** Search panel list / place / focus — drives mobile history sync. */
   const [searchBackable, setSearchBackable] = useState(false);
-  /** Mobile Drive sheet height as fraction of viewport (0.1–0.5). */
+  /** Mobile Drive sheet height as fraction of viewport (0.1–1.0). */
   const [sheetHeightFrac, setSheetHeightFrac] = useState(0.3);
   const [followingLocation, setFollowingLocation] = useState(false);
   const suppressMapClickUntil = useRef(0);
