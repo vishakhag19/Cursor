@@ -1,4 +1,4 @@
-/* Material Design 3 theme for Atlas
+/* Material Design 3 theme for Maps
  * Brand accent = Google Maps blue (#1A73E8). All interactive chrome
  * (buttons, chips, FABs, selected states, focus) should use these tokens.
  */
@@ -15,7 +15,7 @@
   --md-sys-shape-corner-large: 16px;
   --md-sys-shape-corner-extra-large: 28px;
 
-  /* —— Atlas interactive palette (single source of truth) —— */
+  /* —— Maps interactive palette (single source of truth) —— */
   --atlas-accent: #1a73e8;
   --atlas-accent-hover: #1765cc;
   --atlas-accent-pressed: #174ea6;
