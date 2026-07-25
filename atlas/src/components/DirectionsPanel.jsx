@@ -53,6 +53,7 @@ export default function DirectionsPanel({
   onRoutePrefsChange = null,
 }) {
   const [activeStop, setActiveStop] = useState(null);
+  const activeStopRef = useRef(null);
   const [forceShowStops, setForceShowStops] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -69,6 +70,11 @@ export default function DirectionsPanel({
     select: null,
   });
   const wasLoadingRef = useRef(false);
+
+  function setActiveStopIndex(index) {
+    activeStopRef.current = index;
+    setActiveStop(index);
+  }
 
   function clearDragGhost() {
     const ghost = dragGhostRef.current;
@@ -126,16 +132,18 @@ export default function DirectionsPanel({
   function handleListChange(index, payload) {
     // Opening always wins for that field (activeStop setState can lag focus).
     if (payload.open) {
-      setActiveStop(index);
+      setActiveStopIndex(index);
       setPlaceList(payload);
       return;
     }
     // Ignore close events from fields that no longer own the list.
-    setActiveStop((current) => {
-      if (current != null && current !== index) return current;
-      setPlaceList(payload);
-      return current === index ? null : current;
-    });
+    if (activeStopRef.current != null && activeStopRef.current !== index) {
+      return;
+    }
+    setPlaceList(payload);
+    if (activeStopRef.current === index) {
+      setActiveStopIndex(null);
+    }
   }
 
   function clearPlaceList() {
@@ -146,7 +154,7 @@ export default function DirectionsPanel({
       loading: false,
       select: null,
     });
-    setActiveStop(null);
+    setActiveStopIndex(null);
   }
 
   useEffect(() => {
@@ -397,7 +405,7 @@ export default function DirectionsPanel({
                     near={near}
                     onRequestLocation={onRequestLocation}
                     externalList
-                    onFocusField={() => setActiveStop(i)}
+                    onFocusField={() => setActiveStopIndex(i)}
                     onListChange={(payload) => handleListChange(i, payload)}
                   />
                   {multi ? (
