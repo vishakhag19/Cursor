@@ -1,5 +1,5 @@
 /**
- * Register Material Web (Material Design 3) custom elements used by Atlas.
+ * Register Material Web (Material Design 3) custom elements used by Maps.
  * @see https://github.com/material-components/material-web/tree/main/docs
  */
 import "@material/web/button/filled-button.js";

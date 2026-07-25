@@ -1,4 +1,4 @@
-# Atlas
+# Maps
 
 Google Maps–style web app built with **Material Design 3** ([Material Web](https://github.com/material-components/material-web)) — place search, directions, custom route creation, and live geolocation.
 

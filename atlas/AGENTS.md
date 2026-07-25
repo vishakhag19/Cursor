@@ -1,6 +1,6 @@
-# Atlas product rules (agent memory)
+# Maps product rules (agent memory)
 
-Keep these constraints in mind for all Atlas UI and routing work.
+Keep these constraints in mind for all Maps UI and routing work.
 
 ## 1. Search input + suggestion list (Google Maps style)
 

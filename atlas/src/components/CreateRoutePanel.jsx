@@ -47,7 +47,7 @@ export default function CreateRoutePanel({
   return (
     <section className="mode-panel create-panel">
       <p className="hint tight md-typescale-body-medium">
-        Add stops in the order you want to visit them. Atlas builds Fastest and
+        Add stops in the order you want to visit them. Maps builds Fastest and
         Shortest options through <em>your</em> stops — it won’t redirect unless
         you pick another option.
       </p>

@@ -113,7 +113,7 @@ async function nominatimSearch(
   const res = await fetch(url.toString(), {
     headers: {
       Accept: "application/json",
-      "User-Agent": "AtlasMaps/1.0 (route editor)",
+      "User-Agent": "Maps/1.0 (route editor)",
     },
     signal: AbortSignal.timeout(8000),
   });
@@ -231,7 +231,7 @@ async function nominatimStreetSearch(
   const res = await fetch(url.toString(), {
     headers: {
       Accept: "application/json",
-      "User-Agent": "AtlasMaps/1.0 (route editor)",
+      "User-Agent": "Maps/1.0 (route editor)",
     },
     signal: AbortSignal.timeout(8000),
   });

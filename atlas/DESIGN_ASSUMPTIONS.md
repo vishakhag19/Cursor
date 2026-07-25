@@ -2,7 +2,7 @@
 
 Flagged guesses from the route-control suite implementation (not product-final):
 
-1. **Brand label** — panel chrome shows “Maps” (Google Maps–style short name). Confirm vs keeping “Atlas”.
+1. **Brand label** — product name is **Maps** (document title and user-facing copy).
 2. **Traffic** — mock light/moderate/heavy from duration + turn density + route id hash. No live traffic API.
 3. **Highway / road-quality metrics** — inferred from OSRM step names & maneuver types (not OSM `highway=*` tags).
 4. **Route options** — Avoid tolls / highways / ferries + Prefer fuel-efficient, with In your vehicle (avatar, toll pass prices, engine type). Instant toggles; no Apply button.

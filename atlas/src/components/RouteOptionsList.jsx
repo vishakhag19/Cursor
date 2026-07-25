@@ -29,7 +29,7 @@ export default function RouteOptionsList({
         )}
       </div>
       <p className="hint tight md-typescale-body-small">
-        Pick the route you want. Atlas will not switch it mid-trip unless you
+        Pick the route you want. Maps will not switch it mid-trip unless you
         choose another option.
       </p>
       <div className="route-option-cards">

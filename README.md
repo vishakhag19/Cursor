@@ -1,6 +1,6 @@
 # Cursor
 
-This repo hosts **Atlas**, a Google Maps–style clone with custom route creation.
+This repo hosts **Maps**, a Google Maps–style clone with custom route creation.
 
 ```bash
 cd atlas
