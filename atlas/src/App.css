@@ -316,13 +316,13 @@ md-icon-button.collapse-panel-btn:hover,
 
 .dir-stops {
   display: grid;
-  grid-template-columns: 40px 1fr;
-  gap: 4px 8px;
+  grid-template-columns: 20px 1fr;
+  gap: 4px;
   align-items: stretch;
 }
 
 .dir-stops.has-mid-stops {
-  grid-template-columns: 40px 1fr;
+  grid-template-columns: 20px 1fr;
 }
 
 .dir-stops-rail {
@@ -4344,7 +4344,7 @@ md-text-button {
 
 @media (max-width: 480px) {
   .dir-stops {
-    grid-template-columns: 36px 1fr;
+    grid-template-columns: 18px 1fr;
   }
 
   .dir-stop-row-action {
