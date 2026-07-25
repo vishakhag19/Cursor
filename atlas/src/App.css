@@ -69,7 +69,7 @@
   flex-shrink: 0;
 }
 
-/* Match floating Open panel chevron (circular chip + weight) */
+/* Same hit target / glyph weight as Open panel; no chip fill until hover */
 .collapse-panel-btn {
   width: var(--panel-control-size);
   height: var(--panel-control-size);
@@ -77,12 +77,17 @@
   flex-shrink: 0;
   border: none;
   border-radius: 999px;
-  background: #f1f3f4;
+  background: transparent;
   --md-icon-button-icon-size: 28px;
   --md-icon-size: 28px;
   --md-icon-button-icon-color: #3c4043;
   --md-icon-button-state-layer-width: var(--panel-control-size);
   --md-icon-button-state-layer-height: var(--panel-control-size);
+}
+
+md-icon-button.collapse-panel-btn:hover,
+.collapse-panel-btn:hover {
+  background: #f1f3f4;
 }
 
 .brand {
