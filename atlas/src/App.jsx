@@ -1921,29 +1921,9 @@ export default function App() {
       className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${roadPickMode ? "road-pick-mode" : ""}`}
     >
       <aside
-        className={`panel m3-surface ${view === "search" ? "is-search-chrome" : ""}`}
+        className={`panel m3-surface ${view === "search" ? "is-search-chrome" : "is-directions-chrome"}`}
         aria-label="Map tools"
       >
-        {view !== "search" ? (
-          <header className="panel-header panel-header-compact">
-            <ActionTip tip="Collapse panel">
-              <md-icon-button
-                type="button"
-                class="collapse-panel-btn"
-                onClick={() => {
-                  setPanelOpen(false);
-                  setPrefsOpen(false);
-                  setRoadRulesOpen(false);
-                  setAssistantOpen(false);
-                }}
-                aria-label="Collapse panel"
-              >
-                <md-icon>{isCompact ? "expand_less" : "chevron_left"}</md-icon>
-              </md-icon-button>
-            </ActionTip>
-          </header>
-        ) : null}
-
         {view === "search" && (
           <SearchPanel
             query={searchQuery}
@@ -1991,6 +1971,13 @@ export default function App() {
             onRemoveStop={removeStop}
             onMoveStop={moveStop}
             onSwap={swapStops}
+            collapseIcon={isCompact ? "expand_less" : "chevron_left"}
+            onCollapsePanel={() => {
+              setPanelOpen(false);
+              setPrefsOpen(false);
+              setRoadRulesOpen(false);
+              setAssistantOpen(false);
+            }}
             onClose={() => {
               setPrefsOpen(false);
               setView("search");
