@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import RouteEditorLayer from "./RouteEditorLayer";
+import { formatDuration } from "../utils/format";
 
 const DEFAULT_CENTER = [37.7749, -122.4194];
 const DEFAULT_ZOOM = 13;
@@ -48,27 +49,28 @@ function pinIcon(kind = "default") {
   return icon;
 }
 
-const ROUTE_NUM_ICON_CACHE = new Map();
-function routeNumberIcon(num, active = false) {
-  const key = `${num}-${active ? 1 : 0}`;
-  const cached = ROUTE_NUM_ICON_CACHE.get(key);
+const ROUTE_TIME_ICON_CACHE = new Map();
+function routeTimeIcon(label, active = false) {
+  const key = `${label}-${active ? 1 : 0}`;
+  const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
-  const bg = active ? ROUTE_BLUE : "#fff";
-  const fg = active ? "#fff" : ROUTE_BLUE;
-  const border = ROUTE_BLUE;
+  // Offset above the route line, same idea as the via × control.
   const icon = L.divIcon({
-    className: "atlas-route-num",
-    html: `<div class="map-route-num ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE};background:${bg};color:${fg};border-color:${border}">${num}</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    className: "atlas-route-time",
+    html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${label}</div>`,
+    iconSize: [1, 1],
+    iconAnchor: [0, 28],
   });
-  ROUTE_NUM_ICON_CACHE.set(key, icon);
+  ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
 }
 
-function geometryMidpoint(geometry) {
+function geometryLabelPoint(geometry, fraction = 0.5) {
   if (!geometry?.length) return null;
-  const i = Math.floor(geometry.length / 2);
+  const i = Math.min(
+    geometry.length - 1,
+    Math.max(0, Math.floor(geometry.length * fraction)),
+  );
   const pt = geometry[i];
   if (!pt) return null;
   return { lat: pt[0], lng: pt[1] };
@@ -596,27 +598,28 @@ export default function MapView({
           );
         })}
 
-      {/* Numbered badges match the panel list (1, 2, 3…) in bright blue */}
-      {!showRouteEditor &&
-        routeOptions.map((opt, index) => {
-          const mid = geometryMidpoint(opt?.geometry);
-          if (!mid) return null;
-          const active = opt.id === selectedRouteId;
-          return (
-            <Marker
-              key={`num-${opt.id}`}
-              position={[mid.lat, mid.lng]}
-              icon={routeNumberIcon(index + 1, active)}
-              zIndexOffset={active ? 1600 : 1400}
-              eventHandlers={{
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  onSelectRoute?.(opt);
-                },
-              }}
-            />
-          );
-        })}
+      {/* Travel-time chips sit beside the route, like the via × control */}
+      {routeOptions.map((opt, index) => {
+        const fraction = 0.38 + (index % 3) * 0.12;
+        const mid = geometryLabelPoint(opt?.geometry, fraction);
+        if (!mid) return null;
+        const active = opt.id === selectedRouteId;
+        const label = formatDuration(opt.duration);
+        return (
+          <Marker
+            key={`time-${opt.id}`}
+            position={[mid.lat, mid.lng]}
+            icon={routeTimeIcon(label, active)}
+            zIndexOffset={active ? 1600 : 1400}
+            eventHandlers={{
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
+                onSelectRoute?.(opt);
+              },
+            }}
+          />
+        );
+      })}
 
       {showRouteEditor && (
         <RouteEditorLayer

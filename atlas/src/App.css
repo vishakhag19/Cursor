@@ -948,6 +948,35 @@ md-icon.is-filled {
   border-color: var(--atlas-accent);
 }
 
+.atlas-route-time {
+  background: transparent !important;
+  border: none !important;
+}
+
+.map-route-time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--atlas-control-outline, #dadce0);
+  border-radius: 999px;
+  background: #fff;
+  color: #3c4043;
+  font: 600 12px/1.2 Roboto, system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(60, 64, 67, 0.15);
+  transform: translate(-50%, -100%);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.map-route-time.is-active {
+  background: var(--route-blue, #1a73e8);
+  border-color: var(--route-blue, #1a73e8);
+  color: #fff;
+}
+
 .atlas-route-num {
   background: transparent !important;
   border: none !important;
