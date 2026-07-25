@@ -194,13 +194,30 @@ export default function DirectionsPanel({
     setDragOver(index);
   }
 
+  function detachStopDragListeners() {
+    const drag = stopDragRef.current;
+    if (!drag) return;
+    if (drag.onMove) {
+      window.removeEventListener("pointermove", drag.onMove);
+    }
+    if (drag.onUp) {
+      window.removeEventListener("pointerup", drag.onUp);
+      window.removeEventListener("pointercancel", drag.onUp);
+    }
+    if (drag.raf != null) {
+      cancelAnimationFrame(drag.raf);
+      drag.raf = null;
+    }
+  }
+
   function placeDragGhost(clientX, clientY) {
     const ghost = dragGhostRef.current;
     if (!ghost) return;
     const w = ghost.offsetWidth || 260;
     const h = ghost.offsetHeight || 48;
-    ghost.style.top = `${Math.max(8, clientY - h / 2)}px`;
-    ghost.style.left = `${Math.max(8, clientX - Math.min(56, w / 3))}px`;
+    const x = Math.max(8, clientX - Math.min(56, w / 3));
+    const y = Math.max(8, clientY - h / 2);
+    ghost.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
   function ensureDragGhost(index) {
@@ -227,86 +244,130 @@ export default function DirectionsPanel({
     return ghost;
   }
 
-  function stopIndexFromPoint(clientX, clientY) {
-    const stack = document.elementsFromPoint(clientX, clientY);
-    for (const el of stack) {
-      const row = el?.closest?.(".dir-stop-row");
-      if (!row) continue;
-      const parent = row.parentElement;
-      if (!parent) continue;
-      const rows = [...parent.querySelectorAll(":scope > .dir-stop-row")];
-      const idx = rows.indexOf(row);
-      if (idx >= 0) return idx;
+  /** Prefer row midpoints so drop target updates as soon as the finger crosses. */
+  function stopIndexFromClientY(clientY) {
+    const rows = document.querySelectorAll(
+      ".dir-stops-fields > .dir-stop-row",
+    );
+    if (!rows.length) return dragOverRef.current;
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < rows.length; i += 1) {
+      const rect = rows[i].getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      const dist = Math.abs(clientY - mid);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
     }
-    return dragOverRef.current;
+    return best;
   }
 
   function beginStopPointerDrag(e, index) {
     if (!onMoveStop || stops.length < 2) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Kill sheet / scroll gestures immediately — drag starts on slightest touch.
+    e.preventDefault();
     e.stopPropagation();
+    detachStopDragListeners();
+
+    const handle = e.currentTarget;
     try {
-      e.currentTarget.setPointerCapture?.(e.pointerId);
+      handle.setPointerCapture?.(e.pointerId);
     } catch {
       /* ignore */
     }
+
+    const onMove = (ev) => {
+      const drag = stopDragRef.current;
+      if (!drag || drag.pointerId !== ev.pointerId) return;
+      if (ev.cancelable) ev.preventDefault();
+      drag.lastX = ev.clientX;
+      drag.lastY = ev.clientY;
+      if (!drag.active) {
+        // 1px — effectively the slightest touch starts the drag.
+        if (
+          Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < 1
+        ) {
+          return;
+        }
+        drag.active = true;
+        ensureDragGhost(drag.from);
+        placeDragGhost(ev.clientX, ev.clientY);
+      }
+      if (drag.raf != null) return;
+      drag.raf = requestAnimationFrame(() => {
+        const d = stopDragRef.current;
+        if (!d) return;
+        d.raf = null;
+        if (!d.active) return;
+        placeDragGhost(d.lastX, d.lastY);
+        const over = stopIndexFromClientY(d.lastY);
+        if (over != null && over !== dragOverRef.current) {
+          setDropTarget(over);
+        }
+      });
+    };
+
+    const onUp = (ev) => {
+      const drag = stopDragRef.current;
+      if (!drag || (ev && drag.pointerId !== ev.pointerId)) return;
+      const from = drag.from;
+      const to = dragOverRef.current;
+      const wasActive = drag.active;
+      detachStopDragListeners();
+      try {
+        handle.releasePointerCapture?.(drag.pointerId);
+      } catch {
+        /* ignore */
+      }
+      stopDragRef.current = null;
+      document.body.classList.remove("is-stop-reordering");
+      clearDragGhost();
+      setDragFrom(null);
+      setDropTarget(null);
+      if (
+        wasActive &&
+        onMoveStop &&
+        to != null &&
+        from !== to &&
+        to >= 0 &&
+        to < stops.length
+      ) {
+        onMoveStop(from, to);
+      }
+    };
+
     stopDragRef.current = {
       from: index,
       pointerId: e.pointerId,
       startY: e.clientY,
       startX: e.clientX,
+      lastX: e.clientX,
+      lastY: e.clientY,
       active: false,
+      raf: null,
+      onMove,
+      onUp,
     };
     setDragFrom(index);
     setDropTarget(index);
-  }
 
-  function moveStopPointerDrag(e) {
-    const drag = stopDragRef.current;
-    if (!drag || drag.pointerId !== e.pointerId) return;
-    const dy = e.clientY - drag.startY;
-    const dx = e.clientX - drag.startX;
-    if (!drag.active) {
-      if (Math.hypot(dx, dy) < 8) return;
-      drag.active = true;
-      document.body.classList.add("is-stop-reordering");
-      ensureDragGhost(drag.from);
-    }
-    if (e.cancelable) e.preventDefault();
-    placeDragGhost(e.clientX, e.clientY);
-    const over = stopIndexFromPoint(e.clientX, e.clientY);
-    if (over != null && over !== dragOverRef.current) {
-      setDropTarget(over);
-    }
-  }
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
 
-  function endStopPointerDrag(e) {
-    const drag = stopDragRef.current;
-    if (!drag || (e && drag.pointerId !== e.pointerId)) return;
-    const from = drag.from;
-    const to = dragOverRef.current;
-    const wasActive = drag.active;
-    stopDragRef.current = null;
-    document.body.classList.remove("is-stop-reordering");
-    clearDragGhost();
-    setDragFrom(null);
-    setDropTarget(null);
-    if (
-      wasActive &&
-      onMoveStop &&
-      to != null &&
-      from !== to &&
-      to >= 0 &&
-      to < stops.length
-    ) {
-      onMoveStop(from, to);
-    }
+    // Block competing scroll immediately; ghost appears on the first 1px move.
+    document.body.classList.add("is-stop-reordering");
   }
 
   useEffect(
     () => () => {
+      detachStopDragListeners();
       clearDragGhost();
       document.body.classList.remove("is-stop-reordering");
+      stopDragRef.current = null;
     },
     [],
   );
@@ -750,9 +811,6 @@ export default function DirectionsPanel({
                           aria-label="Drag to reorder stop"
                           title="Drag to reorder"
                           onPointerDown={(e) => beginStopPointerDrag(e, i)}
-                          onPointerMove={moveStopPointerDrag}
-                          onPointerUp={endStopPointerDrag}
-                          onPointerCancel={endStopPointerDrag}
                           onKeyDown={(e) => {
                             if (!onMoveStop) return;
                             if (e.key === "ArrowUp" && i > 0) {
