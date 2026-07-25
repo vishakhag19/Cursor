@@ -468,10 +468,16 @@ export default function DirectionsPanel({
     null;
   const sheetChromeOnly = sheetSnap === "s10" && sheetDragPx == null;
 
-  // Exact route id first; endpoint-tight fingerprint if ids were regenerated.
+  // Exact route id, loaded-saved id (`saved-${entry.id}`), or geometry fingerprint.
   const savedMatch =
     selectedRoute &&
-    (savedRoutes.find((s) => s.route?.id && s.route.id === selectedRoute.id) ||
+    (savedRoutes.find(
+      (s) =>
+        (s.route?.id && s.route.id === selectedRoute.id) ||
+        (s.route?.id && s.route.id === selectedRoute.originalRouteId) ||
+        (selectedRoute.savedEntryId && selectedRoute.savedEntryId === s.id) ||
+        selectedRoute.id === `saved-${s.id}`,
+    ) ||
       savedRoutes.find((s) => {
         const r = s.route;
         if (!r?.geometry?.length || !selectedRoute.geometry?.length) return false;

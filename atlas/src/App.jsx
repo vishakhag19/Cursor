@@ -1245,6 +1245,9 @@ export default function App() {
       setTravelMode(entry.travelMode || "driving");
       const restored = {
         ...entry.route,
+        // Keep a stable link back to the saved entry for the bookmark state.
+        originalRouteId: entry.route.id,
+        savedEntryId: entry.id,
         id: `saved-${entry.id}`,
         edited: true,
         badge: entry.route.edited ? "Saved custom route" : "Saved route",
