@@ -3279,14 +3279,19 @@ md-text-button {
     flex-shrink: 0;
   }
 
-  /* Steps visible once the sheet is tall enough to scroll */
+  /* Steps below route details once the sheet is tall enough to scroll */
   .panel.is-directions-chrome .dir-inline-steps {
     display: none;
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-s30 .dir-inline-steps,
   .panel.is-directions-chrome .dir-drive-sheet.is-s40 .dir-inline-steps,
-  .panel.is-directions-chrome .dir-drive-sheet.is-s50 .dir-inline-steps {
+  .panel.is-directions-chrome .dir-drive-sheet.is-s50 .dir-inline-steps,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s60 .dir-inline-steps,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s70 .dir-inline-steps,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s80 .dir-inline-steps,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s90 .dir-inline-steps,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s100 .dir-inline-steps {
     display: block;
     max-height: none;
   }
