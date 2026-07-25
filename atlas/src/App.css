@@ -1464,7 +1464,6 @@ md-filled-tonal-button.is-edit-active {
 }
 
 @media (max-width: 800px) {
-  .panel.is-search-chrome,
   .panel.is-directions-chrome {
     padding-top: max(10px, env(safe-area-inset-top, 0px));
   }
@@ -2704,8 +2703,7 @@ md-text-button {
 
   /*
    * Search: transparent full-screen host + inner rounded card.
-   * Default: pinned to the top with 16px left/right margins.
-   * Card radius lives on .search-panel so all four corners stay round.
+   * Default: pinned to the top with a hard 16px gap from left/right edges.
    */
   .panel.is-search-chrome {
     inset: 0;
@@ -2713,26 +2711,25 @@ md-text-button {
     max-width: none;
     max-height: none;
     transform: none;
-    padding: max(16px, env(safe-area-inset-top, 0px)) 16px 16px;
+    padding: 0;
     background: transparent;
     border: none;
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
     pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
+    display: block;
+    box-sizing: border-box;
   }
 
   .panel.is-search-chrome .search-panel {
     pointer-events: auto;
-    width: 100%;
-    max-width: none;
+    box-sizing: border-box;
+    width: calc(100% - 32px);
+    max-width: calc(100% - 32px);
     max-height: min(72dvh, 560px);
     min-height: 0;
-    margin: 0;
+    margin: max(16px, env(safe-area-inset-top, 0px)) 16px 0;
     padding: 10px 12px 12px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
