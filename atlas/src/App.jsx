@@ -581,7 +581,9 @@ export default function App() {
         const y =
           screenPos?.y ??
           (typeof window !== "undefined" ? window.innerHeight / 2 : 200);
-        setCtx({ latlng, x, y });
+        // Prefetch road name while the Prefer/Avoid/Never sheet is open.
+        const roadPromise = resolveRoadAt(latlng);
+        setCtx({ latlng, x, y, roadPromise });
         setRoadPickMode(false);
         showStatus("Choose Prefer, Avoid, or Never for this road", 3200);
         return;
@@ -913,26 +915,31 @@ export default function App() {
 
   /** Force the route off a road near `latlng`, or just add to Avoided list. */
   const avoidStreetAt = useCallback(
-    async (latlng, { roadName = null, reshapeRoute = true } = {}) => {
+    async (
+      latlng,
+      { roadName = null, reshapeRoute = true, focus: focusOverride = null } = {},
+    ) => {
       let name = roadName;
-      let focus = { lat: latlng.lat, lng: latlng.lng };
-      try {
-        const snapped = await nearestRoadPoint(
-          latlng.lat,
-          latlng.lng,
-          routingModeFor(travelMode),
-        );
-        focus = { lat: snapped.lat, lng: snapped.lng };
-        name = name || snapped.name || null;
-      } catch {
-        /* use raw point */
-      }
-      if (!name) {
+      let focus = focusOverride || { lat: latlng.lat, lng: latlng.lng };
+      if (!focusOverride || !name) {
         try {
-          const place = await reverseGeocode(focus.lat, focus.lng);
-          name = place.address?.road || place.name || "this street";
+          const snapped = await nearestRoadPoint(
+            latlng.lat,
+            latlng.lng,
+            routingModeFor(travelMode),
+          );
+          if (!focusOverride) focus = { lat: snapped.lat, lng: snapped.lng };
+          name = name || snapped.name || null;
         } catch {
-          name = "this street";
+          /* use raw point */
+        }
+        if (!name) {
+          try {
+            const place = await reverseGeocode(focus.lat, focus.lng);
+            name = place.address?.road || place.name || "this street";
+          } catch {
+            name = "this street";
+          }
         }
       }
 
@@ -1545,8 +1552,8 @@ export default function App() {
   }, []);
 
   const applyRoadRuleAt = useCallback(
-    async (latlng, mode) => {
-      const road = await resolveRoadAt(latlng);
+    async (latlng, mode, roadOrPromise = null) => {
+      const road = await (roadOrPromise || resolveRoadAt(latlng));
       let addedId = null;
       setRoadRules((prev) => {
         const next = upsertRoadRule(prev, {
@@ -1558,22 +1565,6 @@ export default function App() {
         addedId = next[0]?.id ?? null;
         return next;
       });
-      // Soft trip avoid still reshapes when "avoid" / "never" and a route is live.
-      if (
-        (mode === "avoid" || mode === "never") &&
-        routeGeometryRef.current?.length
-      ) {
-        await avoidStreetAt(latlng, {
-          roadName: road.name,
-          reshapeRoute: true,
-        });
-      } else if (mode === "prefer" && routeGeometryRef.current?.length) {
-        try {
-          await preferStreetNamed(road.name);
-        } catch {
-          /* keep list update even if prefer snap fails */
-        }
-      }
       // Re-rank cards so Prefer/Avoid/Never change recommendation order.
       setRouteOptions((prev) => {
         if (prev.length < 2) return prev;
@@ -1590,9 +1581,51 @@ export default function App() {
           },
         ]);
       });
+
+      // Reshape in the background — never block returning to Route options.
+      if (
+        (mode === "avoid" || mode === "never") &&
+        routeGeometryRef.current?.length
+      ) {
+        void avoidStreetAt(latlng, {
+          roadName: road.name,
+          focus: { lat: road.lat, lng: road.lng },
+          reshapeRoute: true,
+        }).catch(() => {});
+      } else if (mode === "prefer" && routeGeometryRef.current?.length) {
+        void (async () => {
+          try {
+            ensureEditSession();
+            const via = {
+              id: uid(),
+              lat: road.lat,
+              lng: road.lng,
+              name: road.name,
+            };
+            await enqueueEdit(async () => {
+              const next = [...editViasRef.current, via];
+              await rebuildFromVias(next, {
+                pushHistory: true,
+                preserveOrder: false,
+              });
+            });
+          } catch {
+            /* keep list update even if prefer snap fails */
+          }
+        })();
+      }
+
       return { name: road.name, id: addedId };
     },
-    [resolveRoadAt, avoidStreetAt, preferStreetNamed, routePrefs, roadRules],
+    [
+      resolveRoadAt,
+      avoidStreetAt,
+      ensureEditSession,
+      enqueueEdit,
+      rebuildFromVias,
+      routePrefs,
+      roadRules,
+    ],
   );
 
   const applyTypedRoadRule = useCallback(
@@ -1635,45 +1668,85 @@ export default function App() {
           id: "prefer-road",
           label: "Prefer this road",
           icon: "thumb_up",
-          onClick: async () => {
-            try {
-              const { name, id } = await applyRoadRuleAt(ctx.latlng, "prefer");
-              showStatus(`Preferring ${name}`);
-              openPrefsWithRoadRules(id);
-            } catch (err) {
-              showStatus(err.message || "Could not set road rule");
-              restoreAfterRoadPick();
-            }
+          onClick: () => {
+            const { latlng, roadPromise } = ctx;
+            // Return to Route options immediately; finish save/reshape in background.
+            openPrefsWithRoadRules(null);
+            void (async () => {
+              try {
+                const { name, id } = await applyRoadRuleAt(
+                  latlng,
+                  "prefer",
+                  roadPromise,
+                );
+                if (id) {
+                  setHighlightedRoadRuleId(id);
+                  clearTimeout(highlightTimerRef.current);
+                  highlightTimerRef.current = setTimeout(() => {
+                    setHighlightedRoadRuleId(null);
+                  }, 4500);
+                }
+                showStatus(`Preferring ${name}`);
+              } catch (err) {
+                showStatus(err.message || "Could not set road rule");
+              }
+            })();
           },
         },
         {
           id: "avoid-road",
           label: "Avoid this road",
           icon: "do_not_disturb_on",
-          onClick: async () => {
-            try {
-              const { name, id } = await applyRoadRuleAt(ctx.latlng, "avoid");
-              showStatus(`Avoiding ${name}`);
-              openPrefsWithRoadRules(id);
-            } catch (err) {
-              showStatus(err.message || "Could not set road rule");
-              restoreAfterRoadPick();
-            }
+          onClick: () => {
+            const { latlng, roadPromise } = ctx;
+            openPrefsWithRoadRules(null);
+            void (async () => {
+              try {
+                const { name, id } = await applyRoadRuleAt(
+                  latlng,
+                  "avoid",
+                  roadPromise,
+                );
+                if (id) {
+                  setHighlightedRoadRuleId(id);
+                  clearTimeout(highlightTimerRef.current);
+                  highlightTimerRef.current = setTimeout(() => {
+                    setHighlightedRoadRuleId(null);
+                  }, 4500);
+                }
+                showStatus(`Avoiding ${name}`);
+              } catch (err) {
+                showStatus(err.message || "Could not set road rule");
+              }
+            })();
           },
         },
         {
           id: "never-road",
           label: "Never use this road",
           icon: "block",
-          onClick: async () => {
-            try {
-              const { name, id } = await applyRoadRuleAt(ctx.latlng, "never");
-              showStatus(`Never use ${name}`);
-              openPrefsWithRoadRules(id);
-            } catch (err) {
-              showStatus(err.message || "Could not set road rule");
-              restoreAfterRoadPick();
-            }
+          onClick: () => {
+            const { latlng, roadPromise } = ctx;
+            openPrefsWithRoadRules(null);
+            void (async () => {
+              try {
+                const { name, id } = await applyRoadRuleAt(
+                  latlng,
+                  "never",
+                  roadPromise,
+                );
+                if (id) {
+                  setHighlightedRoadRuleId(id);
+                  clearTimeout(highlightTimerRef.current);
+                  highlightTimerRef.current = setTimeout(() => {
+                    setHighlightedRoadRuleId(null);
+                  }, 4500);
+                }
+                showStatus(`Never use ${name}`);
+              } catch (err) {
+                showStatus(err.message || "Could not set road rule");
+              }
+            })();
           },
         },
       ]
