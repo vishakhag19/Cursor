@@ -1528,11 +1528,11 @@ export default function App() {
   );
 
   const applyTypedRoadRule = useCallback(
-    async ({ name, mode }) => {
+    async ({ name, mode, lat = null, lng = null }) => {
       const trimmed = (name || "").trim();
       if (!trimmed || !mode) return;
       setRoadRules((prev) =>
-        upsertRoadRule(prev, { name: trimmed, mode, lat: null, lng: null }),
+        upsertRoadRule(prev, { name: trimmed, mode, lat, lng }),
       );
       if (mode === "prefer" && routeGeometryRef.current?.length) {
         try {
@@ -1547,7 +1547,7 @@ export default function App() {
           ...roadRules.filter(
             (r) => r.name.toLowerCase() !== trimmed.toLowerCase(),
           ),
-          { name: trimmed, mode, lat: null, lng: null, id: "tmp" },
+          { name: trimmed, mode, lat, lng, id: "tmp" },
         ]);
       });
       const verb =
@@ -1644,6 +1644,19 @@ export default function App() {
   const mapMode = view === "directions" ? "directions" : "explore";
   const selectedRoute =
     routeOptions.find((r) => r.id === selectedRouteId) || null;
+  const routeRoadHints = (() => {
+    const names = [];
+    const seen = new Set();
+    for (const step of selectedRoute?.steps || []) {
+      const name = String(step?.name || "").trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      names.push(name);
+    }
+    return names;
+  })();
 
   const startNavigation = useCallback(async () => {
     if (!selectedRoute?.steps?.length && !selectedRoute?.geometry?.length) {
@@ -2257,6 +2270,8 @@ export default function App() {
         onChange={handleRoutePrefsChange}
         onClose={() => setPrefsOpen(false)}
         roadRules={roadRules}
+        near={userLocation}
+        routeRoadHints={routeRoadHints}
         onAddTypedRoadRule={applyTypedRoadRule}
         onPickRoadOnMap={() => {
           setPrefsOpen(false);
