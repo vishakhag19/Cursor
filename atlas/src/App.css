@@ -3490,6 +3490,32 @@ md-text-button {
   box-shadow: var(--atlas-elevation-2);
 }
 
+.nav-banner-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.nav-banner-close md-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  color: #fff;
+  --md-icon-size: 22px;
+  pointer-events: none;
+}
+
 .nav-banner-icon {
   display: grid;
   place-items: center;
@@ -3639,6 +3665,15 @@ md-text-button {
 /* During nav: remove the side panel from layout/hit-testing entirely */
 .app.nav-mode .panel {
   display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.app.nav-mode .panel *,
+.app.nav-mode .dir-start-btn,
+.app.nav-mode .dir-drive-sheet,
+.app.nav-mode .dir-mobile-stop-card {
+  pointer-events: none !important;
 }
 
 .app.nav-mode .map-stage {
@@ -3658,8 +3693,14 @@ md-text-button {
 
 .app.nav-mode .nav-footer,
 .app.nav-mode .nav-footer-close,
+.app.nav-mode .nav-banner-close,
 .app.nav-mode .reroute-prompt {
-  pointer-events: auto;
+  pointer-events: auto !important;
+}
+
+.app.nav-mode .nav-footer-close md-icon,
+.app.nav-mode .nav-banner-close md-icon {
+  pointer-events: none;
 }
 
 /* Hide menu FAB during nav — Exit covers leaving; avoids floating chrome clash */

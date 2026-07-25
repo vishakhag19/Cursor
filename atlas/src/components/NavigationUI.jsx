@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { formatDistance, formatDuration } from "../utils/format";
 import ReroutePrompt from "./ReroutePrompt";
 
@@ -17,6 +18,32 @@ export default function NavigationUI({
   onReturnToOriginal = null,
   onShowAlternatives = null,
 }) {
+  const closeRef = useRef(null);
+  const bannerCloseRef = useRef(null);
+  const onExitRef = useRef(onExit);
+  onExitRef.current = onExit;
+
+  // Native capture listeners — survive overlay / synthetic-event edge cases.
+  useEffect(() => {
+    if (!active) return undefined;
+    const exit = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onExitRef.current?.();
+    };
+    const nodes = [closeRef.current, bannerCloseRef.current].filter(Boolean);
+    for (const el of nodes) {
+      el.addEventListener("click", exit, true);
+      el.addEventListener("pointerup", exit, true);
+    }
+    return () => {
+      for (const el of nodes) {
+        el.removeEventListener("click", exit, true);
+        el.removeEventListener("pointerup", exit, true);
+      }
+    };
+  }, [active]);
+
   if (!route || !active) return null;
 
   const steps = route.steps || [];
@@ -41,6 +68,14 @@ export default function NavigationUI({
               {step?.instruction || "Continue on the route"}
             </div>
           </div>
+          <button
+            ref={bannerCloseRef}
+            type="button"
+            className="nav-banner-close"
+            aria-label="Exit navigation"
+          >
+            <md-icon>close</md-icon>
+          </button>
         </div>
         {nextStep ? (
           <div className="nav-banner-then" aria-label="Then">
@@ -61,14 +96,10 @@ export default function NavigationUI({
 
       <div className="nav-footer">
         <button
+          ref={closeRef}
           type="button"
           className="nav-footer-close"
           aria-label="Exit navigation"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onExit?.();
-          }}
         >
           <md-icon>close</md-icon>
         </button>
