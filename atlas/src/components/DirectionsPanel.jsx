@@ -481,7 +481,7 @@ export default function DirectionsPanel({
                 }
               >
                 <div className="dir-stop-field">
-                  <SuggestInput
+                    <SuggestInput
                     id={`dir-stop-${i}`}
                     label={
                       isStart
@@ -498,16 +498,17 @@ export default function DirectionsPanel({
                     }}
                     placeholder={
                       isStart
-                        ? "Choose starting point"
+                        ? "Starting point"
                         : isDest
-                          ? "Choose destination"
-                          : "Add stop"
+                          ? "Destination"
+                          : `Stop ${i}`
                     }
                     currentLocation={currentLocation}
                     allowCurrentLocation
                     recentPlaces={recentPlaces}
                     near={near}
                     onRequestLocation={onRequestLocation}
+                    bare
                     externalList
                     onFocusField={() => setActiveStopIndex(i)}
                     onListChange={(payload) => handleListChange(i, payload)}

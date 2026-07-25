@@ -317,6 +317,89 @@ md-icon-button.collapse-panel-btn:hover,
   flex: 1 1 auto;
   min-width: 0;
   width: 100%;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 4px 4px 4px 16px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid var(--atlas-control-outline, var(--atlas-surface-pressed));
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.dir-stop-field .suggest-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.dir-stop-field .suggest-bare-input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin: 0;
+  padding: 0 4px 0 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #202124;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 40px;
+  box-sizing: border-box;
+}
+
+.dir-stop-field .suggest-bare-input::placeholder {
+  color: #70757a;
+  opacity: 1;
+}
+
+.dir-stop-field .suggest-wrap md-outlined-text-field {
+  width: 100%;
+  max-width: 100%;
+}
+
+.dir-stop-row .suggest-wrap.is-open {
+  flex: 1 1 auto;
+}
+
+.dir-stop-row.has-controls .dir-stop-field {
+  padding-right: 2px;
+}
+
+.dir-stop-row.has-clear .dir-stop-field {
+  padding-right: 2px;
+}
+
+.dir-stop-row.has-controls .suggest-wrap md-outlined-text-field {
+  --md-outlined-text-field-trailing-space: 76px;
+}
+
+.dir-stop-row.has-clear .suggest-wrap md-outlined-text-field {
+  --md-outlined-text-field-trailing-space: 40px;
+}
+
+.dir-stop-reorder {
+  position: relative;
+  right: auto;
+  top: auto;
+  translate: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0;
+  z-index: 50;
+  background: transparent;
+  padding-left: 0;
+  border-radius: 0;
+}
+
+.dir-stop-reorder.is-clear-only {
+  padding-left: 0;
 }
 
 .dir-stop-row-action {
@@ -326,7 +409,7 @@ md-icon-button.collapse-panel-btn:hover,
   justify-content: center;
   align-self: center;
   width: 40px;
-  min-height: 56px;
+  min-height: 48px;
 }
 
 .dir-stop-row-action .action-tip-wrap {
@@ -340,56 +423,6 @@ md-icon-button.dir-add-stop {
   width: 40px;
   height: 40px;
   margin: 0;
-}
-
-.dir-stop-row .suggest-wrap {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-  max-width: 100%;
-  overflow: visible;
-}
-
-.dir-stop-field .suggest-wrap md-outlined-text-field {
-  width: 100%;
-  max-width: 100%;
-}
-
-.dir-stop-row .suggest-wrap.is-open {
-  flex: 1 1 auto;
-}
-
-.dir-stop-row.has-controls .suggest-wrap md-outlined-text-field {
-  --md-outlined-text-field-trailing-space: 76px;
-}
-
-.dir-stop-row.has-clear .suggest-wrap md-outlined-text-field {
-  --md-outlined-text-field-trailing-space: 40px;
-}
-
-.dir-stop-reorder {
-  position: absolute;
-  right: 2px;
-  top: 50%;
-  translate: 0 -50%;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 0;
-  /* Above .suggest-wrap:focus-within so remove / drag stay clickable */
-  z-index: 50;
-  background: linear-gradient(
-    to right,
-    transparent,
-    #fff 28%
-  );
-  padding-left: 8px;
-  border-radius: 0 999px 999px 0;
-}
-
-.dir-stop-reorder.is-clear-only {
-  padding-left: 4px;
 }
 
 .dir-stop-reorder md-icon-button {
@@ -1841,8 +1874,13 @@ md-outlined-text-field {
 }
 
 /* Keep spinner clear of drag / remove controls on multi-stop rows */
-.dir-stop-row.has-controls .suggest-spinner {
-  right: 78px;
+.dir-stop-field .suggest-spinner {
+  right: 8px;
+}
+
+.dir-stop-row.has-controls .suggest-spinner,
+.dir-stop-row.has-clear .suggest-spinner {
+  right: 8px;
 }
 
 .search-bar .suggest-spinner {
@@ -3093,17 +3131,21 @@ md-text-button {
   }
 
   .panel.is-directions-chrome .dir-mobile-top-stack {
+    --search-card-inset: var(--atlas-mobile-chrome-inset, 12px);
     position: absolute;
-    top: max(12px, env(safe-area-inset-top, 0px));
-    left: 12px;
-    right: 12px;
+    top: max(var(--search-card-inset), env(safe-area-inset-top, 0px));
+    left: var(--search-card-inset);
+    right: auto;
     z-index: 4;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: 8px;
+    width: calc(100% - (2 * var(--search-card-inset)));
+    max-width: calc(100% - (2 * var(--search-card-inset)));
     max-height: min(52dvh, 440px);
     pointer-events: none;
+    box-sizing: border-box;
   }
 
   .panel.is-directions-chrome .dir-mobile-stop-card {
@@ -3115,12 +3157,9 @@ md-text-button {
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: 100%;
     max-height: min(42dvh, 360px);
-    /*
-     * Floating MD labels sit on the outline notch and extend above the field.
-     * Keep ≥24px top pad so "Starting point" never meets the card edge.
-     */
-    padding: 24px 12px 12px;
+    padding: 12px;
     background: #fff;
     border: 1px solid rgba(60, 64, 67, 0.12);
     border-radius: 24px;
@@ -3131,6 +3170,7 @@ md-text-button {
     pointer-events: auto;
     isolation: isolate;
     transition: opacity 0.18s ease;
+    box-sizing: border-box;
   }
 
   .panel.is-directions-chrome .directions-panel.has-stop-suggest .dir-mobile-stop-card {
