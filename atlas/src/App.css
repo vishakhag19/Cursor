@@ -4647,10 +4647,19 @@ md-text-button {
 
 .road-rule-add-actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
   margin-top: 2px;
+  width: 100%;
+}
+
+.road-rule-add-actions .road-rule-add-action,
+.road-rule-add-actions md-filled-button,
+.road-rule-add-actions md-outlined-button {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 50%;
 }
 
 /*
