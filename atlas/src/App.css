@@ -2704,9 +2704,8 @@ md-text-button {
 
   /*
    * Search: transparent full-screen host + inner rounded card.
-   * Card radius lives on .search-panel (not the transformed host) so all four
-   * corners stay round — transform + overflow:hidden on one node was squaring
-   * the bottom edge in some browsers.
+   * Default: pinned to the top with 16px left/right margins.
+   * Card radius lives on .search-panel so all four corners stay round.
    */
   .panel.is-search-chrome {
     inset: 0;
@@ -2714,24 +2713,23 @@ md-text-button {
     max-width: none;
     max-height: none;
     transform: none;
-    padding: 16px;
-    padding-top: max(16px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px 16px;
     background: transparent;
     border: none;
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
     pointer-events: none;
-    display: grid;
-    /* Default: floating card pinned to the top, horizontally centered */
-    place-items: start center;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
   }
 
   .panel.is-search-chrome .search-panel {
     pointer-events: auto;
-    width: min(92vw, 400px);
-    max-width: min(92vw, 400px);
+    width: 100%;
+    max-width: none;
     max-height: min(72dvh, 560px);
     min-height: 0;
     margin: 0;
