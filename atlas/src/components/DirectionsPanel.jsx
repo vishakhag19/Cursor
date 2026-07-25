@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import SuggestInput from "./SuggestInput";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 import ActionTip from "./ActionTip";
@@ -10,6 +10,8 @@ import {
   travelModeMeta,
   ROUTE_OPTION_FIELDS,
 } from "../utils/routePreferences";
+
+const SAVE_TAP_MOVE_PX = 10;
 
 function useIsCompact(query = "(max-width: 800px)") {
   const [compact, setCompact] = useState(() =>
@@ -165,6 +167,8 @@ export default function DirectionsPanel({
   const [sheetDragPx, setSheetDragPx] = useState(null);
   const [saveNameError, setSaveNameError] = useState("");
   const isCompact = useIsCompact();
+  const saveTapRef = useRef(null);
+  const saveOpenTokenRef = useRef(0);
   const sheetRef = useRef(null);
   const sheetHandleRef = useRef(null);
   const sheetBodyRef = useRef(null);
@@ -256,10 +260,99 @@ export default function DirectionsPanel({
     setActiveStopIndex(null);
   }
 
-  function closeSaveForm() {
+  const closeSaveForm = useCallback(() => {
+    saveOpenTokenRef.current += 1;
     setSaving(false);
     setSaveName("");
     setSaveNameError("");
+  }, []);
+
+  const openSaveForm = useCallback(() => {
+    if (saving) return;
+    setSaveNameError("");
+    setSaving(true);
+    const token = ++saveOpenTokenRef.current;
+    const fromPlace = stops[0];
+    const toPlace = stops[stops.length - 1];
+    const roughFrom =
+      fromPlace && !fromPlace.isCurrentLocation
+        ? fromPlace.name || "Start"
+        : "Start";
+    const roughTo =
+      toPlace && !toPlace.isCurrentLocation
+        ? toPlace.name || "Destination"
+        : "Destination";
+    setSaveName(`${roughFrom} to ${roughTo}`);
+    void Promise.all([
+      resolveSaveEndpointName(fromPlace, "Start"),
+      resolveSaveEndpointName(toPlace, "Destination"),
+    ]).then(([from, to]) => {
+      if (saveOpenTokenRef.current !== token) return;
+      setSaveName(`${from} to ${to}`);
+    });
+  }, [saving, stops]);
+
+  function activateSaveButton() {
+    if (routeIsSaved && savedMatch?.id) {
+      onUnsaveRoute?.(savedMatch.id);
+      closeSaveForm();
+      return;
+    }
+    openSaveForm();
+  }
+
+  function onSavePointerDown(e) {
+    // Mouse / keyboard use click. Touch / pen need press tracking so the
+    // scrollable Drive sheet can't cancel the gesture before click fires.
+    if (e.pointerType === "mouse") return;
+    if (typeof e.button === "number" && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    saveTapRef.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      moved: false,
+    };
+  }
+
+  function onSavePointerMove(e) {
+    const tap = saveTapRef.current;
+    if (!tap || tap.id !== e.pointerId || tap.moved) return;
+    const dx = e.clientX - tap.x;
+    const dy = e.clientY - tap.y;
+    if (dx * dx + dy * dy > SAVE_TAP_MOVE_PX * SAVE_TAP_MOVE_PX) {
+      tap.moved = true;
+    }
+  }
+
+  function onSavePointerEnd(e) {
+    if (e.pointerType === "mouse") return;
+    const tap = saveTapRef.current;
+    if (!tap || tap.id !== e.pointerId) return;
+    saveTapRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    if (tap.moved) return;
+    e.preventDefault();
+    e.stopPropagation();
+    activateSaveButton();
+  }
+
+  function onSaveClick(e) {
+    // Mouse click + keyboard activation. Touch is handled in pointerup and
+    // preventDefault on pointerdown suppresses the synthetic click.
+    e.preventDefault();
+    e.stopPropagation();
+    activateSaveButton();
   }
 
   function submitSaveForm() {
@@ -874,36 +967,11 @@ export default function DirectionsPanel({
                   className={`dir-save-btn${routeIsSaved ? " is-saved" : ""}`}
                   aria-label={routeIsSaved ? "Unsave route" : "Save route"}
                   aria-pressed={routeIsSaved ? "true" : "false"}
-                  title={routeIsSaved ? "Unsave route" : "Save route"}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (routeIsSaved && savedMatch?.id) {
-                      onUnsaveRoute?.(savedMatch.id);
-                      closeSaveForm();
-                      return;
-                    }
-                    if (saving) return;
-                    setSaveNameError("");
-                    setSaving(true);
-                    const fromPlace = stops[0];
-                    const toPlace = stops[stops.length - 1];
-                    const roughFrom =
-                      fromPlace && !fromPlace.isCurrentLocation
-                        ? fromPlace.name || "Start"
-                        : "Start";
-                    const roughTo =
-                      toPlace && !toPlace.isCurrentLocation
-                        ? toPlace.name || "Destination"
-                        : "Destination";
-                    setSaveName(`${roughFrom} to ${roughTo}`);
-                    void Promise.all([
-                      resolveSaveEndpointName(fromPlace, "Start"),
-                      resolveSaveEndpointName(toPlace, "Destination"),
-                    ]).then(([from, to]) => {
-                      setSaveName(`${from} to ${to}`);
-                    });
-                  }}
+                  onPointerDown={onSavePointerDown}
+                  onPointerMove={onSavePointerMove}
+                  onPointerUp={onSavePointerEnd}
+                  onPointerCancel={onSavePointerEnd}
+                  onClick={onSaveClick}
                 >
                   <md-icon class={routeIsSaved ? "is-filled" : undefined}>
                     bookmark

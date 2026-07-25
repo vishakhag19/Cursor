@@ -22,11 +22,16 @@ export default function SaveRouteSheet({
       return undefined;
     }
 
-    // Ignore the opening gesture so the same tap can't close via backdrop.
+    // Opened from the bookmark's pointerup/click — wait out any leftover
+    // synthetic click before the backdrop can dismiss.
     allowDismissRef.current = false;
-    const armId = window.setTimeout(() => {
+    let armed = false;
+    function armDismiss() {
+      if (armed) return;
+      armed = true;
       allowDismissRef.current = true;
-    }, 280);
+    }
+    const armId = window.setTimeout(armDismiss, 320);
 
     function onKey(e) {
       if (e.key === "Escape") {
@@ -35,14 +40,16 @@ export default function SaveRouteSheet({
       }
     }
     document.addEventListener("keydown", onKey);
+
     const focusId = window.setTimeout(() => {
       inputRef.current?.focus?.();
       inputRef.current?.select?.();
-    }, 40);
+    }, 80);
+
     return () => {
       window.clearTimeout(armId);
-      document.removeEventListener("keydown", onKey);
       window.clearTimeout(focusId);
+      document.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
 
@@ -53,7 +60,9 @@ export default function SaveRouteSheet({
     onSave?.();
   }
 
-  function handleDismiss() {
+  function handleDismiss(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     if (!allowDismissRef.current) return;
     onClose?.();
   }
@@ -64,20 +73,15 @@ export default function SaveRouteSheet({
         type="button"
         className="save-route-sheet-backdrop"
         aria-label="Dismiss save route"
+        onPointerDown={handleDismiss}
         onClick={handleDismiss}
-        onPointerUp={(e) => {
-          // Swallow the opening pointer so it never becomes a dismiss click.
-          if (!allowDismissRef.current) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-        }}
       />
       <div
         className="save-route-sheet"
         role="dialog"
         aria-modal="true"
         aria-label="Save route"
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="save-route-sheet-handle" aria-hidden>
           <div className="save-route-sheet-grabber" />

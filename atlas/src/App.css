@@ -645,7 +645,10 @@ md-icon-button.dir-add-stop:hover {
   color: #5f6368;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  /* Keep the Drive sheet from claiming this gesture as a scroll. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .dir-save-btn:hover {
