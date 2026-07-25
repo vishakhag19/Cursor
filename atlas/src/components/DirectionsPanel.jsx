@@ -903,23 +903,32 @@ export default function DirectionsPanel({
                 setSaveNameError("");
               }}
             >
-              <MdTextField
-                id="dir-save-route-name"
-                className="dir-save-field"
-                label="Route name"
-                value={saveName}
-                onChange={(v) => {
-                  setSaveName(v);
-                  setSaveNameError(
-                    v.length > 80
-                      ? "Name must be 80 characters or fewer"
-                      : "",
-                  );
-                }}
-                error={Boolean(saveNameError)}
-                supportingText={saveNameError || undefined}
-                placeholder="Optional"
-              />
+              <div className={`dir-save-field${saveNameError ? " is-error" : ""}`}>
+                <input
+                  id="dir-save-route-name"
+                  className="dir-save-field-input"
+                  type="text"
+                  value={saveName}
+                  maxLength={80}
+                  placeholder="Route name"
+                  aria-label="Route name"
+                  aria-invalid={saveNameError ? "true" : "false"}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSaveName(v);
+                    setSaveNameError(
+                      v.length > 80
+                        ? "Name must be 80 characters or fewer"
+                        : "",
+                    );
+                  }}
+                />
+              </div>
+              {saveNameError ? (
+                <p className="dir-save-field-error md-typescale-body-small" role="alert">
+                  {saveNameError}
+                </p>
+              ) : null}
               <div className="dir-save-actions btn-row">
                 <md-outlined-button
                   type="button"
