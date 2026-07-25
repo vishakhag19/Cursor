@@ -249,9 +249,6 @@ export default function SearchPanel({
                     className="landing-saved-open"
                     onClick={() => onLoadSaved?.(r)}
                   >
-                    <span className="landing-item-icon" aria-hidden>
-                      <md-icon>bookmark</md-icon>
-                    </span>
                     <span className="landing-saved-open-text">
                       <span className="landing-saved-open-title">{r.name}</span>
                       <span className="landing-saved-open-meta">
