@@ -2752,7 +2752,41 @@ md-text-button {
     flex-direction: column;
   }
 
-  .app:has(.search-panel.has-suggest) .panel.is-search-chrome .search-panel {
+  /*
+   * Default "Search here": no card padding/chrome — only the input pill floats.
+   * Saved (if any) sits in its own card underneath.
+   */
+  .panel.is-search-chrome .search-panel.is-bare {
+    padding: 0;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .panel.is-search-chrome .search-panel.is-bare .search-bar {
+    border-radius: 999px;
+    box-shadow:
+      0 1px 2px rgba(60, 64, 67, 0.12),
+      0 4px 16px rgba(60, 64, 67, 0.18);
+  }
+
+  .panel.is-search-chrome .search-panel.is-bare .landing-saved {
+    margin: 0;
+    padding: 8px 12px 10px;
+    background: #fff;
+    border: 1px solid rgba(60, 64, 67, 0.12);
+    border-radius: 20px;
+    box-shadow:
+      0 1px 2px rgba(60, 64, 67, 0.12),
+      0 4px 16px rgba(60, 64, 67, 0.16);
+    overflow: hidden;
+  }
+
+  .app:has(.search-panel.has-suggest) .panel.is-search-chrome .search-panel,
+  .app:has(.search-panel.has-place) .panel.is-search-chrome .search-panel {
     max-height: min(70dvh, 560px);
     border-radius: 28px;
   }
