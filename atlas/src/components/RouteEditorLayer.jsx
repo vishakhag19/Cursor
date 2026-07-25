@@ -30,8 +30,8 @@ function viaDeleteIcon() {
     className: "atlas-via-delete",
     html: `<button type="button" class="via-map-delete" aria-label="Remove reshape point">×</button>`,
     iconSize: [28, 28],
-    // Close above the vertex (slight offset so it doesn't cover the handle).
-    iconAnchor: [14, 32],
+    // Above-right of the vertex so the × never covers the white handle.
+    iconAnchor: [-6, 44],
   });
 }
 
