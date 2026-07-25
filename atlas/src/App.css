@@ -1091,16 +1091,6 @@ md-icon-button.dir-add-stop:hover {
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   pointer-events: auto;
-  /* Nudge further off the vertex on coarse pointers */
-  translate: 0 0;
-}
-
-@media (pointer: coarse) {
-  .via-map-delete {
-    width: 32px;
-    height: 32px;
-    font-size: 18px;
-  }
 }
 
 .via-map-delete:hover,
