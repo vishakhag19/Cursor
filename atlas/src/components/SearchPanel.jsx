@@ -93,8 +93,8 @@ export default function SearchPanel({
     listVisible &&
     !(placeList.query || "").trim() &&
     placeList.items.some((p) => p?.isRecent || p?.fromRecent);
-  /* No collapse on idle "Search here" or place card — panel stays open. */
-  const showCollapse = Boolean(onCollapsePanel) && listVisible;
+  /* Search stays open — no collapse chevron on idle, Recent, or place card. */
+  const showCollapse = false;
   /* Default landing: only the search pill floats (no padded card chrome). */
   const isBareSearch = !listVisible && !showPlaceCard;
 
