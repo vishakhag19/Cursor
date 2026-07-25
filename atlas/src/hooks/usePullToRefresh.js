@@ -83,20 +83,23 @@ export default function usePullToRefresh({
         target?.closest?.(
           [
             ".dir-drive-sheet",
-            ".dir-sheet-handle",
+            ".dir-sheet-grabber-hit",
             ".place-bottom-sheet",
             ".panel",
             ".search-panel",
             ".directions-panel",
-            ".context-menu",
+            ".route-sheet",
+            ".route-sheet-backdrop",
             ".route-prefs-sheet",
-            ".road-rules-sheet",
+            ".save-route-sheet",
+            ".steps-sheet",
+            ".context-menu",
+            ".ctx-backdrop",
             ".map-controls",
             ".nav-active",
             ".route-assistant",
             "md-dialog",
             "[role='dialog']",
-            "[role='bottomsheet']",
           ].join(", "),
         )
       ) {
