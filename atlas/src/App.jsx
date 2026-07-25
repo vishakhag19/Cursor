@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import MapView from "./components/MapView";
 import SearchPanel from "./components/SearchPanel";
 import DirectionsPanel from "./components/DirectionsPanel";
@@ -71,6 +71,30 @@ function useIsCompact(query = "(max-width: 800px)") {
   return compact;
 }
 
+const SYSTEM_BACK_MQ =
+  "(max-width: 800px), ((hover: none) and (pointer: coarse))";
+
+/** Phones/tablets — including landscape widths above 800px. */
+function useSystemBackEnabled() {
+  return useIsCompact(SYSTEM_BACK_MQ);
+}
+
+function makeMapsUiHistoryState() {
+  return { mapsUi: true, t: Date.now() };
+}
+
+function historyHasMapsUiMarker() {
+  return Boolean(window.history.state?.mapsUi);
+}
+
+/** Call from tap handlers so Chrome keeps the history entry for Android Back. */
+function armMapsUiHistoryMarkerNow() {
+  if (typeof window === "undefined") return;
+  if (!window.matchMedia(SYSTEM_BACK_MQ).matches) return;
+  if (historyHasMapsUiMarker()) return;
+  window.history.pushState(makeMapsUiHistoryState(), "");
+}
+
 function cloneGeometry(geometry) {
   if (!geometry?.length) return geometry ?? null;
   return geometry.map((p) => (Array.isArray(p) ? [...p] : p));
@@ -105,6 +129,7 @@ export default function App() {
   const [view, setView] = useState("search"); // search | directions
   const [panelOpen, setPanelOpen] = useState(true);
   const isCompact = useIsCompact();
+  const systemBackEnabled = useSystemBackEnabled();
   const [layer, setLayer] = useState("map");
   const [status, setStatus] = useState(null);
   const statusTimer = useRef(null);
@@ -549,6 +574,8 @@ export default function App() {
       clearRoutes();
       setView("directions");
       setPanelOpen(true);
+      // Arm history in the same turn as the tap so Android Back peels this view.
+      armMapsUiHistoryMarkerNow();
       if (nextStops[0] && nextStops[1]) {
         runDirections(nextStops, travelMode);
       }
@@ -1263,6 +1290,7 @@ export default function App() {
       clearEditState();
       setView("directions");
       setPanelOpen(true);
+      armMapsUiHistoryMarkerNow();
       setDirError(null);
       setStops(entry.stops?.length ? entry.stops : emptyStops());
       setStopTexts(
@@ -1824,6 +1852,7 @@ export default function App() {
     setShowSteps(false);
     setNavigating(true);
     setPanelOpen(false);
+    armMapsUiHistoryMarkerNow();
     setRerouteSuggestion(null);
     setAcceptedReroute(false);
     setReroutePromptSettled(false);
@@ -2046,7 +2075,7 @@ export default function App() {
     clearRoutes();
   }, [clearRoutes]);
 
-  // Keep a sync snapshot for the mobile system-back handler.
+  // Keep a sync snapshot for the system-back handler (read from popstate).
   mobileUiRef.current = {
     ctx,
     roadPickMode,
@@ -2061,115 +2090,132 @@ export default function App() {
     searchBackable,
   };
 
-  /**
-   * Mobile: Android / browser back peels one UI layer.
-   * A single history marker stays armed while any layer is open.
-   */
-  useEffect(() => {
-    if (!isCompact) return undefined;
+  const countBackableUi = useCallback((overrides = {}) => {
+    const s = { ...mobileUiRef.current, ...overrides };
+    let n = 0;
+    if (s.ctx) n += 1;
+    if (s.roadPickMode) n += 1;
+    if (s.rerouteSuggestion) n += 1;
+    if (s.assistantOpen) n += 1;
+    if (s.prefsOpen || s.roadRulesOpen) n += 1;
+    if (s.showSteps) n += 1;
+    if (s.navigating) n += 1;
+    if (s.view === "directions") n += 1;
+    else if (s.searchBackable || searchBackRef.current?.isBackable?.()) n += 1;
+    return n;
+  }, []);
 
-    const MARK = { mapsUi: true };
-
-    function countBackable(overrides = {}) {
-      const s = { ...mobileUiRef.current, ...overrides };
-      let n = 0;
-      if (s.ctx) n += 1;
-      if (s.roadPickMode) n += 1;
-      if (s.rerouteSuggestion) n += 1;
-      if (s.assistantOpen) n += 1;
-      if (s.prefsOpen || s.roadRulesOpen) n += 1;
-      if (s.showSteps) n += 1;
-      if (s.navigating) n += 1;
-      if (s.view === "directions") n += 1;
-      else if (s.searchBackable || searchBackRef.current?.isBackable?.()) n += 1;
-      return n;
-    }
-
-    function hasBackableUi() {
-      return countBackable() > 0;
-    }
-
-    /** @returns {boolean} true if another layer remains after this peel */
-    function dismissTopLayer() {
-      const s = mobileUiRef.current;
-      if (s.ctx) {
-        restoreAfterRoadPick(s.roadPickReturnTo || "prefs");
-        return countBackable({
+  /** @returns {boolean} true if another layer remains after this peel */
+  const dismissTopLayer = useCallback(() => {
+    const s = mobileUiRef.current;
+    if (s.ctx) {
+      restoreAfterRoadPick(s.roadPickReturnTo || "prefs");
+      return (
+        countBackableUi({
           ctx: null,
           roadPickMode: false,
           prefsOpen: (s.roadPickReturnTo || "prefs") === "prefs",
           roadRulesOpen: s.roadPickReturnTo === "roadRules",
-        }) > 0;
-      }
-      if (s.roadPickMode) {
-        restoreAfterRoadPick(s.roadPickReturnTo || "prefs");
-        return countBackable({
+        }) > 0
+      );
+    }
+    if (s.roadPickMode) {
+      restoreAfterRoadPick(s.roadPickReturnTo || "prefs");
+      return (
+        countBackableUi({
           roadPickMode: false,
           prefsOpen: (s.roadPickReturnTo || "prefs") === "prefs",
           roadRulesOpen: s.roadPickReturnTo === "roadRules",
-        }) > 0;
-      }
-      if (s.rerouteSuggestion) {
-        setRerouteSuggestion(null);
-        return countBackable({ rerouteSuggestion: null }) > 0;
-      }
-      if (s.assistantOpen) {
-        setAssistantOpen(false);
-        return countBackable({ assistantOpen: false }) > 0;
-      }
-      if (s.prefsOpen || s.roadRulesOpen) {
-        setPrefsOpen(false);
-        setRoadRulesOpen(false);
-        setHighlightedRoadRuleId(null);
-        return countBackable({ prefsOpen: false, roadRulesOpen: false }) > 0;
-      }
-      if (s.showSteps) {
-        setShowSteps(false);
-        return countBackable({ showSteps: false }) > 0;
-      }
-      if (s.navigating) {
-        exitNavigation();
-        return countBackable({ navigating: false }) > 0;
-      }
-      if (s.view === "directions") {
-        const kept = dirBackRef.current?.handleBack?.() ?? false;
+        }) > 0
+      );
+    }
+    if (s.rerouteSuggestion) {
+      setRerouteSuggestion(null);
+      return countBackableUi({ rerouteSuggestion: null }) > 0;
+    }
+    if (s.assistantOpen) {
+      setAssistantOpen(false);
+      return countBackableUi({ assistantOpen: false }) > 0;
+    }
+    if (s.prefsOpen || s.roadRulesOpen) {
+      setPrefsOpen(false);
+      setRoadRulesOpen(false);
+      setHighlightedRoadRuleId(null);
+      return countBackableUi({ prefsOpen: false, roadRulesOpen: false }) > 0;
+    }
+    if (s.showSteps) {
+      setShowSteps(false);
+      return countBackableUi({ showSteps: false }) > 0;
+    }
+    if (s.navigating) {
+      exitNavigation();
+      return countBackableUi({ navigating: false }) > 0;
+    }
+    if (s.view === "directions") {
+      if (dirBackRef.current?.handleBack) {
+        const kept = dirBackRef.current.handleBack();
         if (kept) return true;
-        return Boolean(searchBackRef.current?.isBackable?.());
+      } else {
+        closeDirectionsView();
       }
-      if (searchBackRef.current?.isBackable?.()) {
-        return Boolean(searchBackRef.current.handleBack());
-      }
-      return false;
+      return Boolean(searchBackRef.current?.isBackable?.());
     }
+    if (searchBackRef.current?.isBackable?.()) {
+      return Boolean(searchBackRef.current.handleBack());
+    }
+    return false;
+  }, [closeDirectionsView, countBackableUi, exitNavigation, restoreAfterRoadPick]);
 
-    function syncHistoryMarker() {
-      if (ignoreMobilePopRef.current) return;
-      const marked = Boolean(window.history.state?.mapsUi);
-      const has = hasBackableUi();
-      if (has && !marked) {
-        window.history.pushState(MARK, "");
-      } else if (!has && marked) {
-        ignoreMobilePopRef.current = true;
-        window.history.back();
-      }
+  const armMapsUiHistoryMarker = useCallback(() => {
+    if (!systemBackEnabled) return;
+    if (ignoreMobilePopRef.current) return;
+    if (countBackableUi() <= 0) return;
+    if (historyHasMapsUiMarker()) return;
+    window.history.pushState(makeMapsUiHistoryState(), "");
+  }, [countBackableUi, systemBackEnabled]);
+
+  const syncMapsUiHistoryMarker = useCallback(() => {
+    if (!systemBackEnabled) return;
+    if (ignoreMobilePopRef.current) return;
+    const has = countBackableUi() > 0;
+    const marked = historyHasMapsUiMarker();
+    if (has && !marked) {
+      window.history.pushState(makeMapsUiHistoryState(), "");
+    } else if (!has && marked) {
+      ignoreMobilePopRef.current = true;
+      window.history.back();
     }
+  }, [countBackableUi, systemBackEnabled]);
+
+  // Stable listener — do not tear down on every layer change (that drops backs).
+  useEffect(() => {
+    if (!systemBackEnabled) return undefined;
 
     function onPopState() {
       if (ignoreMobilePopRef.current) {
         ignoreMobilePopRef.current = false;
+        // Disarm raced with a newly opened layer — re-arm so Back keeps working.
+        if (countBackableUi() > 0 && !historyHasMapsUiMarker()) {
+          window.history.pushState(makeMapsUiHistoryState(), "");
+        }
         return;
       }
+      if (countBackableUi() <= 0) return;
       const still = dismissTopLayer();
       if (still) {
-        window.history.pushState(MARK, "");
+        window.history.pushState(makeMapsUiHistoryState(), "");
       }
     }
 
-    syncHistoryMarker();
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
+  }, [systemBackEnabled, countBackableUi, dismissTopLayer]);
+
+  // Keep one history marker armed while any dismissible layer is open.
+  useLayoutEffect(() => {
+    syncMapsUiHistoryMarker();
   }, [
-    isCompact,
+    syncMapsUiHistoryMarker,
     ctx,
     roadPickMode,
     roadPickReturnTo,
@@ -2181,10 +2227,21 @@ export default function App() {
     navigating,
     view,
     searchBackable,
-    exitNavigation,
-    clearStatus,
-    restoreAfterRoadPick,
   ]);
+
+  // Arm during the same user gesture that opened a layer (Chrome won't skip it).
+  useEffect(() => {
+    if (!systemBackEnabled) return undefined;
+    function onGesture() {
+      armMapsUiHistoryMarker();
+    }
+    window.addEventListener("pointerup", onGesture, true);
+    window.addEventListener("click", onGesture, true);
+    return () => {
+      window.removeEventListener("pointerup", onGesture, true);
+      window.removeEventListener("click", onGesture, true);
+    };
+  }, [systemBackEnabled, armMapsUiHistoryMarker]);
 
   const fitPadding = useMemo(() => {
     const mobile =
@@ -2246,7 +2303,10 @@ export default function App() {
               openDirections({ from: selectedPlace });
             }}
             backRef={searchBackRef}
-            onBackableChange={setSearchBackable}
+            onBackableChange={(next) => {
+              setSearchBackable(next);
+              if (next) armMapsUiHistoryMarkerNow();
+            }}
           />
         )}
 
