@@ -2936,8 +2936,9 @@ md-text-button {
     display: block;
   }
 
+  /* Change stops — available when the floating card is tucked (mid/full) */
   .panel.is-directions-chrome .dir-change-stops {
-    display: none !important;
+    display: inline-flex;
   }
 
   .panel.is-directions-chrome .dir-drive-sheet {
