@@ -268,7 +268,6 @@ export default function DirectionsPanel({
   }, []);
 
   const openSaveForm = useCallback(() => {
-    if (saving) return;
     setSaveNameError("");
     setSaving(true);
     const token = ++saveOpenTokenRef.current;
@@ -290,7 +289,7 @@ export default function DirectionsPanel({
       if (saveOpenTokenRef.current !== token) return;
       setSaveName(`${from} to ${to}`);
     });
-  }, [saving, stops]);
+  }, [stops]);
 
   function activateSaveButton() {
     if (routeIsSaved && savedMatch?.id) {
@@ -298,6 +297,9 @@ export default function DirectionsPanel({
       closeSaveForm();
       return;
     }
+    // Guard against pointerup + residual click in the same gesture.
+    if (saving || saveTapRef.current?.opened) return;
+    if (saveTapRef.current) saveTapRef.current.opened = true;
     openSaveForm();
   }
 
@@ -318,6 +320,7 @@ export default function DirectionsPanel({
       x: e.clientX,
       y: e.clientY,
       moved: false,
+      opened: false,
     };
   }
 
