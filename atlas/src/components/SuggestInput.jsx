@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { searchPlaces } from "../api/geocode";
-import { agentLog } from "../debugAgentLog";
 import MdTextField from "./MdTextField";
 import PlaceSuggestionList from "./PlaceSuggestionList";
 
@@ -115,9 +114,6 @@ export default function SuggestInput({
       loading: "loading" in partial ? partial.loading : loadingRef.current,
       select: selectRef.current,
     };
-    // #region agent log
-    agentLog({location:'SuggestInput.jsx:publish',message:'publish list state',data:{open:payload.open,loading:payload.loading,itemCount:payload.items?.length??0,query:payload.query,partialKeys:Object.keys(partial),externalList,bare,id},hypothesisId:'D'});
-    // #endregion
     onListChange(payload);
   }
 
@@ -245,24 +241,21 @@ export default function SuggestInput({
     setOpen(true);
     setListQuery(q);
     publish({ open: true, loading: true, query: q });
-    // #region agent log
-    agentLog({location:'SuggestInput.jsx:runSearch:start',message:'runSearch started',data:{q,forceOpen,seq,near:nearRef.current||currentLocationRef.current,committed:committedRef.current},hypothesisId:'A'});
-    // #endregion
     try {
       const loc = currentLocationRef.current;
       const results = await searchPlaces(q, {
         near: nearRef.current || loc,
         limit: 8,
       });
-      // #region agent log
-      agentLog({location:'SuggestInput.jsx:runSearch:results',message:'searchPlaces returned',data:{q,seq,requestSeq:requestSeq.current,resultCount:results?.length??0,names:(results||[]).slice(0,3).map(r=>r.name),committed:committedRef.current,forceOpen,stale:seq!==requestSeq.current},hypothesisId:'A'});
-      // #endregion
       if (seq !== requestSeq.current) return;
       if (committedRef.current && !forceOpen) {
-        // #region agent log
-        agentLog({location:'SuggestInput.jsx:runSearch:committedBail',message:'bailing due to committedRef',data:{q,committed:committedRef.current,resultCount:results?.length??0},hypothesisId:'B'});
-        // #endregion
+        // External commit (place select / parent sync) owns the field —
+        // drop typeahead instead of leaving a stale Searching… panel.
         setLoading(false);
+        loadingRef.current = false;
+        setOpen(false);
+        openRef.current = false;
+        publish({ open: false, loading: false });
         return;
       }
       const merged = [];
@@ -287,10 +280,7 @@ export default function SuggestInput({
         query: q,
         loading: false,
       });
-    } catch (err) {
-      // #region agent log
-      agentLog({location:'SuggestInput.jsx:runSearch:catch',message:'searchPlaces threw',data:{q,seq,err:String(err?.message||err),forceOpen},hypothesisId:'A'});
-      // #endregion
+    } catch {
       if (seq !== requestSeq.current) return;
       setLoading(false);
       loadingRef.current = false;
@@ -396,10 +386,15 @@ export default function SuggestInput({
     if (lastTypedValueRef.current === value) {
       return;
     }
+    // Parent controlled value can lag one keystroke behind lastTyped; do not
+    // treat that as an external commit or we cancel in-flight geocode.
+    if (
+      lastTypedValueRef.current != null &&
+      lastTypedValueRef.current.startsWith(value || "")
+    ) {
+      return;
+    }
     const q = (value || "").trim();
-    // #region agent log
-    agentLog({location:'SuggestInput.jsx:valueEffect',message:'external value sync closing list',data:{value,lastTyped:lastTypedValueRef.current,q,id,externalList},hypothesisId:'C'});
-    // #endregion
     if (q.toLowerCase() === "your location") {
       committedRef.current = "Your location";
     } else if (q.length >= 1) {
@@ -435,9 +430,6 @@ export default function SuggestInput({
   function handleValueChange(v) {
     lastTypedValueRef.current = v;
     committedRef.current = null;
-    // #region agent log
-    agentLog({location:'SuggestInput.jsx:handleValueChange',message:'typed value',data:{v,propValue:value,id,externalList},hypothesisId:'C'});
-    // #endregion
     onChange(v);
     scheduleSearch(v);
   }
