@@ -876,28 +876,6 @@ export default function DirectionsPanel({
               ) : null}
             </div>
             <div className="dir-selected-actions">
-              {onStart && !saving ? (
-                <md-filled-button
-                  type="button"
-                  class="dir-start-btn dir-start-btn-inline"
-                  onClick={onStart}
-                >
-                  <span slot="icon" className="steps-start-icon" aria-hidden>
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
-                      focusable="false"
-                    >
-                      <path
-                        fill="currentColor"
-                        d="M12 3.2 5.2 20.1l.65.34L12 17.4l6.15 3.04.65-.34z"
-                      />
-                    </svg>
-                  </span>
-                  Start
-                </md-filled-button>
-              ) : null}
               {onSaveRoute ? (
                 <button
                   type="button"
@@ -1021,8 +999,9 @@ export default function DirectionsPanel({
           ) : null}
         </div>
       ) : null}
+        </div>
 
-      {selectedRoute && onStart && !saving ? (
+      {selectedRoute && onStart ? (
         <div className="dir-bottom-actions" role="toolbar" aria-label="Route actions">
           <md-filled-button
             type="button"
@@ -1046,7 +1025,6 @@ export default function DirectionsPanel({
           </md-filled-button>
         </div>
       ) : null}
-        </div>
       </div>
     </section>
   );
