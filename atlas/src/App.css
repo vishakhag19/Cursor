@@ -3913,15 +3913,6 @@ md-text-button {
   background: var(--atlas-surface-hover);
 }
 
-.route-pref-avatar-btn {
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-}
-
-.route-pref-avatar-btn:hover:not(.is-selected) {
-  background: var(--atlas-surface-hover);
-  border-color: #c4c7c5;
-}
-
 .route-pref-link:hover {
   background: var(--atlas-surface-hover);
 }
