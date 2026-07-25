@@ -3630,9 +3630,30 @@ md-text-button {
   cursor: pointer;
 }
 
-/* During nav, keep map chrome above the (hidden) side panel stacking context */
+/* During nav: remove the side panel from layout/hit-testing entirely */
+.app.nav-mode .panel {
+  display: none !important;
+}
+
 .app.nav-mode .map-stage {
   z-index: 6;
+}
+
+.app.nav-mode .nav-active {
+  position: absolute;
+  inset: 0;
+  z-index: 1400;
+  pointer-events: none;
+}
+
+.app.nav-mode .nav-active > * {
+  pointer-events: auto;
+}
+
+.app.nav-mode .nav-footer,
+.app.nav-mode .nav-footer-close,
+.app.nav-mode .reroute-prompt {
+  pointer-events: auto;
 }
 
 /* Hide menu FAB during nav — Exit covers leaving; avoids floating chrome clash */
@@ -4329,12 +4350,6 @@ md-text-button {
   pointer-events: auto;
 }
 
-.reroute-prompt-actions md-outlined-button,
-.reroute-prompt-actions md-filled-button {
-  pointer-events: auto;
-  cursor: pointer;
-}
-
 @keyframes reroute-in {
   from {
     opacity: 0;
@@ -4376,6 +4391,8 @@ md-text-button {
 .reroute-prompt-actions md-filled-button {
   width: 100%;
   min-width: 0;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .app.nav-mode .reroute-prompt {

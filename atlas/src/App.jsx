@@ -2071,8 +2071,10 @@ export default function App() {
       <aside
         className={`panel m3-surface ${view === "search" ? "is-search-chrome" : "is-directions-chrome"}`}
         aria-label="Map tools"
+        aria-hidden={navigating ? "true" : undefined}
+        inert={navigating ? true : undefined}
       >
-        {view === "search" && (
+        {view === "search" && !navigating && (
           <SearchPanel
             query={searchQuery}
             onQueryChange={setSearchQuery}
@@ -2112,7 +2114,7 @@ export default function App() {
           />
         )}
 
-        {view === "directions" && (
+        {view === "directions" && !navigating && (
           <DirectionsPanel
             stops={stops}
             stopTexts={stopTexts}
@@ -2397,42 +2399,39 @@ export default function App() {
           </div>
         </div>
 
-        {view === "directions" && selectedRoute && !showEditBar && (
-          <>
-            {navigating && (
-              <NavigationUI
-                active={navigating}
-                route={selectedRoute}
-                currentStepIndex={navStepIndex}
-                onExit={exitNavigation}
-                rerouteSuggestion={rerouteSuggestion}
-                onAcceptReroute={acceptReroute}
-                onRejectReroute={rejectReroute}
-                canReturnToOriginal={acceptedReroute && Boolean(navOriginalRoute)}
-                onReturnToOriginal={returnToOriginalRoute}
-                onShowAlternatives={() => {
-                  const alt = routeOptions.find(
-                    (r) => r.id !== selectedRoute.id && !r.edited,
-                  );
-                  if (alt) {
-                    setSelectedRouteId(alt.id);
-                    setRerouteSuggestion(null);
-                    showStatus(`Switched to ${alt.label || "alternate route"}`);
-                  } else {
-                    showStatus("No alternate routes available");
-                  }
-                }}
-              />
-            )}
-          </>
-        )}
-
         {status && !navigating && (
           <div className="map-status md-typescale-label-large" role="status">
             {status}
           </div>
         )}
       </main>
+
+      {/* Outside the side panel so Drive-sheet stacking can never block nav chrome */}
+      {navigating && selectedRoute ? (
+        <NavigationUI
+          active={navigating}
+          route={selectedRoute}
+          currentStepIndex={navStepIndex}
+          onExit={exitNavigation}
+          rerouteSuggestion={rerouteSuggestion}
+          onAcceptReroute={acceptReroute}
+          onRejectReroute={rejectReroute}
+          canReturnToOriginal={acceptedReroute && Boolean(navOriginalRoute)}
+          onReturnToOriginal={returnToOriginalRoute}
+          onShowAlternatives={() => {
+            const alt = routeOptions.find(
+              (r) => r.id !== selectedRoute.id && !r.edited,
+            );
+            if (alt) {
+              setSelectedRouteId(alt.id);
+              setRerouteSuggestion(null);
+              showStatus(`Switched to ${alt.label || "alternate route"}`);
+            } else {
+              showStatus("No alternate routes available");
+            }
+          }}
+        />
+      ) : null}
 
       <ContextMenu
         position={ctx}
