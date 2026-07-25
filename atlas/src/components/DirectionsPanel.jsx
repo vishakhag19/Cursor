@@ -316,17 +316,11 @@ export default function DirectionsPanel({
     null;
   const sheetChromeOnly = sheetSnap === "s10" && sheetDragPx == null;
 
+  // Only treat as saved when this exact route id was bookmarked (no fuzzy match —
+  // loose distance/duration matches were eating the first tap as an "unsave").
   const savedMatch =
     selectedRoute &&
-    (savedRoutes.find((s) => s.route?.id && s.route.id === selectedRoute.id) ||
-      savedRoutes.find(
-        (s) =>
-          s.route &&
-          Math.round(s.route.distance) === Math.round(selectedRoute.distance) &&
-          Math.round(s.route.duration) === Math.round(selectedRoute.duration) &&
-          (s.route.geometry?.length || 0) ===
-            (selectedRoute.geometry?.length || 0),
-      ));
+    savedRoutes.find((s) => s.route?.id && s.route.id === selectedRoute.id);
   const routeIsSaved = Boolean(savedMatch);
 
   useEffect(() => {
@@ -905,50 +899,50 @@ export default function DirectionsPanel({
                 </md-filled-button>
               ) : null}
               {onSaveRoute ? (
-                <ActionTip tip={routeIsSaved ? "Unsave route" : "Save route"}>
-                  <md-icon-button
-                    type="button"
-                    class={`dir-save-btn${routeIsSaved ? " is-saved" : ""}`}
-                    aria-label={routeIsSaved ? "Unsave route" : "Save route"}
-                    aria-pressed={routeIsSaved ? "true" : "false"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (routeIsSaved && savedMatch?.id) {
-                        onUnsaveRoute?.(savedMatch.id);
-                        setSaving(false);
-                        setSaveName("");
-                        setSaveNameError("");
-                        return;
-                      }
-                      // Form already open — ignore (avoids touch ghost-click toggle-off).
-                      if (saving) return;
+                <button
+                  type="button"
+                  className={`dir-save-btn${routeIsSaved ? " is-saved" : ""}`}
+                  aria-label={routeIsSaved ? "Unsave route" : "Save route"}
+                  aria-pressed={routeIsSaved ? "true" : "false"}
+                  title={routeIsSaved ? "Unsave route" : "Save route"}
+                  onPointerDown={(e) => {
+                    // Fire on press so the first touch isn't lost to focus/ghost click.
+                    if (e.pointerType === "mouse" && e.button !== 0) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (routeIsSaved && savedMatch?.id) {
+                      onUnsaveRoute?.(savedMatch.id);
+                      setSaving(false);
+                      setSaveName("");
                       setSaveNameError("");
-                      setSaving(true);
-                      const fromPlace = stops[0];
-                      const toPlace = stops[stops.length - 1];
-                      // Instant placeholder without "Your location", then refine.
-                      const roughFrom =
-                        fromPlace && !fromPlace.isCurrentLocation
-                          ? fromPlace.name || "Start"
-                          : "Start";
-                      const roughTo =
-                        toPlace && !toPlace.isCurrentLocation
-                          ? toPlace.name || "Destination"
-                          : "Destination";
-                      setSaveName(`${roughFrom} to ${roughTo}`);
-                      void Promise.all([
-                        resolveSaveEndpointName(fromPlace, "Start"),
-                        resolveSaveEndpointName(toPlace, "Destination"),
-                      ]).then(([from, to]) => {
-                        setSaveName(`${from} to ${to}`);
-                      });
-                    }}
-                  >
-                    <md-icon class={routeIsSaved ? "is-filled" : undefined}>
-                      bookmark
-                    </md-icon>
-                  </md-icon-button>
-                </ActionTip>
+                      return;
+                    }
+                    if (saving) return;
+                    setSaveNameError("");
+                    setSaving(true);
+                    const fromPlace = stops[0];
+                    const toPlace = stops[stops.length - 1];
+                    const roughFrom =
+                      fromPlace && !fromPlace.isCurrentLocation
+                        ? fromPlace.name || "Start"
+                        : "Start";
+                    const roughTo =
+                      toPlace && !toPlace.isCurrentLocation
+                        ? toPlace.name || "Destination"
+                        : "Destination";
+                    setSaveName(`${roughFrom} to ${roughTo}`);
+                    void Promise.all([
+                      resolveSaveEndpointName(fromPlace, "Start"),
+                      resolveSaveEndpointName(toPlace, "Destination"),
+                    ]).then(([from, to]) => {
+                      setSaveName(`${from} to ${to}`);
+                    });
+                  }}
+                >
+                  <md-icon class={routeIsSaved ? "is-filled" : undefined}>
+                    bookmark
+                  </md-icon>
+                </button>
               ) : null}
             </div>
           </div>
