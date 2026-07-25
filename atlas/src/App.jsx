@@ -2003,6 +2003,7 @@ export default function App() {
   const routeEditable =
     view === "directions" &&
     !navigating &&
+    !roadPickMode &&
     Boolean(editOrigin) &&
     Boolean(editDestination) &&
     Boolean(routeGeometry?.length > 1);
@@ -2439,6 +2440,7 @@ export default function App() {
             selectRoute(opt);
           }}
           routeEditable={routeEditable}
+          roadPickMode={roadPickMode}
           freezeFit={freezeFit}
           editOrigin={editOrigin}
           editDestination={editDestination}

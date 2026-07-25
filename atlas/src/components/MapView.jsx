@@ -360,6 +360,7 @@ export default function MapView({
   selectedRouteId = null,
   onSelectRoute,
   routeEditable = false,
+  roadPickMode = false,
   freezeFit = false,
   editOrigin = null,
   editDestination = null,
@@ -489,7 +490,7 @@ export default function MapView({
             key={wp.id || `dir-wp-${stopIndex}`}
             position={[wp.lat, wp.lng]}
             icon={pinIcon(kind)}
-            draggable
+            draggable={!roadPickMode}
             onClick={() => onMarkerClick?.(wp)}
             onDragEnd={(lat, lng) => onWaypointDrag?.(stopIndex, lat, lng)}
           />
@@ -513,7 +514,7 @@ export default function MapView({
               key={wp.id}
               position={[wp.lat, wp.lng]}
               icon={pinIcon(kind)}
-              draggable
+              draggable={!roadPickMode}
               onClick={() => onMarkerClick?.(wp)}
               onDragEnd={(lat, lng) => onWaypointDrag?.(stopIndex, lat, lng)}
             />
@@ -528,6 +529,7 @@ export default function MapView({
             key={opt.id}
             positions={opt.geometry}
             pane="routeAlt"
+            interactive={!roadPickMode}
             pathOptions={{
               color: ROUTE_BLUE_ALT,
               weight: 5,
@@ -535,18 +537,22 @@ export default function MapView({
               lineJoin: "round",
               lineCap: "round",
             }}
-            eventHandlers={{
-              click: (e) => {
-                L.DomEvent.stopPropagation(e);
-                onSelectRoute?.(opt);
-              },
-              mouseover: (e) => {
-                e.target.setStyle({ opacity: 0.95, weight: 6 });
-              },
-              mouseout: (e) => {
-                e.target.setStyle({ opacity: 0.82, weight: 5 });
-              },
-            }}
+            eventHandlers={
+              roadPickMode
+                ? undefined
+                : {
+                    click: (e) => {
+                      L.DomEvent.stopPropagation(e);
+                      onSelectRoute?.(opt);
+                    },
+                    mouseover: (e) => {
+                      e.target.setStyle({ opacity: 0.95, weight: 6 });
+                    },
+                    mouseout: (e) => {
+                      e.target.setStyle({ opacity: 0.82, weight: 5 });
+                    },
+                  }
+            }
           />
         ))}
 
@@ -559,6 +565,7 @@ export default function MapView({
               key={opt.id}
               positions={opt.geometry}
               pane="routeSelected"
+              interactive={!roadPickMode}
               pathOptions={{
                 color: ROUTE_BLUE,
                 weight: 6,
@@ -566,16 +573,21 @@ export default function MapView({
                 lineJoin: "round",
                 lineCap: "round",
               }}
-              eventHandlers={{
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  onSelectRoute?.(opt);
-                },
-              }}
+              eventHandlers={
+                roadPickMode
+                  ? undefined
+                  : {
+                      click: (e) => {
+                        L.DomEvent.stopPropagation(e);
+                        onSelectRoute?.(opt);
+                      },
+                    }
+              }
             />
           ))}
 
       {!showRouteEditor &&
+        !roadPickMode &&
         routeOptions.map((opt) => {
           if (!opt?.geometry?.length) return null;
           return (
