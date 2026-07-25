@@ -2270,7 +2270,11 @@ export default function App() {
         onChange={handleRoutePrefsChange}
         onClose={() => setPrefsOpen(false)}
         roadRules={roadRules}
-        near={userLocation}
+        near={
+          userLocation ||
+          stops.find((s) => s?.lat != null && s?.lng != null) ||
+          null
+        }
         routeRoadHints={routeRoadHints}
         onAddTypedRoadRule={applyTypedRoadRule}
         onPickRoadOnMap={() => {
