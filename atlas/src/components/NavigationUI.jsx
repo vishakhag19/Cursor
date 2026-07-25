@@ -64,7 +64,11 @@ export default function NavigationUI({
           type="button"
           className="nav-footer-close"
           aria-label="Exit navigation"
-          onClick={onExit}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onExit?.();
+          }}
         >
           <md-icon>close</md-icon>
         </button>

@@ -3550,7 +3550,8 @@ md-text-button {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1200;
+  /* Above the reroute card so Exit stays tappable while a prompt is open */
+  z-index: 1360;
   display: grid;
   grid-template-columns: 48px 1fr 48px;
   align-items: center;
@@ -3559,10 +3560,13 @@ md-text-button {
   background: #ffffff;
   border-radius: 20px 20px 0 0;
   box-shadow: var(--atlas-elevation-2);
+  pointer-events: auto;
 }
 
 .nav-footer-close,
 .nav-footer-alts {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 48px;
@@ -3574,6 +3578,8 @@ md-text-button {
   background: #fff;
   color: #3c4043;
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
   box-shadow: 0 1px 2px rgba(60, 64, 67, 0.2);
 }
 
@@ -4328,8 +4334,9 @@ md-text-button {
   position: absolute;
   left: 50%;
   right: auto;
-  bottom: calc(94px + env(safe-area-inset-bottom, 0px));
-  z-index: 1300;
+  /* Clear the nav footer so Accept/Reject never cover Exit */
+  bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+  z-index: 1320;
   box-sizing: border-box;
   width: min(
     var(--reroute-card-max),
@@ -4396,12 +4403,12 @@ md-text-button {
 }
 
 .app.nav-mode .reroute-prompt {
-  bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(128px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 801px) {
   .app.nav-mode .reroute-prompt {
-    bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
   }
 }
 
