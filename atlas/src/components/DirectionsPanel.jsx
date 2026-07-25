@@ -556,8 +556,11 @@ export default function DirectionsPanel({
                   ) : null}
                 </div>
 
-                {showSwap ? (
-                  <div className="dir-stop-row-action">
+                <div
+                  className="dir-stop-row-action"
+                  aria-hidden={showSwap || showAdd ? undefined : true}
+                >
+                  {showSwap ? (
                     <ActionTip tip="Swap start and destination">
                       <md-icon-button
                         class="dir-swap"
@@ -568,11 +571,8 @@ export default function DirectionsPanel({
                         <md-icon>swap_vert</md-icon>
                       </md-icon-button>
                     </ActionTip>
-                  </div>
-                ) : null}
-
-                {showAdd ? (
-                  <div className="dir-stop-row-action">
+                  ) : null}
+                  {showAdd ? (
                     <ActionTip tip="Add stop">
                       <md-icon-button
                         class="dir-add-stop"
@@ -587,8 +587,8 @@ export default function DirectionsPanel({
                         <md-icon>add</md-icon>
                       </md-icon-button>
                     </ActionTip>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
               );
             })}
