@@ -595,8 +595,14 @@ export default function App() {
       if (Date.now() < suppressMapClickUntil.current) return;
 
       // Directions: fill empty stop, or insert a mid-waypoint when A/B are set
-      // (Feature 3 — tap map to add pins). Route-line drag still owns reshape.
+      // (Feature 3 — tap map to add pins). Disabled after any route reshape.
       if (view === "directions") {
+        const routeAlreadyEdited =
+          editViasRef.current.length > 0 ||
+          editHistoryRef.current.length > 0 ||
+          routeOptionsRef.current?.some((r) => r.edited);
+        if (routeAlreadyEdited) return;
+
         // Clicks near the active route belong to reshape — don't add a stop.
         const geom = routeGeometryRef.current;
         if (geom?.length > 1) {
