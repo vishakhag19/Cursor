@@ -12,6 +12,32 @@
   --panel-control-size: 40px;
 }
 
+/*
+ * Never show scrollbars inside app chrome / floating containers.
+ * Overflow scroll still works via touch, trackpad, and mouse wheel.
+ */
+.app,
+.app *,
+.nav-active,
+.nav-active *,
+.route-assistant,
+.route-assistant *,
+.route-assistant-backdrop {
+  scrollbar-width: none;
+}
+
+.app::-webkit-scrollbar,
+.app *::-webkit-scrollbar,
+.nav-active::-webkit-scrollbar,
+.nav-active *::-webkit-scrollbar,
+.route-assistant::-webkit-scrollbar,
+.route-assistant *::-webkit-scrollbar,
+.route-assistant-backdrop::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
 .map-stage {
   position: absolute;
   inset: 0;
@@ -156,12 +182,7 @@ md-icon-button.collapse-panel-btn:hover,
   overflow-x: auto;
   margin: 0 -4px 4px;
   padding: 10px 4px 6px;
-  scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
-}
-
-.dir-travel-modes::-webkit-scrollbar {
-  height: 3px;
 }
 
 .dir-travel-mode {
@@ -1300,8 +1321,6 @@ md-filled-tonal-button.is-edit-active {
   overflow-x: hidden;
   overflow-y: auto;
   max-height: none;
-  /* Keep left/right gutters equal when the scrollbar appears */
-  scrollbar-gutter: stable both-edges;
   padding-inline: var(--panel-pad-x, 16px);
   /* Sit flush under the Maps header — no extra top gap before Drive */
   padding-top: 0;
@@ -1347,13 +1366,8 @@ md-filled-tonal-button.is-edit-active {
   gap: 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   margin: 0 calc(-1 * var(--panel-pad-x, 16px));
   padding: 2px var(--panel-pad-x, 16px) 4px;
-}
-
-.explore-chips::-webkit-scrollbar {
-  display: none;
 }
 
 .explore-chip {
@@ -1476,13 +1490,8 @@ md-filled-tonal-button.is-edit-active {
   gap: 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   margin: 0 calc(-1 * var(--panel-pad-x, 16px)) 2px;
   padding: 2px var(--panel-pad-x, 16px) 8px;
-}
-
-.dir-avoid-chips::-webkit-scrollbar {
-  display: none;
 }
 
 .dir-avoid-chip {

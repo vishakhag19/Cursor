@@ -11,6 +11,19 @@ body {
   overflow: hidden;
 }
 
+/* No visible scrollbars anywhere in the app; scroll still works. */
+*,
+*::before,
+*::after {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: normal;
