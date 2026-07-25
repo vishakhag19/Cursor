@@ -2787,29 +2787,16 @@ md-text-button {
   }
 
   /*
-   * Focused / suggestions / place card: edge-to-edge — no left/right/top
-   * inset so the search field can use the full panel width.
+   * Focused / suggestions / place card: keep the same inset width as the
+   * default Search here pill (--search-card-inset), not edge-to-edge.
    */
   .panel.is-search-chrome .search-panel.is-searching,
   .panel.is-search-chrome .search-panel.has-suggest,
   .panel.is-search-chrome .search-panel.has-place {
-    --search-card-inset: 0px;
-    width: 100%;
-    max-width: none;
     max-height: min(70dvh, 560px);
-    margin: 0;
-    padding: max(8px, env(safe-area-inset-top, 0px)) 12px 12px;
-    background: #fff;
-    border: none;
-    border-bottom: 1px solid rgba(60, 64, 67, 0.12);
-    border-radius: 0 0 16px 16px;
-    box-shadow:
-      0 1px 2px rgba(60, 64, 67, 0.12),
-      0 4px 16px rgba(60, 64, 67, 0.16);
-    overflow: hidden;
   }
 
-  .panel.is-search-chrome .search-panel.is-searching .search-bar,
+  .panel.is-search-chrome .search-panel.is-searching:not(.is-bare) .search-bar,
   .panel.is-search-chrome .search-panel.has-suggest .search-bar,
   .panel.is-search-chrome .search-panel.has-place .search-bar {
     box-shadow: none;
