@@ -148,12 +148,8 @@ export default function SearchPanel({
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, [listVisible, isCompact, mobileExpanded, place]);
 
-  const recentDestinations = (recentPlaces || [])
-    .filter((p) => p && !p.isCurrentLocation && p.lat != null && p.lng != null)
-    .slice(0, 6);
   const hasSaved = savedRoutes.length > 0;
-  const hasRecents = recentDestinations.length > 0;
-  const showHomeList = !listVisible && !place && (hasSaved || hasRecents);
+  const showHomeList = !listVisible && !place && hasSaved;
   const showPlaceCard = Boolean(place) && !listVisible;
   const isSearching = listVisible || (isCompact && mobileExpanded && !place);
   const showingRecents =
@@ -246,46 +242,12 @@ export default function SearchPanel({
         {showHomeList && (
           <div className="landing-saved">
             <div className="landing-saved-head">
-              {hasSaved && !hasRecents ? (
-                <md-icon class="landing-saved-icon" aria-hidden>
-                  bookmark
-                </md-icon>
-              ) : null}
-              <h2 className="md-typescale-title-small">
-                {hasSaved && hasRecents
-                  ? "Recents"
-                  : hasSaved
-                    ? "Saved routes"
-                    : "Recent"}
-              </h2>
+              <md-icon class="landing-saved-icon" aria-hidden>
+                bookmark
+              </md-icon>
+              <h2 className="md-typescale-title-small">Saved routes</h2>
             </div>
             <ul className="landing-saved-list">
-              {recentDestinations.map((p) => (
-                <li
-                  key={`recent-${p.id}`}
-                  className="landing-saved-item is-recent"
-                >
-                  <button
-                    type="button"
-                    className="landing-saved-open"
-                    onClick={() => pickPlace(p)}
-                  >
-                    <span className="landing-item-icon" aria-hidden>
-                      <md-icon>history</md-icon>
-                    </span>
-                    <span className="landing-saved-open-text">
-                      <span className="landing-saved-open-title">
-                        {p.name || "Place"}
-                      </span>
-                      <span className="landing-saved-open-meta">
-                        {p.display_name && p.display_name !== p.name
-                          ? p.display_name
-                          : "Recent search"}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
               {savedRoutes.map((r) => (
                 <li
                   key={`saved-${r.id}`}
