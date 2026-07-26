@@ -2479,11 +2479,20 @@ export default function App() {
           <div
             className="map-reshape-tip"
             role="dialog"
-            aria-label="Reshape route tip"
+            aria-label="Edit route tip"
           >
-            <p className="map-reshape-tip-copy md-typescale-body-medium">
-              Drag the blue route on the map to reshape
-            </p>
+            <div className="map-reshape-tip-icon" aria-hidden>
+              <md-icon>open_with</md-icon>
+            </div>
+            <div className="map-reshape-tip-body">
+              <p className="map-reshape-tip-title md-typescale-title-small">
+                Edit your route
+              </p>
+              <p className="map-reshape-tip-copy md-typescale-body-medium">
+                Drag the blue route on the map to edit. Use Undo or Reset if you
+                want to reverse changes.
+              </p>
+            </div>
             <md-filled-button
               type="button"
               class="map-reshape-tip-btn"

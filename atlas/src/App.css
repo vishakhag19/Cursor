@@ -745,7 +745,7 @@ md-icon-button.dir-add-stop:hover {
   z-index: 2;
 }
 
-/* Top-center reshape coach mark on the map */
+/* Top-center reshape coach card on the map */
 .map-reshape-tip {
   position: absolute;
   top: 16px;
@@ -754,13 +754,13 @@ md-icon-button.dir-add-stop:hover {
   z-index: 1110;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  align-items: stretch;
+  gap: 12px;
   box-sizing: border-box;
-  width: max-content;
-  max-width: min(360px, calc(100% - 24px));
+  width: min(340px, calc(100% - 24px));
+  max-width: min(340px, calc(100% - 24px));
   margin: 0;
-  padding: 12px 14px;
+  padding: 16px;
   border: 1px solid rgba(60, 64, 67, 0.12);
   border-radius: 16px;
   background: #fff;
@@ -768,16 +768,47 @@ md-icon-button.dir-add-stop:hover {
     0 1px 2px rgba(60, 64, 67, 0.12),
     0 8px 24px rgba(60, 64, 67, 0.18);
   pointer-events: auto;
-  text-align: center;
+  text-align: left;
+}
+
+.map-reshape-tip-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--atlas-accent-container, #e8f0fe);
+  color: var(--atlas-accent, #1a73e8);
+}
+
+.map-reshape-tip-icon md-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  --md-icon-size: 22px;
+  color: inherit;
+}
+
+.map-reshape-tip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.map-reshape-tip-title {
+  margin: 0;
+  color: #202124;
 }
 
 .map-reshape-tip-copy {
   margin: 0;
-  color: #202124;
-  line-height: 1.35;
+  color: #5f6368;
+  line-height: 1.4;
 }
 
 .map-reshape-tip-btn {
+  align-self: flex-end;
   min-width: 88px;
 }
 
