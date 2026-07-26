@@ -895,6 +895,15 @@ export default function DirectionsPanel({
           </div>
         </div>
 
+        {hasRouteResults && !hasCustomEdits ? (
+          <p className="dir-drag-hint md-typescale-body-small" role="note">
+            <md-icon aria-hidden>open_with</md-icon>
+            <span className="dir-drag-hint-copy">
+              Drag the blue route on the map to reshape
+            </span>
+          </p>
+        ) : null}
+
         {/* Always below start / mid / destination fields. */}
         {placeList.open &&
         (placeList.items.length > 0 ||
@@ -1097,14 +1106,6 @@ export default function DirectionsPanel({
 
       {selectedRoute ? (
         <div className="dir-selected-route">
-          {hasRouteResults && !hasCustomEdits ? (
-            <p className="dir-drag-hint md-typescale-body-small" role="note">
-              <md-icon aria-hidden>open_with</md-icon>
-              <span className="dir-drag-hint-copy">
-                Drag the blue route on the map to reshape
-              </span>
-            </p>
-          ) : null}
           <div className="dir-selected-summary">
             <div className="dir-selected-stats">
               <span className="dir-route-time md-typescale-headline-small">

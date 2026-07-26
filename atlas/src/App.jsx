@@ -216,7 +216,6 @@ export default function App() {
   const routePrefsRef = useRef(routePrefs);
   const roadRulesRef = useRef(roadRules);
   const directionsSeqRef = useRef(0);
-  const reshapeHintShownRef = useRef(false);
 
   const {
     location: userLocation,
@@ -532,15 +531,7 @@ export default function App() {
         setBaselineRoute(ranked[0]);
         selectRoute(ranked[0]);
         setFitKey((k) => k + 1);
-        if (!liveUpdate) {
-          // One-shot cue so route editing isn’t invisible on first trip.
-          if (!reshapeHintShownRef.current && ranked[0]) {
-            reshapeHintShownRef.current = true;
-            showStatus("Drag the blue route on the map to reshape", 4500);
-          } else {
-            clearStatus();
-          }
-        }
+        if (!liveUpdate) clearStatus();
       } catch (err) {
         if (seq !== directionsSeqRef.current) return;
         if (!keepVisible) clearRoutes();

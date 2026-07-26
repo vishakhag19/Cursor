@@ -749,7 +749,8 @@ md-icon-button.dir-add-stop:hover {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 4px 0 8px;
+  margin: 8px 0 0;
+  padding: 0 2px;
   color: #5f6368;
 }
 
@@ -1609,14 +1610,8 @@ md-icon-button.dir-add-stop:hover {
 }
 
 .leaflet-container.is-route-edit {
-  /* Default map cursor — grab appears on the route hit target */
-  cursor: default;
+  cursor: crosshair;
   touch-action: manipulation;
-}
-
-/* Soft midpoint dots that signal the blue line can be dragged */
-.atlas-route-ghost-handle {
-  pointer-events: none;
 }
 
 .leaflet-container.is-route-edit.is-route-dragging,
@@ -4133,15 +4128,11 @@ md-text-button {
 
   .panel.is-directions-chrome .dir-drag-hint {
     display: flex;
-    margin: 0 0 10px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    background: var(--atlas-accent-container, #e8f0fe);
-    color: #174ea6;
-  }
-
-  .panel.is-directions-chrome .dir-drag-hint md-icon {
-    color: var(--atlas-accent, #1a73e8);
+    margin: 8px 0 0;
+    padding: 0 2px;
+    border-radius: 0;
+    background: transparent;
+    color: #5f6368;
   }
 
   /* Stay above the Drive sheet, clear of the top stops card.
