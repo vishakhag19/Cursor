@@ -56,12 +56,12 @@ const ROUTE_ONBOARDING_ITEMS = [
   {
     icon: "open_with",
     title: "Edit route",
-    body: "Drag the blue route to edit. Undo or reset changes.",
+    body: "Drag the selected blue route to edit. Undo, reset, or remove points.",
   },
   {
     icon: "tune",
     title: "Route options",
-    body: "Avoid tolls, scenic roads, fewest turns, and more.",
+    body: "Prefer scenic roads, fewest turns, good quality roads, and more.",
   },
   {
     icon: "signpost",
@@ -70,8 +70,8 @@ const ROUTE_ONBOARDING_ITEMS = [
   },
   {
     icon: "bookmark",
-    title: "Save & go",
-    body: "Save a route, then tap Start.",
+    title: "Save route",
+    body: "Save a route to use later.",
   },
 ];
 
@@ -2378,7 +2378,7 @@ export default function App() {
 
   return (
     <div
-      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${navigating && rerouteSuggestion ? "has-reroute-prompt" : ""} ${roadPickMode ? "road-pick-mode" : ""} ${ptrPullPx > 0 || ptrRefreshing ? "is-pulling-refresh" : ""}`}
+      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${navigating && rerouteSuggestion ? "has-reroute-prompt" : ""} ${roadPickMode ? "road-pick-mode" : ""} ${showRouteOnboarding ? "has-route-onboard" : ""} ${ptrPullPx > 0 || ptrRefreshing ? "is-pulling-refresh" : ""}`}
     >
       {pullToRefreshEnabled && (ptrPullPx > 0 || ptrRefreshing) ? (
         <div

@@ -16,4 +16,4 @@ Flagged guesses from the route-control suite implementation (not product-final):
 
 Ranking weights that actually change order live in `utils/routeRecommend.js` (`scoreRoute`) with inline comments.
 
-12. **Route onboarding** — “New features” card above the Drive sheet (z-index). Sections: Edit route (drag + undo/reset — not add stops), Route options, Road rules, Save & go. Persisted via `atlas.onboarding.v1` after Got it.
+12. **Route onboarding** — centered “New features” card; hides stops bar + Drive sheet while open. Sections: Edit route (selected blue route, undo/reset/remove points), Route options (scenic / fewest turns / good quality), Road rules, Save route (for later). Persisted via `atlas.onboarding.v1` after Got it.

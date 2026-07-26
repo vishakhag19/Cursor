@@ -745,12 +745,12 @@ md-icon-button.dir-add-stop:hover {
   z-index: 2;
 }
 
-/* Above the directions bottom drawer (panel z-index: 5) */
+/* Above the directions chrome (panel z-index: 5). No inner scroll. */
 .map-onboard {
   position: absolute;
-  top: 16px;
+  top: 50%;
   left: 50%;
-  translate: -50% 0;
+  translate: -50% -50%;
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -759,7 +759,6 @@ md-icon-button.dir-add-stop:hover {
   box-sizing: border-box;
   width: min(360px, calc(100% - 24px));
   max-width: min(360px, calc(100% - 24px));
-  max-height: min(72dvh, 560px);
   margin: 0;
   padding: 16px 14px 12px;
   border: 1px solid rgba(60, 64, 67, 0.12);
@@ -770,15 +769,14 @@ md-icon-button.dir-add-stop:hover {
     0 10px 28px rgba(60, 64, 67, 0.2);
   pointer-events: auto;
   text-align: left;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .map-onboard-head {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 0 2px 4px;
-  border-bottom: 1px solid rgba(60, 64, 67, 0.1);
+  padding: 0 2px;
 }
 
 .map-onboard-title {
@@ -790,11 +788,18 @@ md-icon-button.dir-add-stop:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 2px 0;
+  padding: 0;
+  overflow: visible;
+}
+
+/* Hide stops bar + Drive sheet while the New features card is open */
+.app.has-route-onboard .panel.is-directions-chrome .dir-mobile-top-stack,
+.app.has-route-onboard .panel.is-directions-chrome .dir-drive-sheet {
+  display: none !important;
+}
+
+.app.has-route-onboard .panel.is-directions-chrome {
+  pointer-events: none;
 }
 
 .map-onboard-section {
@@ -4207,13 +4212,6 @@ md-text-button {
   .panel.is-directions-chrome .dir-drive-sheet.is-s100 .dir-inline-steps {
     display: block;
     max-height: none;
-  }
-
-  /* Sit in the map band under the stops card, above the Drive sheet */
-  .app:has(.panel.is-directions-chrome) .map-onboard {
-    top: min(38dvh, 240px);
-    max-height: min(48dvh, 360px);
-    z-index: 20;
   }
 
   /* Stay above the Drive sheet, clear of the top stops card.
