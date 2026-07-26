@@ -47,43 +47,43 @@ import {
   persistSavedRoutes,
   pushRecentSearch,
 } from "./utils/storage";
+import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
+import usePullToRefresh from "./hooks/usePullToRefresh";
+import ActionTip from "./components/ActionTip";
+import "./App.css";
 
 const ROUTE_ONBOARDING_ITEMS = [
   {
     icon: "open_with",
     title: "Drag to edit",
-    body: "Drag the blue route on the map to reshape your path",
+    body: "Drag the blue route on the map to reshape your path.",
   },
   {
     icon: "undo",
     title: "Undo or reset",
-    body: "Undo the last reshape, or reset to the original route",
+    body: "Undo the last reshape, or reset back to the original route.",
   },
   {
     icon: "tune",
     title: "Route options",
-    body: "Use chips for scenic roads, fewest turns, avoid tolls, and more",
+    body: "Tap chips for scenic roads, fewest turns, avoid tolls, and more.",
   },
   {
     icon: "signpost",
     title: "Road rules",
-    body: "Prefer, avoid, or never use a road from Route options",
+    body: "Prefer, avoid, or never use a road from Route options.",
   },
   {
     icon: "add_location_alt",
     title: "Stops",
-    body: "Add stops and drag the handle to reorder them",
+    body: "Add stops and drag the handle to reorder them.",
   },
   {
     icon: "bookmark",
     title: "Save & go",
-    body: "Bookmark a route, then tap Start — you’ll get a live reroute if needed",
+    body: "Bookmark a route, then tap Start. You’ll get a live reroute if needed.",
   },
 ];
-import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
-import usePullToRefresh from "./hooks/usePullToRefresh";
-import ActionTip from "./components/ActionTip";
-import "./App.css";
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -2518,39 +2518,38 @@ export default function App() {
             role="dialog"
             aria-labelledby="map-onboard-title"
           >
-            <div className="map-onboard-head">
-              <div className="map-onboard-icon" aria-hidden>
-                <md-icon>explore</md-icon>
-              </div>
-              <div className="map-onboard-intro">
-                <p
-                  id="map-onboard-title"
-                  className="map-onboard-title md-typescale-title-small"
-                >
-                  Make this route yours
-                </p>
-                <p className="map-onboard-sub md-typescale-body-small">
-                  A quick tour of what you can do before you go
-                </p>
-              </div>
-            </div>
-            <ul className="map-onboard-list">
+            <header className="map-onboard-head">
+              <h2
+                id="map-onboard-title"
+                className="map-onboard-title md-typescale-title-medium"
+              >
+                New features
+              </h2>
+              <p className="map-onboard-sub md-typescale-body-small">
+                Here’s what’s new for building and refining your route
+              </p>
+            </header>
+            <div className="map-onboard-sections">
               {ROUTE_ONBOARDING_ITEMS.map((item) => (
-                <li key={item.title} className="map-onboard-item">
-                  <span className="map-onboard-item-icon" aria-hidden>
+                <section
+                  key={item.title}
+                  className="map-onboard-section"
+                  aria-label={item.title}
+                >
+                  <div className="map-onboard-section-icon" aria-hidden>
                     <md-icon>{item.icon}</md-icon>
-                  </span>
-                  <span className="map-onboard-item-copy">
-                    <span className="map-onboard-item-title md-typescale-label-large">
+                  </div>
+                  <div className="map-onboard-section-copy">
+                    <h3 className="map-onboard-section-title md-typescale-title-small">
                       {item.title}
-                    </span>
-                    <span className="map-onboard-item-body md-typescale-body-small">
+                    </h3>
+                    <p className="map-onboard-section-body md-typescale-body-small">
                       {item.body}
-                    </span>
-                  </span>
-                </li>
+                    </p>
+                  </div>
+                </section>
               ))}
-            </ul>
+            </div>
             <md-filled-button
               type="button"
               class="map-onboard-btn"

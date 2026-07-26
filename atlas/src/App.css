@@ -745,7 +745,7 @@ md-icon-button.dir-add-stop:hover {
   z-index: 2;
 }
 
-/* Top-center first-run onboarding card on the map */
+/* Top-center first-run onboarding card — one section per feature */
 .map-onboard {
   position: absolute;
   top: 16px;
@@ -759,9 +759,9 @@ md-icon-button.dir-add-stop:hover {
   box-sizing: border-box;
   width: min(360px, calc(100% - 24px));
   max-width: min(360px, calc(100% - 24px));
-  max-height: min(72dvh, 520px);
+  max-height: min(72dvh, 560px);
   margin: 0;
-  padding: 14px 14px 12px;
+  padding: 16px 14px 12px;
   border: 1px solid rgba(60, 64, 67, 0.12);
   border-radius: 20px;
   background: #fff;
@@ -775,35 +775,11 @@ md-icon-button.dir-add-stop:hover {
 
 .map-onboard-head {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  min-width: 0;
-}
-
-.map-onboard-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--atlas-accent-container, #e8f0fe);
-  color: var(--atlas-accent, #1a73e8);
-}
-
-.map-onboard-icon md-icon {
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
-  --md-icon-size: 22px;
-  color: inherit;
-}
-
-.map-onboard-intro {
-  display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
+  padding: 0 2px 4px;
+  border-bottom: 1px solid rgba(60, 64, 67, 0.1);
 }
 
 .map-onboard-title {
@@ -817,61 +793,65 @@ md-icon-button.dir-add-stop:hover {
   line-height: 1.35;
 }
 
-.map-onboard-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.map-onboard-sections {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 2px 0;
 }
 
-.map-onboard-item {
+.map-onboard-section {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 8px 4px;
-  border-radius: 12px;
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(60, 64, 67, 0.1);
+  border-radius: 14px;
+  background: #f8f9fa;
 }
 
-.map-onboard-item-icon {
+.map-onboard-section-icon {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  margin-top: 1px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: var(--atlas-surface-hover, #f1f3f4);
-  color: #3c4043;
+  background: #fff;
+  border: 1px solid rgba(60, 64, 67, 0.1);
+  color: var(--atlas-accent, #1a73e8);
 }
 
-.map-onboard-item-icon md-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  --md-icon-size: 18px;
+.map-onboard-section-icon md-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  --md-icon-size: 20px;
   color: inherit;
 }
 
-.map-onboard-item-copy {
+.map-onboard-section-copy {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
 }
 
-.map-onboard-item-title {
+.map-onboard-section-title {
+  margin: 0;
   color: #202124;
+  font-weight: 500;
 }
 
-.map-onboard-item-body {
+.map-onboard-section-body {
+  margin: 0;
   color: #5f6368;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .map-onboard-btn {
