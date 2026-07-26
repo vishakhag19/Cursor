@@ -16,4 +16,4 @@ Flagged guesses from the route-control suite implementation (not product-final):
 
 Ranking weights that actually change order live in `utils/routeRecommend.js` (`scoreRoute`) with inline comments.
 
-12. **Reshape discoverability** — top-center map card explaining drag-to-edit plus Undo/Reset, with a Got it button; dismissed for the rest of the session.
+12. **Route onboarding** — top-center map card covering drag-to-edit, undo/reset, route options, road rules, stops, and save/start. Persisted via `atlas.onboarding.v1` after Got it.

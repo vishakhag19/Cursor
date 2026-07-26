@@ -2,9 +2,28 @@ const ROUTES_KEY = "atlas.savedRoutes.v1";
 const RECENT_KEY = "atlas.recentSearches.v1";
 const BLOCKED_KEY = "atlas.blockedStreets.v1";
 const ROAD_RULES_KEY = "atlas.roadRules.v1";
+const ONBOARDING_KEY = "atlas.onboarding.v1";
 const MAX_RECENT = 8;
 const MAX_BLOCKED = 40;
 const MAX_ROAD_RULES = 60;
+
+export function loadOnboardingSeen() {
+  try {
+    const raw = localStorage.getItem(ONBOARDING_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return Boolean(parsed?.routeCardSeen);
+  } catch {
+    return false;
+  }
+}
+
+export function persistOnboardingSeen() {
+  localStorage.setItem(
+    ONBOARDING_KEY,
+    JSON.stringify({ routeCardSeen: true, seenAt: Date.now() }),
+  );
+}
 
 export function loadSavedRoutes() {
   try {

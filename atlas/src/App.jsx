@@ -37,14 +37,49 @@ import { enrichAndRankRoutes } from "./utils/routeRecommend";
 import { removeRoadRule, upsertRoadRule, findRoadRule, enrichRoadRulesFromRoute } from "./utils/roadRules";
 import {
   loadBlockedStreets,
+  loadOnboardingSeen,
   loadRecentSearches,
   loadRoadRules,
   loadSavedRoutes,
   persistBlockedStreets,
+  persistOnboardingSeen,
   persistRoadRules,
   persistSavedRoutes,
   pushRecentSearch,
 } from "./utils/storage";
+
+const ROUTE_ONBOARDING_ITEMS = [
+  {
+    icon: "open_with",
+    title: "Drag to edit",
+    body: "Drag the blue route on the map to reshape your path",
+  },
+  {
+    icon: "undo",
+    title: "Undo or reset",
+    body: "Undo the last reshape, or reset to the original route",
+  },
+  {
+    icon: "tune",
+    title: "Route options",
+    body: "Use chips for scenic roads, fewest turns, avoid tolls, and more",
+  },
+  {
+    icon: "signpost",
+    title: "Road rules",
+    body: "Prefer, avoid, or never use a road from Route options",
+  },
+  {
+    icon: "add_location_alt",
+    title: "Stops",
+    body: "Add stops and drag the handle to reorder them",
+  },
+  {
+    icon: "bookmark",
+    title: "Save & go",
+    body: "Bookmark a route, then tap Start — you’ll get a live reroute if needed",
+  },
+];
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
 import usePullToRefresh from "./hooks/usePullToRefresh";
 import ActionTip from "./components/ActionTip";
@@ -161,7 +196,9 @@ export default function App() {
   const [roadRules, setRoadRules] = useState(() => loadRoadRules());
   const [routePrefs, setRoutePrefs] = useState(() => ({ ...DEFAULT_ROUTE_PREFS }));
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [reshapeTipDismissed, setReshapeTipDismissed] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(
+    () => loadOnboardingSeen(),
+  );
   const [roadRulesOpen, setRoadRulesOpen] = useState(false);
   const [roadPickMode, setRoadPickMode] = useState(false);
   /** Where to restore after Pick-on-map: "prefs" | "roadRules" | null */
@@ -2094,10 +2131,10 @@ export default function App() {
     Boolean(editOrigin) &&
     Boolean(editDestination) &&
     Boolean(routeGeometry?.length > 1);
-  const showReshapeTip =
+  const showRouteOnboarding =
     routeEditable &&
     routeOptions.length > 0 &&
-    !reshapeTipDismissed &&
+    !onboardingDismissed &&
     !dirLoading;
   const freezeFit =
     editHistory.length > 0 ||
@@ -2475,28 +2512,52 @@ export default function App() {
       </aside>
 
       <main className="map-stage">
-        {showReshapeTip ? (
+        {showRouteOnboarding ? (
           <div
-            className="map-reshape-tip"
+            className="map-onboard"
             role="dialog"
-            aria-label="Edit route tip"
+            aria-labelledby="map-onboard-title"
           >
-            <div className="map-reshape-tip-icon" aria-hidden>
-              <md-icon>open_with</md-icon>
+            <div className="map-onboard-head">
+              <div className="map-onboard-icon" aria-hidden>
+                <md-icon>explore</md-icon>
+              </div>
+              <div className="map-onboard-intro">
+                <p
+                  id="map-onboard-title"
+                  className="map-onboard-title md-typescale-title-small"
+                >
+                  Make this route yours
+                </p>
+                <p className="map-onboard-sub md-typescale-body-small">
+                  A quick tour of what you can do before you go
+                </p>
+              </div>
             </div>
-            <div className="map-reshape-tip-body">
-              <p className="map-reshape-tip-title md-typescale-title-small">
-                Edit your route
-              </p>
-              <p className="map-reshape-tip-copy md-typescale-body-medium">
-                Drag the blue route on the map to edit. Use Undo or Reset if you
-                want to reverse changes.
-              </p>
-            </div>
+            <ul className="map-onboard-list">
+              {ROUTE_ONBOARDING_ITEMS.map((item) => (
+                <li key={item.title} className="map-onboard-item">
+                  <span className="map-onboard-item-icon" aria-hidden>
+                    <md-icon>{item.icon}</md-icon>
+                  </span>
+                  <span className="map-onboard-item-copy">
+                    <span className="map-onboard-item-title md-typescale-label-large">
+                      {item.title}
+                    </span>
+                    <span className="map-onboard-item-body md-typescale-body-small">
+                      {item.body}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
             <md-filled-button
               type="button"
-              class="map-reshape-tip-btn"
-              onClick={() => setReshapeTipDismissed(true)}
+              class="map-onboard-btn"
+              onClick={() => {
+                persistOnboardingSeen();
+                setOnboardingDismissed(true);
+              }}
             >
               Got it
             </md-filled-button>
