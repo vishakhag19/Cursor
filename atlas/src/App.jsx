@@ -2122,8 +2122,11 @@ export default function App() {
     Boolean(editDestination) &&
     Boolean(routeGeometry?.length > 1);
   const showRouteOnboarding =
-    routeEditable &&
+    view === "directions" &&
+    !navigating &&
+    !roadPickMode &&
     routeOptions.length > 0 &&
+    Boolean(routeGeometry?.length > 1) &&
     !onboardingDismissed &&
     !dirLoading;
   const freezeFit =
