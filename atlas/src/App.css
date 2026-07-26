@@ -4138,10 +4138,6 @@ md-text-button {
     max-height: none;
   }
 
-  .panel.is-directions-chrome .dir-drag-hint {
-    display: none;
-  }
-
   /* Sit in the visible map band under the floating stops card */
   .app:has(.panel.is-directions-chrome) .map-reshape-tip {
     top: min(42dvh, 260px);
