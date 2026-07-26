@@ -55,33 +55,23 @@ import "./App.css";
 const ROUTE_ONBOARDING_ITEMS = [
   {
     icon: "open_with",
-    title: "Drag to edit",
-    body: "Drag the blue route on the map to reshape your path.",
-  },
-  {
-    icon: "undo",
-    title: "Undo or reset",
-    body: "Undo the last reshape, or reset back to the original route.",
+    title: "Edit route",
+    body: "Drag the blue route to edit. Undo or reset changes.",
   },
   {
     icon: "tune",
     title: "Route options",
-    body: "Tap chips for scenic roads, fewest turns, avoid tolls, and more.",
+    body: "Avoid tolls, scenic roads, fewest turns, and more.",
   },
   {
     icon: "signpost",
     title: "Road rules",
-    body: "Prefer, avoid, or never use a road from Route options.",
-  },
-  {
-    icon: "add_location_alt",
-    title: "Stops",
-    body: "Add stops and drag the handle to reorder them.",
+    body: "Prefer, avoid, or never use a road.",
   },
   {
     icon: "bookmark",
     title: "Save & go",
-    body: "Bookmark a route, then tap Start. You’ll get a live reroute if needed.",
+    body: "Save a route, then tap Start.",
   },
 ];
 
@@ -2511,57 +2501,55 @@ export default function App() {
         )}
       </aside>
 
-      <main className="map-stage">
-        {showRouteOnboarding ? (
-          <div
-            className="map-onboard"
-            role="dialog"
-            aria-labelledby="map-onboard-title"
-          >
-            <header className="map-onboard-head">
-              <h2
-                id="map-onboard-title"
-                className="map-onboard-title md-typescale-title-medium"
-              >
-                New features
-              </h2>
-              <p className="map-onboard-sub md-typescale-body-small">
-                Here’s what’s new for building and refining your route
-              </p>
-            </header>
-            <div className="map-onboard-sections">
-              {ROUTE_ONBOARDING_ITEMS.map((item) => (
-                <section
-                  key={item.title}
-                  className="map-onboard-section"
-                  aria-label={item.title}
-                >
-                  <div className="map-onboard-section-icon" aria-hidden>
-                    <md-icon>{item.icon}</md-icon>
-                  </div>
-                  <div className="map-onboard-section-copy">
-                    <h3 className="map-onboard-section-title md-typescale-title-small">
-                      {item.title}
-                    </h3>
-                    <p className="map-onboard-section-body md-typescale-body-small">
-                      {item.body}
-                    </p>
-                  </div>
-                </section>
-              ))}
-            </div>
-            <md-filled-button
-              type="button"
-              class="map-onboard-btn"
-              onClick={() => {
-                persistOnboardingSeen();
-                setOnboardingDismissed(true);
-              }}
+      {showRouteOnboarding ? (
+        <div
+          className="map-onboard"
+          role="dialog"
+          aria-labelledby="map-onboard-title"
+        >
+          <header className="map-onboard-head">
+            <h2
+              id="map-onboard-title"
+              className="map-onboard-title md-typescale-title-medium"
             >
-              Got it
-            </md-filled-button>
+              New features
+            </h2>
+          </header>
+          <div className="map-onboard-sections">
+            {ROUTE_ONBOARDING_ITEMS.map((item) => (
+              <section
+                key={item.title}
+                className="map-onboard-section"
+                aria-label={item.title}
+              >
+                <div className="map-onboard-section-icon" aria-hidden>
+                  <md-icon>{item.icon}</md-icon>
+                </div>
+                <div className="map-onboard-section-copy">
+                  <h3 className="map-onboard-section-title md-typescale-title-small">
+                    {item.title}
+                  </h3>
+                  <p className="map-onboard-section-body md-typescale-body-small">
+                    {item.body}
+                  </p>
+                </div>
+              </section>
+            ))}
           </div>
-        ) : null}
+          <md-filled-button
+            type="button"
+            class="map-onboard-btn"
+            onClick={() => {
+              persistOnboardingSeen();
+              setOnboardingDismissed(true);
+            }}
+          >
+            Got it
+          </md-filled-button>
+        </div>
+      ) : null}
+
+      <main className="map-stage">
         {showEditBar ? (
           <div
             className="route-reshape-bar"
