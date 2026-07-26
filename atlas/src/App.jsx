@@ -161,6 +161,7 @@ export default function App() {
   const [roadRules, setRoadRules] = useState(() => loadRoadRules());
   const [routePrefs, setRoutePrefs] = useState(() => ({ ...DEFAULT_ROUTE_PREFS }));
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [reshapeTipDismissed, setReshapeTipDismissed] = useState(false);
   const [roadRulesOpen, setRoadRulesOpen] = useState(false);
   const [roadPickMode, setRoadPickMode] = useState(false);
   /** Where to restore after Pick-on-map: "prefs" | "roadRules" | null */
@@ -2093,6 +2094,11 @@ export default function App() {
     Boolean(editOrigin) &&
     Boolean(editDestination) &&
     Boolean(routeGeometry?.length > 1);
+  const showReshapeTip =
+    routeEditable &&
+    routeOptions.length > 0 &&
+    !reshapeTipDismissed &&
+    !dirLoading;
   const freezeFit =
     editHistory.length > 0 ||
     Boolean(editPreview?.active) ||
@@ -2469,6 +2475,24 @@ export default function App() {
       </aside>
 
       <main className="map-stage">
+        {showReshapeTip ? (
+          <div
+            className="map-reshape-tip"
+            role="dialog"
+            aria-label="Reshape route tip"
+          >
+            <p className="map-reshape-tip-copy md-typescale-body-medium">
+              Drag the blue route on the map to reshape
+            </p>
+            <md-filled-button
+              type="button"
+              class="map-reshape-tip-btn"
+              onClick={() => setReshapeTipDismissed(true)}
+            >
+              Got it
+            </md-filled-button>
+          </div>
+        ) : null}
         {showEditBar ? (
           <div
             className="route-reshape-bar"

@@ -895,15 +895,6 @@ export default function DirectionsPanel({
           </div>
         </div>
 
-        {hasRouteResults && !hasCustomEdits ? (
-          <p className="dir-drag-hint md-typescale-body-small" role="note">
-            <md-icon aria-hidden>open_with</md-icon>
-            <span className="dir-drag-hint-copy">
-              Drag the blue route on the map to reshape
-            </span>
-          </p>
-        ) : null}
-
         {/* Always below start / mid / destination fields. */}
         {placeList.open &&
         (placeList.items.length > 0 ||

@@ -745,28 +745,40 @@ md-icon-button.dir-add-stop:hover {
   z-index: 2;
 }
 
-.dir-drag-hint {
+/* Top-center reshape coach mark on the map */
+.map-reshape-tip {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 1110;
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 8px 0 0;
-  padding: 0 2px;
-  color: #5f6368;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(360px, calc(100% - 24px));
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(60, 64, 67, 0.12);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.12),
+    0 8px 24px rgba(60, 64, 67, 0.18);
+  pointer-events: auto;
+  text-align: center;
 }
 
-.dir-drag-hint md-icon {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  color: var(--atlas-accent, #1a73e8);
-  --md-icon-size: 18px;
-}
-
-.dir-drag-hint-copy {
-  min-width: 0;
+.map-reshape-tip-copy {
+  margin: 0;
+  color: #202124;
   line-height: 1.35;
+}
+
+.map-reshape-tip-btn {
+  min-width: 88px;
 }
 
 .dir-selected-route {
@@ -4127,12 +4139,12 @@ md-text-button {
   }
 
   .panel.is-directions-chrome .dir-drag-hint {
-    display: flex;
-    margin: 8px 0 0;
-    padding: 0 2px;
-    border-radius: 0;
-    background: transparent;
-    color: #5f6368;
+    display: none;
+  }
+
+  /* Sit in the visible map band under the floating stops card */
+  .app:has(.panel.is-directions-chrome) .map-reshape-tip {
+    top: min(42dvh, 260px);
   }
 
   /* Stay above the Drive sheet, clear of the top stops card.

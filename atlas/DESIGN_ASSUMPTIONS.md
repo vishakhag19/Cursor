@@ -16,4 +16,4 @@ Flagged guesses from the route-control suite implementation (not product-final):
 
 Ranking weights that actually change order live in `utils/routeRecommend.js` (`scoreRoute`) with inline comments.
 
-12. **Reshape discoverability** — single panel hint under the destination field (“Drag the blue route…”). Hides after the first reshape in the session.
+12. **Reshape discoverability** — top-center map tip (“Drag the blue route…”) with a Got it button; dismissed for the rest of the session.
