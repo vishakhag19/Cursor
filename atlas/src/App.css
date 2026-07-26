@@ -792,13 +792,9 @@ md-icon-button.dir-add-stop:hover {
   overflow: visible;
 }
 
-/* Hide stops bar + Drive sheet while the New features card is open */
-.app.has-route-onboard .panel.is-directions-chrome .dir-mobile-top-stack,
-.app.has-route-onboard .panel.is-directions-chrome .dir-drive-sheet {
-  display: none !important;
-}
-
+/* Hide stops bar + Drive sheet (and desktop directions chrome) while open */
 .app.has-route-onboard .panel.is-directions-chrome {
+  visibility: hidden;
   pointer-events: none;
 }
 
