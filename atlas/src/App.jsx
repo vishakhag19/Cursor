@@ -744,10 +744,11 @@ export default function App() {
         return;
       }
 
-      setSelectedViaId(null);
-
-      // Ignore the click that follows a route-line drag (otherwise it inserts a stop).
+      // Ignore the click that follows a via select / route-line drag
+      // (otherwise it clears the × or inserts a stop).
       if (Date.now() < suppressMapClickUntil.current) return;
+
+      setSelectedViaId(null);
 
       // When a route is on the map, stops are added only via the stop fields —
       // never by tapping / interacting with the map.

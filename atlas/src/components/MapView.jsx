@@ -54,26 +54,66 @@ function routeTimeIcon(label, active = false) {
   const key = `${label}-${active ? 1 : 0}`;
   const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
-  // Farther off the polyline so via × controls stay visible while editing.
+  // Anchor just above the route point — close, but not on the line.
   const icon = L.divIcon({
     className: "atlas-route-time",
     html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${label}</div>`,
-    iconSize: [88, 32],
-    iconAnchor: [-28, 56],
+    iconSize: [72, 28],
+    iconAnchor: [36, 34],
   });
   ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
 }
 
+/** Point at an arc-length fraction along the polyline (not vertex index). */
 function geometryLabelPoint(geometry, fraction = 0.5) {
   if (!geometry?.length) return null;
-  const i = Math.min(
-    geometry.length - 1,
-    Math.max(0, Math.floor(geometry.length * fraction)),
-  );
-  const pt = geometry[i];
-  if (!pt) return null;
-  return { lat: pt[0], lng: pt[1] };
+  if (geometry.length === 1) {
+    return { lat: geometry[0][0], lng: geometry[0][1] };
+  }
+  const segLens = [];
+  let total = 0;
+  for (let i = 1; i < geometry.length; i += 1) {
+    const a = geometry[i - 1];
+    const b = geometry[i];
+    const dLat = (b[0] - a[0]) * 111320;
+    const dLng =
+      (b[1] - a[1]) * 111320 * Math.cos((((a[0] + b[0]) / 2) * Math.PI) / 180);
+    const len = Math.hypot(dLat, dLng);
+    segLens.push(len);
+    total += len;
+  }
+  if (total <= 0) {
+    const pt = geometry[Math.floor(geometry.length / 2)];
+    return { lat: pt[0], lng: pt[1] };
+  }
+  const target = total * Math.min(1, Math.max(0, fraction));
+  let walked = 0;
+  for (let i = 0; i < segLens.length; i += 1) {
+    const seg = segLens[i];
+    if (walked + seg >= target) {
+      const t = seg > 0 ? (target - walked) / seg : 0;
+      const a = geometry[i];
+      const b = geometry[i + 1];
+      const lat = a[0] + (b[0] - a[0]) * t;
+      const lng = a[1] + (b[1] - a[1]) * t;
+      // Small perpendicular nudge so the chip sits beside the stroke.
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const inv = Math.hypot(dx, dy) || 1;
+      const side = i % 2 === 0 ? 1 : -1;
+      const nudgeM = 14;
+      const nLat = (-dy / inv) * (nudgeM / 111320) * side;
+      const nLng =
+        (dx / inv) *
+        (nudgeM / (111320 * Math.cos((lat * Math.PI) / 180) || 1)) *
+        side;
+      return { lat: lat + nLat, lng: lng + nLng };
+    }
+    walked += seg;
+  }
+  const last = geometry[geometry.length - 1];
+  return { lat: last[0], lng: last[1] };
 }
 
 const USER_LOC_ICON = L.divIcon({
@@ -309,7 +349,10 @@ function EnsureRoutePanes() {
     }
     if (!map.getPane("routeHit")) {
       const pane = map.createPane("routeHit");
-      pane.style.zIndex = 430;
+      // Above edit visuals so alternate routes stay tappable while editing.
+      pane.style.zIndex = 470;
+    } else {
+      map.getPane("routeHit").style.zIndex = 470;
     }
     // Above faded selected route, below markers — owns edit-mode drag hits.
     if (!map.getPane("routeEdit")) {
@@ -586,18 +629,29 @@ export default function MapView({
             />
           ))}
 
-      {!showRouteEditor &&
-        !roadPickMode &&
-        routeOptions.map((opt) => {
-          if (!opt?.geometry?.length) return null;
-          return (
+      {/* Fat hit targets: all routes when idle; alternates stay tappable while editing */}
+      {!roadPickMode &&
+        routeOptions
+          .filter((opt) => {
+            if (!opt?.geometry?.length) return false;
+            // Selected line is handled by the editor while editing.
+            if (showRouteEditor && opt.id === selectedRouteId) return false;
+            return true;
+          })
+          // Selected last so it wins shared corridors when not editing.
+          .sort((a, b) => {
+            if (a.id === selectedRouteId) return 1;
+            if (b.id === selectedRouteId) return -1;
+            return 0;
+          })
+          .map((opt) => (
             <Polyline
               key={`hit-${opt.id}`}
               positions={opt.geometry}
               pane="routeHit"
               pathOptions={{
                 color: "#000",
-                weight: 18,
+                weight: 22,
                 opacity: 0,
               }}
               eventHandlers={{
@@ -607,13 +661,11 @@ export default function MapView({
                 },
               }}
             />
-          );
-        })}
+          ))}
 
-      {/* Travel-time chips sit well off the line; never capture pointer events */}
+      {/* Travel-time chips sit just beside the line; never capture pointer events */}
       {routeOptions.map((opt, index) => {
-        // Keep chips away from the mid-route reshape handles.
-        const fraction = 0.22 + (index % 3) * 0.08;
+        const fraction = 0.42 + (index % 4) * 0.06;
         const mid = geometryLabelPoint(opt?.geometry, fraction);
         if (!mid) return null;
         const active = opt.id === selectedRouteId;
@@ -638,6 +690,12 @@ export default function MapView({
           stopPins={directionWaypoints}
           vias={editVias}
           geometry={selectedGeometry}
+          alternateGeometries={routeOptions
+            .filter(
+              (opt) =>
+                opt?.geometry?.length && opt.id !== selectedRouteId,
+            )
+            .map((opt) => opt.geometry)}
           travelMode={editTravelMode}
           selectedViaId={selectedViaId}
           onSelectVia={onSelectVia}

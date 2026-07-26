@@ -101,6 +101,8 @@ export default function RouteEditorLayer({
   stopPins = null,
   vias = [],
   geometry,
+  /** Other route geometries — don't steal clicks that belong to an alternate. */
+  alternateGeometries = [],
   travelMode = "driving",
   onPreview,
   onSuppressMapClick = null,
@@ -124,6 +126,7 @@ export default function RouteEditorLayer({
   const originRef = useRef(origin);
   const destinationRef = useRef(destination);
   const stopPinsRef = useRef(stopPins);
+  const alternateGeometriesRef = useRef(alternateGeometries);
   const travelModeRef = useRef(travelMode);
   const onSelectViaRef = useRef(onSelectVia);
   const onSuppressMapClickRef = useRef(onSuppressMapClick);
@@ -134,6 +137,7 @@ export default function RouteEditorLayer({
   viasRef.current = vias;
   originRef.current = origin;
   destinationRef.current = destination;
+  alternateGeometriesRef.current = alternateGeometries;
   stopPinsRef.current = stopPins;
   travelModeRef.current = travelMode;
   onSelectViaRef.current = onSelectVia;
@@ -691,13 +695,14 @@ export default function RouteEditorLayer({
     function armPending(kind, payload, startEvent, clientX, clientY) {
       clearPending();
       const touch = isTouchLikeEvent(startEvent);
-      // Desktop: claim immediately (existing mouse behavior).
-      if (!touch) {
+      // Desktop line: claim immediately. Via: wait for move vs tap so a
+      // click can select and show × without starting a drag.
+      if (!touch && kind !== "via") {
         claimDrag(kind, payload, startEvent);
         return;
       }
 
-      // Touch: wait for intentional single-finger movement before stealing zoom/pan.
+      // Touch / via: wait for intentional movement before stealing zoom/pan.
       const pointerId = startEvent.pointerId;
       pending = {
         kind,
@@ -706,7 +711,7 @@ export default function RouteEditorLayer({
         y: clientY,
         pointerId,
       };
-      const CLAIM_PX = 16;
+      const CLAIM_PX = kind === "via" ? 10 : 16;
 
       const onMove = (ev) => {
         if (!pending) return;
@@ -796,12 +801,15 @@ export default function RouteEditorLayer({
       const target = e.target;
       if (
         target?.closest?.(
-          ".leaflet-control, .leaflet-marker-icon, .atlas-pin, .via-map-delete, .atlas-via-delete, button, a, input, textarea",
+          ".leaflet-control, .via-map-delete, .atlas-via-delete, button, a, input, textarea",
         )
       ) {
-        // Let stop pins (and other markers) own the gesture — don't steal for reshape.
         return;
       }
+      // Stop pins own the gesture unless a via is under the press (checked below).
+      const onPinChrome = Boolean(
+        target?.closest?.(".leaflet-marker-icon, .atlas-pin"),
+      );
 
       const clientX = e.clientX ?? e.touches?.[0]?.clientX;
       const clientY = e.clientY ?? e.touches?.[0]?.clientY;
@@ -810,21 +818,7 @@ export default function RouteEditorLayer({
       const latlng = clientToLatLng(clientX, clientY);
       const pt = map.latLngToContainerPoint(latlng);
 
-      // Also bail when the press is on a stop pin (anchor is tip of teardrop).
-      const PIN_HIT_PX = 28;
-      const pins =
-        stopPinsRef.current?.length > 0
-          ? stopPinsRef.current
-          : [originRef.current, destinationRef.current];
-      for (const stop of pins) {
-        if (stop?.lat == null || stop?.lng == null) continue;
-        if (stop.isCurrentLocation) continue;
-        const sp = map.latLngToContainerPoint([stop.lat, stop.lng]);
-        if (Math.hypot(sp.x - pt.x, sp.y - pt.y) <= PIN_HIT_PX) {
-          return;
-        }
-      }
-
+      // Prefer vias over coinciding stop pins so × selection works on mid-stops.
       const viasNow = viasRef.current;
       let bestVia = null;
       let bestViaDist = Infinity;
@@ -841,6 +835,23 @@ export default function RouteEditorLayer({
         return;
       }
 
+      if (onPinChrome) return;
+
+      // Bail when the press is on a stop pin (anchor is tip of teardrop).
+      const PIN_HIT_PX = 28;
+      const pins =
+        stopPinsRef.current?.length > 0
+          ? stopPinsRef.current
+          : [originRef.current, destinationRef.current];
+      for (const stop of pins) {
+        if (stop?.lat == null || stop?.lng == null) continue;
+        if (stop.isCurrentLocation) continue;
+        const sp = map.latLngToContainerPoint([stop.lat, stop.lng]);
+        if (Math.hypot(sp.x - pt.x, sp.y - pt.y) <= PIN_HIT_PX) {
+          return;
+        }
+      }
+
       const geom = geometryRef.current;
       const closest = closestPointOnPolyline(
         { lat: latlng.lat, lng: latlng.lng },
@@ -848,7 +859,27 @@ export default function RouteEditorLayer({
       );
       if (!closest) return;
       const closestPt = map.latLngToContainerPoint([closest.lat, closest.lng]);
-      if (Math.hypot(closestPt.x - pt.x, closestPt.y - pt.y) > hitPixels()) {
+      const selectedDist = Math.hypot(closestPt.x - pt.x, closestPt.y - pt.y);
+      if (selectedDist > hitPixels()) {
+        return;
+      }
+
+      // If an alternate is closer, let MapView's hit polyline select it.
+      let altDist = Infinity;
+      for (const altGeom of alternateGeometriesRef.current || []) {
+        const altClosest = closestPointOnPolyline(
+          { lat: latlng.lat, lng: latlng.lng },
+          altGeom,
+        );
+        if (!altClosest) continue;
+        const ap = map.latLngToContainerPoint([
+          altClosest.lat,
+          altClosest.lng,
+        ]);
+        const d = Math.hypot(ap.x - pt.x, ap.y - pt.y);
+        if (d < altDist) altDist = d;
+      }
+      if (altDist + 2 < selectedDist) {
         return;
       }
 
