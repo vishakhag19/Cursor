@@ -1473,6 +1473,7 @@ md-icon-button.dir-add-stop:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   min-width: 52px;
   min-height: 28px;
   padding: 4px 10px;
@@ -1488,10 +1489,31 @@ md-icon-button.dir-add-stop:hover {
   box-sizing: border-box;
 }
 
+.map-route-time-glyph {
+  font-size: 16px;
+  line-height: 1;
+  width: 16px;
+  height: 16px;
+  color: #188038;
+  font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 20;
+}
+
+.map-route-time-glyph:last-of-type {
+  color: #1a73e8;
+}
+
 .map-route-time.is-active {
   background: var(--route-blue, #1a73e8);
   border-color: var(--route-blue, #1a73e8);
   color: #fff;
+}
+
+.map-route-time.is-active .map-route-time-glyph {
+  color: #fff;
+}
+
+.map-route-time-label {
+  line-height: 1;
 }
 
 .atlas-route-num {

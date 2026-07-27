@@ -347,6 +347,20 @@ export function enrichAndRankRoutes(
       (a.metrics.turns - b.metrics.turns) || a.duration - b.duration,
   )[0];
 
+  // Soft “suggest” winners for map time-chip icons (relative to this set).
+  const fuelCostOf = (r) =>
+    (r.metrics?.highwayShare ?? 0) * 180 + (r.metrics?.turns ?? 0) * 8;
+  const bestFuel = [...pool].sort(
+    (a, b) => fuelCostOf(a) - fuelCostOf(b) || a.duration - b.duration,
+  )[0];
+  const bestQuality = [...pool].sort(
+    (a, b) =>
+      (b.metrics?.namedShare ?? 0) - (a.metrics?.namedShare ?? 0) ||
+      a.duration - b.duration,
+  )[0];
+  const bestFuelCost = bestFuel ? fuelCostOf(bestFuel) : 0;
+  const bestNamed = bestQuality?.metrics?.namedShare ?? 0;
+
   const ranked = [...pool].sort(
     (a, b) =>
       scoreRoute(a, prefs, roadRules) - scoreRoute(b, prefs, roadRules),
@@ -366,11 +380,21 @@ export function enrichAndRankRoutes(
     else if (r.id === fastest?.id) badge = "Fastest";
     else if (r.id === shortest?.id) badge = "Shortest";
     else if (prefs.fewestTurns && r.id === fewest?.id) badge = "Fewest turns";
+    const suggestFuelEfficient =
+      pool.length > 1 &&
+      Math.abs(fuelCostOf(r) - bestFuelCost) < 0.5 &&
+      fuelCostOf(r) <= bestFuelCost + 0.01;
+    const suggestGoodQuality =
+      pool.length > 1 &&
+      (r.metrics?.namedShare ?? 0) >= bestNamed - 0.02 &&
+      bestNamed >= 0.45;
     return {
       ...r,
       rank: i + 1,
       reason,
       badge,
+      suggestFuelEfficient,
+      suggestGoodQuality,
       // Trade-off vs the #1 recommendation (Feature 7).
       tradeOff:
         i === 0

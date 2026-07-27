@@ -53,16 +53,30 @@ const ROUTE_TIME_ICON_CACHE = new Map();
 /** Screen px from the stroke to the chip center — clear of the line at any zoom. */
 const ROUTE_TIME_OFFSET_PX = 34;
 
-function routeTimeIcon(label, active = false) {
-  const key = `${label}-${active ? 1 : 0}-px`;
+function routeTimeIcon(
+  label,
+  active = false,
+  { fuel = false, quality = false } = {},
+) {
+  const key = `${label}-${active ? 1 : 0}-f${fuel ? 1 : 0}-q${quality ? 1 : 0}`;
   const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
+  const icons = [
+    fuel
+      ? `<span class="material-symbols-outlined map-route-time-glyph" title="Fuel-efficient" aria-label="Fuel-efficient">eco</span>`
+      : "",
+    quality
+      ? `<span class="material-symbols-outlined map-route-time-glyph" title="Good quality roads" aria-label="Good quality roads">verified</span>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+  const width = 64 + (fuel ? 18 : 0) + (quality ? 18 : 0);
   const icon = L.divIcon({
     className: "atlas-route-time",
-    html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${label}</div>`,
-    iconSize: [72, 28],
-    // Center the chip on the offset point (already off the route).
-    iconAnchor: [36, 14],
+    html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${icons}<span class="map-route-time-label">${label}</span></div>`,
+    iconSize: [width, 28],
+    iconAnchor: [width / 2, 14],
   });
   ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
@@ -129,7 +143,15 @@ function geometryLabelSample(geometry, fraction = 0.5) {
 }
 
 /** ETA chip offset in screen pixels so it never sits on the stroke. */
-function RouteTimeChip({ geometry, fraction, side, label, active }) {
+function RouteTimeChip({
+  geometry,
+  fraction,
+  side,
+  label,
+  active,
+  fuel = false,
+  quality = false,
+}) {
   const map = useMap();
   const [position, setPosition] = useState(null);
 
@@ -170,7 +192,7 @@ function RouteTimeChip({ geometry, fraction, side, label, active }) {
   return (
     <Marker
       position={position}
-      icon={routeTimeIcon(label, active)}
+      icon={routeTimeIcon(label, active, { fuel, quality })}
       interactive={false}
       keyboard={false}
       zIndexOffset={active ? 500 : 400}
@@ -725,7 +747,7 @@ export default function MapView({
             />
           ))}
 
-      {/* Travel-time chips: fixed screen offset off the stroke at every zoom */}
+      {/* Travel-time chips: ETA + optional fuel / quality suggestion icons */}
       {routeOptions.map((opt, index) => {
         if (!opt?.geometry?.length) return null;
         const fraction = 0.38 + (index % 4) * 0.08;
@@ -738,6 +760,8 @@ export default function MapView({
             side={side}
             label={formatDuration(opt.duration)}
             active={opt.id === selectedRouteId}
+            fuel={Boolean(opt.suggestFuelEfficient)}
+            quality={Boolean(opt.suggestGoodQuality)}
           />
         );
       })}
