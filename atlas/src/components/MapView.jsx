@@ -52,9 +52,9 @@ function pinIcon(kind = "default") {
 const ROUTE_TIME_ICON_CACHE = new Map();
 /**
  * Distance from route centerline to chip center (px).
- * stroke≈6 + gap≈6 + chip half-height≈14 ≈ 26 — close, not overlapping.
+ * Selected stroke≈6 → half 3; chip half-height≈14; visual gap≈5 → ~22.
  */
-const ROUTE_TIME_OFFSET_PX = 26;
+const ROUTE_TIME_OFFSET_PX = 22;
 
 function routeTimeIcon(
   label,
@@ -74,12 +74,13 @@ function routeTimeIcon(
   ]
     .filter(Boolean)
     .join("");
-  const width = 64 + (fuel ? 18 : 0) + (quality ? 18 : 0);
+  // Size/anchor left unset — CSS translate(-50%,-50%) centers on the latlng so
+  // varying label/icon widths never drift the chip onto or away from the stroke.
   const icon = L.divIcon({
     className: "atlas-route-time",
     html: `<button type="button" class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}"><span class="map-route-time-label">${label}</span>${icons}</button>`,
-    iconSize: [width, 28],
-    iconAnchor: [width / 2, 14],
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
   });
   ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
@@ -145,11 +146,37 @@ function geometryLabelSample(geometry, fraction = 0.5) {
   };
 }
 
-/** ETA chip offset in screen pixels so it never sits on the stroke. */
+/** Min screen-px distance from point to a polyline (latlngs). */
+function distPointToPolylinePx(map, point, geometry) {
+  if (!geometry?.length) return Infinity;
+  let best = Infinity;
+  for (let i = 1; i < geometry.length; i += 1) {
+    const a = map.latLngToContainerPoint(geometry[i - 1]);
+    const b = map.latLngToContainerPoint(geometry[i]);
+    const abx = b.x - a.x;
+    const aby = b.y - a.y;
+    const len2 = abx * abx + aby * aby;
+    let t = 0;
+    if (len2 > 0) {
+      t = Math.max(
+        0,
+        Math.min(1, ((point.x - a.x) * abx + (point.y - a.y) * aby) / len2),
+      );
+    }
+    const px = a.x + abx * t;
+    const py = a.y + aby * t;
+    best = Math.min(best, Math.hypot(point.x - px, point.y - py));
+  }
+  return best;
+}
+
+/** ETA chip offset in screen pixels so it sits just beside the stroke. */
 function RouteTimeChip({
   geometry,
   fraction,
-  side,
+  side: sideHint = 1,
+  routeId = null,
+  allRouteOptions = [],
   label,
   active,
   fuel = false,
@@ -158,17 +185,30 @@ function RouteTimeChip({
 }) {
   const map = useMap();
   const [position, setPosition] = useState(null);
+  const othersKey = allRouteOptions
+    .map((o) => o?.id)
+    .filter((id) => id && id !== routeId)
+    .join("|");
 
   useEffect(() => {
     function update() {
-      const sample = geometryLabelSample(geometry, fraction);
-      if (!sample) {
+      // Smooth tangent: sample slightly before/after so sharp corners don't fling the chip.
+      const mid = geometryLabelSample(geometry, fraction);
+      const before = geometryLabelSample(geometry, Math.max(0, fraction - 0.03));
+      const after = geometryLabelSample(geometry, Math.min(1, fraction + 0.03));
+      if (!mid) {
         setPosition(null);
         return;
       }
-      const origin = map.latLngToContainerPoint([sample.lat, sample.lng]);
-      const a = map.latLngToContainerPoint([sample.a[0], sample.a[1]]);
-      const b = map.latLngToContainerPoint([sample.b[0], sample.b[1]]);
+      const origin = map.latLngToContainerPoint([mid.lat, mid.lng]);
+      const a = map.latLngToContainerPoint([
+        before?.lat ?? mid.a[0],
+        before?.lng ?? mid.a[1],
+      ]);
+      const b = map.latLngToContainerPoint([
+        after?.lat ?? mid.b[0],
+        after?.lng ?? mid.b[1],
+      ]);
       let dx = b.x - a.x;
       let dy = b.y - a.y;
       let inv = Math.hypot(dx, dy);
@@ -177,9 +217,41 @@ function RouteTimeChip({
         dy = -1;
         inv = 1;
       }
-      // Keep a tight, consistent gap from the stroke at every zoom.
-      const ox = (-dy / inv) * ROUTE_TIME_OFFSET_PX * side;
-      const oy = (dx / inv) * ROUTE_TIME_OFFSET_PX * side;
+      const nx = -dy / inv;
+      const ny = dx / inv;
+
+      // Prefer the side farther from other routes so chips hug their own line.
+      let side = sideHint;
+      const otherGeometries = allRouteOptions
+        .filter((o) => o?.id !== routeId && o?.geometry?.length)
+        .map((o) => o.geometry);
+      if (otherGeometries.length) {
+        const pPos = L.point(
+          origin.x + nx * ROUTE_TIME_OFFSET_PX,
+          origin.y + ny * ROUTE_TIME_OFFSET_PX,
+        );
+        const pNeg = L.point(
+          origin.x - nx * ROUTE_TIME_OFFSET_PX,
+          origin.y - ny * ROUTE_TIME_OFFSET_PX,
+        );
+        let clearancePos = Infinity;
+        let clearanceNeg = Infinity;
+        for (const g of otherGeometries) {
+          clearancePos = Math.min(
+            clearancePos,
+            distPointToPolylinePx(map, pPos, g),
+          );
+          clearanceNeg = Math.min(
+            clearanceNeg,
+            distPointToPolylinePx(map, pNeg, g),
+          );
+        }
+        if (clearanceNeg > clearancePos + 2) side = -1;
+        else if (clearancePos > clearanceNeg + 2) side = 1;
+      }
+
+      const ox = nx * ROUTE_TIME_OFFSET_PX * side;
+      const oy = ny * ROUTE_TIME_OFFSET_PX * side;
       const ll = map.containerPointToLatLng(
         L.point(origin.x + ox, origin.y + oy),
       );
@@ -191,7 +263,9 @@ function RouteTimeChip({
     return () => {
       map.off("zoom viewreset move zoomend moveend", update);
     };
-  }, [map, geometry, fraction, side]);
+    // othersKey tracks sibling route identity without new-array deps each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- allRouteOptions read inside via othersKey
+  }, [map, geometry, fraction, sideHint, routeId, othersKey]);
 
   if (!position) return null;
   return (
@@ -763,7 +837,8 @@ export default function MapView({
       {/* Travel-time chips: ETA + fuel/quality icons only when those filters are on */}
       {routeOptions.map((opt, index) => {
         if (!opt?.geometry?.length) return null;
-        const fraction = 0.45 + (index % 5) * 0.05;
+        // Keep chips near mid-route; stagger slightly so siblings don't stack.
+        const fraction = 0.42 + (index % 4) * 0.04;
         const side = index % 2 === 0 ? 1 : -1;
         const showFuel =
           Boolean(routePrefs?.preferFuelEfficient) &&
@@ -777,6 +852,8 @@ export default function MapView({
             geometry={opt.geometry}
             fraction={fraction}
             side={side}
+            routeId={opt.id}
+            allRouteOptions={routeOptions}
             label={formatDuration(opt.duration)}
             active={opt.id === selectedRouteId}
             fuel={showFuel}
