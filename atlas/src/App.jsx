@@ -198,7 +198,7 @@ export default function App() {
   const [rerouteSuggestion, setRerouteSuggestion] = useState(null);
   const [navOriginalRoute, setNavOriginalRoute] = useState(null);
   const [acceptedReroute, setAcceptedReroute] = useState(false);
-  /** After Accept or Reject, do not auto-offer the demo prompt again. */
+  /** After yes/no (or tap fallback), do not auto-offer the demo prompt again. */
   const [reroutePromptSettled, setReroutePromptSettled] = useState(false);
   const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -207,9 +207,9 @@ export default function App() {
     {
       id: "welcome",
       role: "agent",
-      text: "I can reshape your route. Try “avoid Oak St”, “take Main instead of 5th”, or “reroute around traffic”. Voice confirmation can plug in later — for now, reply here.",
+      text: "I can reshape your route. Try “avoid Oak St”, “take Main instead of 5th”, or “reroute around traffic”. During navigation, reroute offers are spoken — just say yes or no.",
       spoken:
-        "I can reshape your route. Say avoid a street, take one road instead of another, or ask to reroute.",
+        "I can reshape your route. Say avoid a street, take one road instead of another, or ask to reroute. During navigation, reroute offers are spoken — just say yes or no.",
     },
   ]);
 
@@ -2005,8 +2005,8 @@ export default function App() {
   }, []);
 
   /**
-   * Feature 6: mid-nav reroute interruption.
-   * Auto-shows ~3s after Start (no manual simulate control).
+   * Feature 6: mid-nav reroute interruption (audio).
+   * ~3s after Start, speak the offer and listen for yes/no.
    * ASSUMPTION: no live incident feed — mock reason for prototype testing.
    */
   const offerRerouteDemo = useCallback(() => {
@@ -2022,7 +2022,7 @@ export default function App() {
         )
       : 8;
     setRerouteSuggestion({
-      reason: `Accident reported ahead — this saves ~${saveMin} min`,
+      reason: `Accident reported ahead — saves ~${saveMin} min`,
       detail: alt?.reason
         ? `Suggested: ${alt.label}. ${alt.reason}`
         : "Takes a parallel corridor around the blockage.",

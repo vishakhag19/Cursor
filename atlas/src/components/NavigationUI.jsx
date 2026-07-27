@@ -5,6 +5,7 @@ import ReroutePrompt from "./ReroutePrompt";
 /**
  * Active turn-by-turn navigation — Google Maps mobile layout:
  * dark teal maneuver banner + bottom bar with close, ETA, alt routes.
+ * Reroute offers are audio-first (speak + yes/no); UI is a compact listener.
  * Portaled to document.body so map / panel stacking cannot swallow Exit.
  */
 export default function NavigationUI({

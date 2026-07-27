@@ -59,7 +59,7 @@ export default function RouteAssistant({
             <div>
               <div className="md-typescale-title-small">Route assistant</div>
               <div className="md-typescale-body-small route-assistant-sub">
-                Ask in plain language · voice later
+                Ask in plain language · say yes/no on nav reroutes
               </div>
             </div>
           </div>
