@@ -68,6 +68,11 @@ const ROUTE_ONBOARDING_ITEMS = [
     body: "Prefer, avoid, or never use a road.",
   },
   {
+    icon: "mic",
+    title: "Voice while navigating",
+    body: "During navigation, tap the mic and say “avoid” or “prefer” a road — we’ll confirm out loud.",
+  },
+  {
     icon: "bookmark",
     title: "Save route",
     body: "Save a route to use later.",
