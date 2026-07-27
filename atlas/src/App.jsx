@@ -437,6 +437,8 @@ export default function App() {
       badge: "Edited route",
       rank: 0,
       edited: true,
+      // Keep reshape points with the route so they return when reselected.
+      vias: cloneVias(vias),
     };
 
     if (pushHistory) pushEditHistory();
@@ -459,6 +461,23 @@ export default function App() {
 
   const selectRoute = useCallback((opt, { keepNavigating = false } = {}) => {
     if (!opt) return;
+    setSelectedViaId(null);
+
+    // Stash current vias onto the edited route we're leaving.
+    const prevId = selectedRouteIdRef.current;
+    if (prevId && prevId !== opt.id) {
+      const prevVias = cloneVias(editViasRef.current);
+      if (prevVias.length > 0) {
+        setRouteOptions((prev) => {
+          const next = prev.map((r) =>
+            r.id === prevId && r.edited ? { ...r, vias: prevVias } : r,
+          );
+          routeOptionsRef.current = next;
+          return next;
+        });
+      }
+    }
+
     selectedRouteIdRef.current = opt.id;
     setSelectedRouteId(opt.id);
     routeGeometryRef.current = opt.geometry;
@@ -469,7 +488,16 @@ export default function App() {
       setNavStepIndex(0);
       setShowSteps(false);
     }
-    if (!opt.edited) {
+    if (opt.edited) {
+      const fromOpt =
+        routeOptionsRef.current.find((r) => r.id === opt.id)?.vias ||
+        opt.vias ||
+        [];
+      const restored = cloneVias(fromOpt);
+      editViasRef.current = restored;
+      setEditVias(restored);
+      setEditPreview(null);
+    } else {
       setBaselineRoute(opt);
       editViasRef.current = [];
       setEditVias([]);

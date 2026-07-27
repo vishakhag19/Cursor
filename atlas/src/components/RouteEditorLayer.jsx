@@ -130,6 +130,7 @@ export default function RouteEditorLayer({
   const travelModeRef = useRef(travelMode);
   const onSelectViaRef = useRef(onSelectVia);
   const onSuppressMapClickRef = useRef(onSuppressMapClick);
+  const selectedViaIdRef = useRef(selectedViaId);
   const beginPolylineDragRef = useRef(null);
   const beginViaDragRef = useRef(null);
 
@@ -142,6 +143,7 @@ export default function RouteEditorLayer({
   travelModeRef.current = travelMode;
   onSelectViaRef.current = onSelectVia;
   onSuppressMapClickRef.current = onSuppressMapClick;
+  selectedViaIdRef.current = selectedViaId;
 
   function clearDocListeners() {
     const L = listenersRef.current;
@@ -833,6 +835,11 @@ export default function RouteEditorLayer({
       if (bestVia && bestViaDist <= viaHitPixels()) {
         armPending("via", { via: bestVia }, e, clientX, clientY);
         return;
+      }
+
+      // Tap/click anywhere else dismisses the × on the selected point.
+      if (selectedViaIdRef.current) {
+        onSelectViaRef.current?.(null);
       }
 
       if (onPinChrome) return;

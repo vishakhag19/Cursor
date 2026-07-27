@@ -51,22 +51,25 @@ function pinIcon(kind = "default") {
 
 const ROUTE_TIME_ICON_CACHE = new Map();
 function routeTimeIcon(label, active = false) {
-  const key = `${label}-${active ? 1 : 0}`;
+  const key = `${label}-${active ? 1 : 0}-near`;
   const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
-  // Anchor just above the route point — close, but not on the line.
+  // Chip sits above the anchor point; lateral offset is applied in geometry.
   const icon = L.divIcon({
     className: "atlas-route-time",
     html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${label}</div>`,
     iconSize: [72, 28],
-    iconAnchor: [36, 34],
+    iconAnchor: [36, 40],
   });
   ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
 }
 
-/** Point at an arc-length fraction along the polyline (not vertex index). */
-function geometryLabelPoint(geometry, fraction = 0.5) {
+/**
+ * Point at an arc-length fraction along the polyline, nudged perpendicular
+ * so the chip stays close without overlapping the stroke.
+ */
+function geometryLabelPoint(geometry, fraction = 0.5, side = 1) {
   if (!geometry?.length) return null;
   if (geometry.length === 1) {
     return { lat: geometry[0][0], lng: geometry[0][1] };
@@ -97,12 +100,11 @@ function geometryLabelPoint(geometry, fraction = 0.5) {
       const b = geometry[i + 1];
       const lat = a[0] + (b[0] - a[0]) * t;
       const lng = a[1] + (b[1] - a[1]) * t;
-      // Small perpendicular nudge so the chip sits beside the stroke.
       const dx = b[0] - a[0];
       const dy = b[1] - a[1];
       const inv = Math.hypot(dx, dy) || 1;
-      const side = i % 2 === 0 ? 1 : -1;
-      const nudgeM = 14;
+      // ~40–55 m off the line — close at city zoom, clear of the stroke.
+      const nudgeM = 48;
       const nLat = (-dy / inv) * (nudgeM / 111320) * side;
       const nLng =
         (dx / inv) *
@@ -665,8 +667,9 @@ export default function MapView({
 
       {/* Travel-time chips sit just beside the line; never capture pointer events */}
       {routeOptions.map((opt, index) => {
-        const fraction = 0.42 + (index % 4) * 0.06;
-        const mid = geometryLabelPoint(opt?.geometry, fraction);
+        const fraction = 0.4 + (index % 4) * 0.07;
+        const side = index % 2 === 0 ? 1 : -1;
+        const mid = geometryLabelPoint(opt?.geometry, fraction, side);
         if (!mid) return null;
         const active = opt.id === selectedRouteId;
         const label = formatDuration(opt.duration);
