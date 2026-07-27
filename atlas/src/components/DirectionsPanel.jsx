@@ -65,33 +65,27 @@ function isMobileSheetViewport() {
 /** Collapsed sheet fits grabber + Drive title row + Start (never clip Start). */
 const SHEET_COLLAPSED_MIN_PX = 156;
 /** Below this drag height, hide modes/chips/body so Start stays on-screen. */
-const SHEET_CHROME_ONLY_MAX_PX = 200;
+const SHEET_CHROME_ONLY_MAX_PX = 280;
 /**
  * Mid height: show title + travel modes + chips + Start, hide route body.
- * Used for the lower snaps after fully collapsed so the sheet isn’t empty.
+ * (~grabber+title+modes+chips+Start; 40dvh alone often clips Start.)
  */
-const SHEET_CHROME_COMPACT_MAX_PX = 380;
+const SHEET_CHROME_COMPACT_MAX_PX = 400;
 const SHEET_CHROME_COMPACT_MIN_PX = 300;
-/** Fully collapsed: Drive title row + Start only. */
-const SHEET_CHROME_ONLY_SNAPS = new Set(["s10"]);
-/** Next snaps up: title + modes + chips + Start (no route body / empty gap). */
-const SHEET_CHROME_COMPACT_SNAPS = new Set(["s20", "s30"]);
+/** Snaps that only show the Drive title row + Start. */
+const SHEET_CHROME_ONLY_SNAPS = new Set(["s10", "s20", "s30"]);
+/** Snaps that show title + modes + chips + Start (no route body). */
+const SHEET_CHROME_COMPACT_SNAPS = new Set(["s40"]);
 
 function sheetSnapHeights() {
   const vh = window.innerHeight;
   const heights = {};
   for (const id of SHEET_SNAPS) {
     const fromFrac = Math.round(vh * SHEET_FRACTIONS[id]);
-    let floor = SHEET_COLLAPSED_MIN_PX;
-    if (SHEET_CHROME_COMPACT_SNAPS.has(id)) floor = SHEET_CHROME_COMPACT_MIN_PX;
+    const floor = SHEET_CHROME_COMPACT_SNAPS.has(id)
+      ? SHEET_CHROME_COMPACT_MIN_PX
+      : SHEET_COLLAPSED_MIN_PX;
     heights[id] = Math.max(floor, fromFrac);
-  }
-  // Keep drag targets ordered above the fully collapsed snap.
-  if (heights.s20 <= heights.s10) {
-    heights.s20 = heights.s10 + Math.round(SHEET_CHROME_COMPACT_MIN_PX * 0.45);
-  }
-  if (heights.s30 <= heights.s20) {
-    heights.s30 = heights.s20 + 24;
   }
   return heights;
 }
