@@ -11,8 +11,8 @@ export const DEFAULT_ROUTE_PREFS = {
   avoidFerries: false,
   preferScenic: false,
   fewestTurns: false,
-  preferRoadQuality: false,
-  preferFuelEfficient: false,
+  preferRoadQuality: true,
+  preferFuelEfficient: true,
   /** Driving avatar for navigation chrome */
   drivingAvatar: "arrow",
   /** Show estimated toll / pass prices on route cards */

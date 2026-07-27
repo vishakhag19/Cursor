@@ -2637,8 +2637,10 @@ export default function App() {
           routeOptions={view === "directions" ? routeOptions : []}
           selectedRouteId={selectedRouteId}
           onSelectRoute={(opt) => {
+            suppressMapClickUntil.current = Date.now() + 900;
             selectRoute(opt);
           }}
+          routePrefs={routePrefs}
           routeEditable={routeEditable}
           roadPickMode={roadPickMode}
           freezeFit={freezeFit}

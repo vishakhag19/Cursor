@@ -50,15 +50,18 @@ function pinIcon(kind = "default") {
 }
 
 const ROUTE_TIME_ICON_CACHE = new Map();
-/** Screen px from the stroke to the chip center — clear of the line at any zoom. */
-const ROUTE_TIME_OFFSET_PX = 34;
+/**
+ * Distance from route centerline to chip center (px).
+ * stroke≈6 + gap≈6 + chip half-height≈14 ≈ 26 — close, not overlapping.
+ */
+const ROUTE_TIME_OFFSET_PX = 26;
 
 function routeTimeIcon(
   label,
   active = false,
   { fuel = false, quality = false } = {},
 ) {
-  const key = `${label}-${active ? 1 : 0}-f${fuel ? 1 : 0}-q${quality ? 1 : 0}`;
+  const key = `${label}-${active ? 1 : 0}-f${fuel ? 1 : 0}-q${quality ? 1 : 0}-after`;
   const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
   const icons = [
@@ -74,7 +77,7 @@ function routeTimeIcon(
   const width = 64 + (fuel ? 18 : 0) + (quality ? 18 : 0);
   const icon = L.divIcon({
     className: "atlas-route-time",
-    html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${icons}<span class="map-route-time-label">${label}</span></div>`,
+    html: `<button type="button" class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}"><span class="map-route-time-label">${label}</span>${icons}</button>`,
     iconSize: [width, 28],
     iconAnchor: [width / 2, 14],
   });
@@ -151,6 +154,7 @@ function RouteTimeChip({
   active,
   fuel = false,
   quality = false,
+  onSelect = null,
 }) {
   const map = useMap();
   const [position, setPosition] = useState(null);
@@ -173,6 +177,7 @@ function RouteTimeChip({
         dy = -1;
         inv = 1;
       }
+      // Keep a tight, consistent gap from the stroke at every zoom.
       const ox = (-dy / inv) * ROUTE_TIME_OFFSET_PX * side;
       const oy = (dx / inv) * ROUTE_TIME_OFFSET_PX * side;
       const ll = map.containerPointToLatLng(
@@ -182,9 +187,9 @@ function RouteTimeChip({
     }
 
     update();
-    map.on("zoom viewreset move", update);
+    map.on("zoom viewreset move zoomend moveend", update);
     return () => {
-      map.off("zoom viewreset move", update);
+      map.off("zoom viewreset move zoomend moveend", update);
     };
   }, [map, geometry, fraction, side]);
 
@@ -193,9 +198,16 @@ function RouteTimeChip({
     <Marker
       position={position}
       icon={routeTimeIcon(label, active, { fuel, quality })}
-      interactive={false}
+      interactive
       keyboard={false}
-      zIndexOffset={active ? 500 : 400}
+      zIndexOffset={active ? 600 : 500}
+      eventHandlers={{
+        click: (e) => {
+          L.DomEvent.stopPropagation(e);
+          L.DomEvent.preventDefault(e);
+          onSelect?.();
+        },
+      }}
     />
   );
 }
@@ -486,6 +498,7 @@ export default function MapView({
   routeOptions = [],
   selectedRouteId = null,
   onSelectRoute,
+  routePrefs = null,
   routeEditable = false,
   roadPickMode = false,
   freezeFit = false,
@@ -747,11 +760,17 @@ export default function MapView({
             />
           ))}
 
-      {/* Travel-time chips: ETA + optional fuel / quality suggestion icons */}
+      {/* Travel-time chips: ETA + fuel/quality icons only when those filters are on */}
       {routeOptions.map((opt, index) => {
         if (!opt?.geometry?.length) return null;
-        const fraction = 0.38 + (index % 4) * 0.08;
+        const fraction = 0.45 + (index % 5) * 0.05;
         const side = index % 2 === 0 ? 1 : -1;
+        const showFuel =
+          Boolean(routePrefs?.preferFuelEfficient) &&
+          Boolean(opt.suggestFuelEfficient);
+        const showQuality =
+          Boolean(routePrefs?.preferRoadQuality) &&
+          Boolean(opt.suggestGoodQuality);
         return (
           <RouteTimeChip
             key={`time-${opt.id}`}
@@ -760,8 +779,9 @@ export default function MapView({
             side={side}
             label={formatDuration(opt.duration)}
             active={opt.id === selectedRouteId}
-            fuel={Boolean(opt.suggestFuelEfficient)}
-            quality={Boolean(opt.suggestGoodQuality)}
+            fuel={showFuel}
+            quality={showQuality}
+            onSelect={() => onSelectRoute?.(opt)}
           />
         );
       })}
