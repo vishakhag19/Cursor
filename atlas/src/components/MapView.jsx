@@ -50,29 +50,35 @@ function pinIcon(kind = "default") {
 }
 
 const ROUTE_TIME_ICON_CACHE = new Map();
+/** Screen px from the stroke to the chip center — clear of the line at any zoom. */
+const ROUTE_TIME_OFFSET_PX = 34;
+
 function routeTimeIcon(label, active = false) {
-  const key = `${label}-${active ? 1 : 0}-near`;
+  const key = `${label}-${active ? 1 : 0}-px`;
   const cached = ROUTE_TIME_ICON_CACHE.get(key);
   if (cached) return cached;
-  // Chip sits above the anchor point; lateral offset is applied in geometry.
   const icon = L.divIcon({
     className: "atlas-route-time",
     html: `<div class="map-route-time ${active ? "is-active" : ""}" style="--route-blue:${ROUTE_BLUE}">${label}</div>`,
     iconSize: [72, 28],
-    iconAnchor: [36, 40],
+    // Center the chip on the offset point (already off the route).
+    iconAnchor: [36, 14],
   });
   ROUTE_TIME_ICON_CACHE.set(key, icon);
   return icon;
 }
 
-/**
- * Point at an arc-length fraction along the polyline, nudged perpendicular
- * so the chip stays close without overlapping the stroke.
- */
-function geometryLabelPoint(geometry, fraction = 0.5, side = 1) {
+/** Arc-length sample on the polyline + segment endpoints for direction. */
+function geometryLabelSample(geometry, fraction = 0.5) {
   if (!geometry?.length) return null;
   if (geometry.length === 1) {
-    return { lat: geometry[0][0], lng: geometry[0][1] };
+    const pt = geometry[0];
+    return {
+      lat: pt[0],
+      lng: pt[1],
+      a: pt,
+      b: pt,
+    };
   }
   const segLens = [];
   let total = 0;
@@ -87,8 +93,14 @@ function geometryLabelPoint(geometry, fraction = 0.5, side = 1) {
     total += len;
   }
   if (total <= 0) {
-    const pt = geometry[Math.floor(geometry.length / 2)];
-    return { lat: pt[0], lng: pt[1] };
+    const mid = geometry[Math.floor(geometry.length / 2)];
+    const i = Math.max(1, Math.floor(geometry.length / 2));
+    return {
+      lat: mid[0],
+      lng: mid[1],
+      a: geometry[i - 1],
+      b: geometry[i],
+    };
   }
   const target = total * Math.min(1, Math.max(0, fraction));
   let walked = 0;
@@ -98,24 +110,72 @@ function geometryLabelPoint(geometry, fraction = 0.5, side = 1) {
       const t = seg > 0 ? (target - walked) / seg : 0;
       const a = geometry[i];
       const b = geometry[i + 1];
-      const lat = a[0] + (b[0] - a[0]) * t;
-      const lng = a[1] + (b[1] - a[1]) * t;
-      const dx = b[0] - a[0];
-      const dy = b[1] - a[1];
-      const inv = Math.hypot(dx, dy) || 1;
-      // ~40–55 m off the line — close at city zoom, clear of the stroke.
-      const nudgeM = 48;
-      const nLat = (-dy / inv) * (nudgeM / 111320) * side;
-      const nLng =
-        (dx / inv) *
-        (nudgeM / (111320 * Math.cos((lat * Math.PI) / 180) || 1)) *
-        side;
-      return { lat: lat + nLat, lng: lng + nLng };
+      return {
+        lat: a[0] + (b[0] - a[0]) * t,
+        lng: a[1] + (b[1] - a[1]) * t,
+        a,
+        b,
+      };
     }
     walked += seg;
   }
   const last = geometry[geometry.length - 1];
-  return { lat: last[0], lng: last[1] };
+  return {
+    lat: last[0],
+    lng: last[1],
+    a: geometry[geometry.length - 2],
+    b: last,
+  };
+}
+
+/** ETA chip offset in screen pixels so it never sits on the stroke. */
+function RouteTimeChip({ geometry, fraction, side, label, active }) {
+  const map = useMap();
+  const [position, setPosition] = useState(null);
+
+  useEffect(() => {
+    function update() {
+      const sample = geometryLabelSample(geometry, fraction);
+      if (!sample) {
+        setPosition(null);
+        return;
+      }
+      const origin = map.latLngToContainerPoint([sample.lat, sample.lng]);
+      const a = map.latLngToContainerPoint([sample.a[0], sample.a[1]]);
+      const b = map.latLngToContainerPoint([sample.b[0], sample.b[1]]);
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
+      let inv = Math.hypot(dx, dy);
+      if (inv < 1) {
+        dx = 0;
+        dy = -1;
+        inv = 1;
+      }
+      const ox = (-dy / inv) * ROUTE_TIME_OFFSET_PX * side;
+      const oy = (dx / inv) * ROUTE_TIME_OFFSET_PX * side;
+      const ll = map.containerPointToLatLng(
+        L.point(origin.x + ox, origin.y + oy),
+      );
+      setPosition([ll.lat, ll.lng]);
+    }
+
+    update();
+    map.on("zoom viewreset move", update);
+    return () => {
+      map.off("zoom viewreset move", update);
+    };
+  }, [map, geometry, fraction, side]);
+
+  if (!position) return null;
+  return (
+    <Marker
+      position={position}
+      icon={routeTimeIcon(label, active)}
+      interactive={false}
+      keyboard={false}
+      zIndexOffset={active ? 500 : 400}
+    />
+  );
 }
 
 const USER_LOC_ICON = L.divIcon({
@@ -665,22 +725,19 @@ export default function MapView({
             />
           ))}
 
-      {/* Travel-time chips sit just beside the line; never capture pointer events */}
+      {/* Travel-time chips: fixed screen offset off the stroke at every zoom */}
       {routeOptions.map((opt, index) => {
-        const fraction = 0.4 + (index % 4) * 0.07;
+        if (!opt?.geometry?.length) return null;
+        const fraction = 0.38 + (index % 4) * 0.08;
         const side = index % 2 === 0 ? 1 : -1;
-        const mid = geometryLabelPoint(opt?.geometry, fraction, side);
-        if (!mid) return null;
-        const active = opt.id === selectedRouteId;
-        const label = formatDuration(opt.duration);
         return (
-          <Marker
+          <RouteTimeChip
             key={`time-${opt.id}`}
-            position={[mid.lat, mid.lng]}
-            icon={routeTimeIcon(label, active)}
-            interactive={false}
-            keyboard={false}
-            zIndexOffset={active ? 500 : 400}
+            geometry={opt.geometry}
+            fraction={fraction}
+            side={side}
+            label={formatDuration(opt.duration)}
+            active={opt.id === selectedRouteId}
           />
         );
       })}
