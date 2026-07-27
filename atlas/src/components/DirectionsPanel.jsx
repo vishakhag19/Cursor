@@ -64,16 +64,18 @@ function isMobileSheetViewport() {
 
 /** Collapsed sheet fits grabber + Drive title row + Start (never clip Start). */
 const SHEET_COLLAPSED_MIN_PX = 156;
+/** Below this drag height, hide modes/body so Start stays on-screen. */
+const SHEET_CHROME_ONLY_MAX_PX = 280;
+/** Snaps that only show the Drive title row + Start. */
+const SHEET_CHROME_ONLY_SNAPS = new Set(["s10", "s20", "s30"]);
 
 function sheetSnapHeights() {
   const vh = window.innerHeight;
   const heights = {};
   for (const id of SHEET_SNAPS) {
     const fromFrac = Math.round(vh * SHEET_FRACTIONS[id]);
-    heights[id] =
-      id === "s10"
-        ? Math.max(SHEET_COLLAPSED_MIN_PX, fromFrac)
-        : Math.max(64, fromFrac);
+    // Never snap shorter than title + Start, or the CTA clips.
+    heights[id] = Math.max(SHEET_COLLAPSED_MIN_PX, fromFrac);
   }
   return heights;
 }
@@ -615,7 +617,10 @@ export default function DirectionsPanel({
     routeOptions.find((r) => r.id === selectedRouteId) ||
     routeOptions[0] ||
     null;
-  const sheetChromeOnly = sheetSnap === "s10" && sheetDragPx == null;
+  const sheetChromeOnly =
+    sheetDragPx != null
+      ? sheetDragPx <= SHEET_CHROME_ONLY_MAX_PX
+      : SHEET_CHROME_ONLY_SNAPS.has(sheetSnap);
 
   // Exact route id, loaded-saved id (`saved-${entry.id}`), or geometry fingerprint.
   const savedMatch =

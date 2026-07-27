@@ -3843,12 +3843,12 @@ md-text-button {
     max-height: none;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s20 {
-    height: 20dvh;
-    max-height: 20dvh;
+    height: max(20dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
+    max-height: max(20dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s30 {
-    height: 30dvh;
-    max-height: 30dvh;
+    height: max(30dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
+    max-height: max(30dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s40 {
     height: 40dvh;
@@ -3880,22 +3880,35 @@ md-text-button {
     border-radius: 0;
   }
 
-  /* Default collapsed: Drive title row + Start only. */
+  /* Short snaps / low drag: Drive title row + Start only (Start never clipped). */
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-travel-modes,
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-avoid-chips,
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-drive-body {
     display: none;
   }
 
-  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only {
+  .panel.is-directions-chrome .dir-drive-sheet.is-s10.is-chrome-only {
     height: auto;
-    min-height: 0;
+    min-height: calc(156px + env(safe-area-inset-bottom, 0px));
     max-height: none;
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-bottom-actions {
+    margin-top: auto;
     border-top: none;
     padding-top: 4px;
+  }
+
+  .panel.is-directions-chrome .dir-bottom-actions {
+    position: relative;
+    bottom: auto;
+    margin: 0;
+    margin-top: auto;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--atlas-surface-pressed);
+    background: #fff;
+    flex-shrink: 0;
+    z-index: 3;
   }
 
   .panel.is-directions-chrome
@@ -3999,22 +4012,11 @@ md-text-button {
     overflow: auto;
   }
 
-  .panel.is-directions-chrome .dir-bottom-actions {
-    position: relative;
-    bottom: auto;
-    margin: 0;
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--atlas-surface-pressed);
-    background: #fff;
-    flex-shrink: 0;
-  }
-
-  /* Steps below route details once the sheet is tall enough to scroll */
+  /* Steps once the sheet is tall enough (not chrome-only short snaps) */
   .panel.is-directions-chrome .dir-inline-steps {
     display: none;
   }
 
-  .panel.is-directions-chrome .dir-drive-sheet.is-s30 .dir-inline-steps,
   .panel.is-directions-chrome .dir-drive-sheet.is-s40 .dir-inline-steps,
   .panel.is-directions-chrome .dir-drive-sheet.is-s50 .dir-inline-steps,
   .panel.is-directions-chrome .dir-drive-sheet.is-s60 .dir-inline-steps,
