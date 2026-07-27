@@ -64,34 +64,17 @@ function isMobileSheetViewport() {
 
 /** Collapsed sheet fits grabber + Drive title row + Start (never clip Start). */
 const SHEET_COLLAPSED_MIN_PX = 156;
-/** Below this drag height, hide modes/chips/body so Start stays on-screen. */
+/** Below this drag height, only title + Start (fully collapsed). */
 const SHEET_CHROME_ONLY_MAX_PX = 200;
-/**
- * Mid height: title + travel modes + chips + Start (no route body).
- * Keeps the 2nd snap from looking empty.
- */
-const SHEET_CHROME_COMPACT_MAX_PX = 360;
-const SHEET_CHROME_COMPACT_MIN_PX = 300;
 /** Fully collapsed: Drive title row + Start only. */
 const SHEET_CHROME_ONLY_SNAPS = new Set(["s10"]);
-/** 2nd (and 3rd) snap from bottom: also show tabs + chips. */
-const SHEET_CHROME_COMPACT_SNAPS = new Set(["s20", "s30"]);
 
 function sheetSnapHeights() {
   const vh = window.innerHeight;
   const heights = {};
   for (const id of SHEET_SNAPS) {
     const fromFrac = Math.round(vh * SHEET_FRACTIONS[id]);
-    const floor = SHEET_CHROME_COMPACT_SNAPS.has(id)
-      ? SHEET_CHROME_COMPACT_MIN_PX
-      : SHEET_COLLAPSED_MIN_PX;
-    heights[id] = Math.max(floor, fromFrac);
-  }
-  if (heights.s20 <= heights.s10) {
-    heights.s20 = heights.s10 + Math.round(SHEET_CHROME_COMPACT_MIN_PX * 0.45);
-  }
-  if (heights.s30 <= heights.s20) {
-    heights.s30 = heights.s20 + 24;
+    heights[id] = Math.max(SHEET_COLLAPSED_MIN_PX, fromFrac);
   }
   return heights;
 }
@@ -637,11 +620,6 @@ export default function DirectionsPanel({
     sheetDragPx != null
       ? sheetDragPx <= SHEET_CHROME_ONLY_MAX_PX
       : SHEET_CHROME_ONLY_SNAPS.has(sheetSnap);
-  const sheetChromeCompact =
-    !sheetChromeOnly &&
-    (sheetDragPx != null
-      ? sheetDragPx <= SHEET_CHROME_COMPACT_MAX_PX
-      : SHEET_CHROME_COMPACT_SNAPS.has(sheetSnap));
 
   // Exact route id, loaded-saved id (`saved-${entry.id}`), or geometry fingerprint.
   const savedMatch =
@@ -959,7 +937,7 @@ export default function DirectionsPanel({
       {/* Mobile: bottom Drive sheet. Desktop: flattened via display:contents + order. */}
       <div
         ref={sheetRef}
-        className={`dir-drive-sheet is-${sheetSnap}${sheetChromeOnly ? " is-chrome-only" : ""}${sheetChromeCompact ? " is-chrome-compact" : ""}`}
+        className={`dir-drive-sheet is-${sheetSnap}${sheetChromeOnly ? " is-chrome-only" : ""}`}
         style={sheetStyle}
       >
         <div
@@ -979,6 +957,7 @@ export default function DirectionsPanel({
         >
           <div className="dir-sheet-grabber" aria-hidden />
         </div>
+        <div className="dir-sheet-scroll">
         <div className="dir-sticky-chrome">
             <div className="dir-top-bar">
               <md-icon-button
@@ -1241,6 +1220,7 @@ export default function DirectionsPanel({
           ) : null}
         </div>
       ) : null}
+        </div>
         </div>
 
       {onStart ? (
