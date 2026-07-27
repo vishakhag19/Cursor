@@ -3843,12 +3843,12 @@ md-text-button {
     max-height: none;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s20 {
-    height: max(20dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
-    max-height: max(20dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
+    height: 20dvh;
+    max-height: 20dvh;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s30 {
-    height: max(30dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
-    max-height: max(30dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
+    height: 30dvh;
+    max-height: 30dvh;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s40 {
     height: 40dvh;
@@ -3887,9 +3887,21 @@ md-text-button {
     display: none;
   }
 
+  /* 2nd/3rd snap: title + tabs + chips + Start; hide body to avoid empty gap. */
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-compact .dir-drive-body {
+    display: none;
+  }
+
   .panel.is-directions-chrome .dir-drive-sheet.is-s10.is-chrome-only {
     height: auto;
     min-height: calc(156px + env(safe-area-inset-bottom, 0px));
+    max-height: none;
+  }
+
+  .panel.is-directions-chrome .dir-drive-sheet.is-s20.is-chrome-compact,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s30.is-chrome-compact {
+    height: auto;
+    min-height: 0;
     max-height: none;
   }
 
@@ -3897,6 +3909,12 @@ md-text-button {
     margin-top: auto;
     border-top: none;
     padding-top: 4px;
+  }
+
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-compact .dir-bottom-actions {
+    margin-top: auto;
+    border-top: 1px solid var(--atlas-surface-pressed);
+    padding-top: 10px;
   }
 
   .panel.is-directions-chrome .dir-bottom-actions {
@@ -3907,8 +3925,22 @@ md-text-button {
     padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--atlas-surface-pressed);
     background: #fff;
+    flex: 0 0 auto;
     flex-shrink: 0;
     z-index: 3;
+  }
+
+  .panel.is-directions-chrome .dir-sticky-chrome {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    padding: 0 12px 8px;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #fff;
+    isolation: isolate;
   }
 
   .panel.is-directions-chrome
@@ -3947,16 +3979,6 @@ md-text-button {
     border-radius: 999px;
     background: #bdc1c6;
     flex-shrink: 0;
-  }
-
-  .panel.is-directions-chrome .dir-sticky-chrome {
-    position: relative;
-    z-index: 2;
-    margin: 0;
-    padding: 0 12px 8px;
-    flex-shrink: 0;
-    background: #fff;
-    isolation: isolate;
   }
 
   .panel.is-directions-chrome .dir-top-bar > md-icon-button:first-child,
