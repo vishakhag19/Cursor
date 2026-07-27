@@ -4067,8 +4067,10 @@ md-text-button {
   }
 
   .panel.is-directions-chrome .dir-drive-sheet.is-s10 {
-    height: 10dvh;
-    max-height: 10dvh;
+    /* Collapsed: at least title row + Start (10dvh alone clips the CTA). */
+    height: auto;
+    min-height: calc(156px + env(safe-area-inset-bottom, 0px));
+    max-height: none;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s20 {
     height: 20dvh;
@@ -4108,10 +4110,22 @@ md-text-button {
     border-radius: 0;
   }
 
+  /* Default collapsed: Drive title row + Start only. */
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-travel-modes,
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-avoid-chips,
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-drive-body {
     display: none;
+  }
+
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-bottom-actions {
+    border-top: none;
+    padding-top: 4px;
   }
 
   .panel.is-directions-chrome
@@ -4254,7 +4268,8 @@ md-text-button {
       .directions-panel.is-sheet-s10
     )
     .map-controls {
-    bottom: calc(10dvh + 12px);
+    /* Matches collapsed title row + Start min-height */
+    bottom: calc(156px + env(safe-area-inset-bottom, 0px) + 12px);
   }
   .app:not(.nav-mode):has(.panel.is-directions-chrome):has(
       .directions-panel.is-sheet-s20

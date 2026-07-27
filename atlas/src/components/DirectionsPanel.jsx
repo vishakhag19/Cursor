@@ -62,11 +62,18 @@ function isMobileSheetViewport() {
   );
 }
 
+/** Collapsed sheet fits grabber + Drive title row + Start (never clip Start). */
+const SHEET_COLLAPSED_MIN_PX = 156;
+
 function sheetSnapHeights() {
   const vh = window.innerHeight;
   const heights = {};
   for (const id of SHEET_SNAPS) {
-    heights[id] = Math.max(64, Math.round(vh * SHEET_FRACTIONS[id]));
+    const fromFrac = Math.round(vh * SHEET_FRACTIONS[id]);
+    heights[id] =
+      id === "s10"
+        ? Math.max(SHEET_COLLAPSED_MIN_PX, fromFrac)
+        : Math.max(64, fromFrac);
   }
   return heights;
 }
@@ -162,7 +169,8 @@ export default function DirectionsPanel({
     select: null,
   });
   const wasLoadingRef = useRef(false);
-  const [sheetSnap, setSheetSnap] = useState("s30");
+  /** Mobile default: title row + Start only (chrome-only / s10). */
+  const [sheetSnap, setSheetSnap] = useState("s10");
   const [sheetDragPx, setSheetDragPx] = useState(null);
   const [saveNameError, setSaveNameError] = useState("");
   const isCompact = useIsCompact();
@@ -575,19 +583,24 @@ export default function DirectionsPanel({
     }
     if (wasLoadingRef.current && routeOptions.length > 0) {
       wasLoadingRef.current = false;
-      /* Keep the stops card visible so Add stop / edits stay available. */
+      /* Keep the stops card visible so Add stop / edits stay available.
+       * Stay on the collapsed title+Start sheet — do not auto-expand. */
       clearPlaceList();
-      if (isMobileSheetViewport() && sheetSnap === "s10") {
-        setSheetSnap("s30");
-      }
     }
-  }, [loading, routeOptions.length, sheetSnap]);
+  }, [loading, routeOptions.length]);
 
   useEffect(() => {
     if (!onSheetHeightChange) return;
-    const frac = SHEET_FRACTIONS[sheetSnap] ?? 0.3;
+    if (sheetSnap === "s10" && sheetRef.current) {
+      const h = sheetRef.current.getBoundingClientRect().height;
+      if (h > 0) {
+        onSheetHeightChange(h / Math.max(1, window.innerHeight));
+        return;
+      }
+    }
+    const frac = SHEET_FRACTIONS[sheetSnap] ?? 0.1;
     onSheetHeightChange(frac);
-  }, [sheetSnap, onSheetHeightChange]);
+  }, [sheetSnap, onSheetHeightChange, selectedRouteId, routeOptions.length]);
 
   useEffect(() => {
     if (!isMobileSheetViewport()) {
@@ -1219,12 +1232,13 @@ export default function DirectionsPanel({
       ) : null}
         </div>
 
-      {selectedRoute && onStart ? (
+      {onStart ? (
         <div className="dir-bottom-actions" role="toolbar" aria-label="Route actions">
           <md-filled-button
             type="button"
             class="dir-start-btn"
             onClick={onStart}
+            disabled={!selectedRoute || undefined}
           >
             <span slot="icon" className="steps-start-icon" aria-hidden>
               <svg
