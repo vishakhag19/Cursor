@@ -1494,11 +1494,14 @@ md-icon-button.dir-add-stop:hover {
   line-height: 1;
   width: 16px;
   height: 16px;
-  color: #188038;
   font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 20;
 }
 
-.map-route-time-glyph:last-of-type {
+.map-route-time-glyph.is-fuel {
+  color: #188038;
+}
+
+.map-route-time-glyph.is-quality {
   color: #1a73e8;
 }
 

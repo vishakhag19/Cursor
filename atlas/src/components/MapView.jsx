@@ -63,10 +63,10 @@ function routeTimeIcon(
   if (cached) return cached;
   const icons = [
     fuel
-      ? `<span class="material-symbols-outlined map-route-time-glyph" title="Fuel-efficient" aria-label="Fuel-efficient">eco</span>`
+      ? `<span class="material-symbols-outlined map-route-time-glyph is-fuel" title="Fuel-efficient" aria-label="Fuel-efficient">eco</span>`
       : "",
     quality
-      ? `<span class="material-symbols-outlined map-route-time-glyph" title="Good quality roads" aria-label="Good quality roads">verified</span>`
+      ? `<span class="material-symbols-outlined map-route-time-glyph is-quality" title="Good quality roads" aria-label="Good quality roads">verified</span>`
       : "",
   ]
     .filter(Boolean)
