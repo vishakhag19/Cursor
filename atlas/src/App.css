@@ -1638,8 +1638,8 @@ md-icon-button.dir-add-stop:hover {
 
 .drag-handle-core.is-dragging,
 .drag-handle-core.is-selected {
-  border-color: #f9ab00;
-  background: #fff8e1;
+  border-color: #1a73e8;
+  background: #e8f0fe;
 }
 
 .dir-route-card.is-map-hidden {
@@ -1705,7 +1705,7 @@ md-icon-button.dir-add-stop:hover {
 .drag-handle-core.is-dragging {
   transform: scale(1.15);
   box-shadow: 0 2px 8px rgba(26, 115, 232, 0.45);
-  border-color: #f9ab00;
+  border-color: #1a73e8;
 }
 
 .leaflet-container.is-route-dragging,

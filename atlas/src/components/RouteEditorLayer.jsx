@@ -91,8 +91,8 @@ function buildLocalPreview(geometry, lat, lng, segmentIndex, viaId, vias) {
 
 /**
  * Drag-to-reshape the active route (edit mode only).
- * Local rubber-band follows the pointer immediately; dashed OSRM preview
- * refines to roads, then commit snaps permanently.
+ * Local rubber-band follows the pointer immediately; solid blue OSRM preview
+ * refines to roads while dragging, then commit snaps permanently.
  */
 export default function RouteEditorLayer({
   enabled,
@@ -275,10 +275,11 @@ export default function RouteEditorLayer({
       dragRef.current = { ...dragRef.current, ...next };
       setDragState(next);
       onPreview?.(next);
-    } catch (err) {
+      } catch (err) {
       if (session !== dragSession.current) return;
       if (seq !== previewSeq.current) return;
       if (!dragRef.current?.active) return;
+      // Keep the last good road preview so the forming route stays visible.
       setDragState((prev) =>
         prev
           ? {
@@ -286,9 +287,6 @@ export default function RouteEditorLayer({
               lat,
               lng,
               snapped: false,
-              previewGeometry: null,
-              previewDistance: null,
-              previewDuration: null,
             }
           : prev,
       );
@@ -296,12 +294,16 @@ export default function RouteEditorLayer({
     }
   }
 
-  function schedulePreview(lat, lng, segmentIndex, viaId, session) {
+  function schedulePreview(lat, lng, segmentIndex, viaId, session, { immediate = false } = {}) {
     clearTimeout(snapTimer.current);
-    // Local rubber-band already follows the pointer; OSRM can lag a bit.
+    if (immediate) {
+      runPreview(lat, lng, segmentIndex, viaId, session);
+      return;
+    }
+    // Keep the last road preview visible; refresh OSRM shortly after movement settles.
     snapTimer.current = setTimeout(() => {
       runPreview(lat, lng, segmentIndex, viaId, session);
-    }, 160);
+    }, 90);
   }
 
   async function finishDrag(session, { cancel = false } = {}) {
@@ -491,6 +493,8 @@ export default function RouteEditorLayer({
           )
         : null;
 
+      const armImmediatePreview =
+        movedEnough && !dragRef.current.movedEnough;
       dragRef.current = {
         ...dragRef.current,
         lat,
@@ -498,10 +502,10 @@ export default function RouteEditorLayer({
         snapped: false,
         movedEnough,
         localPreviewGeometry,
-        // Drop stale road preview until the next OSRM result arrives.
-        previewGeometry: null,
-        previewDistance: null,
-        previewDuration: null,
+        needsImmediatePreview:
+          Boolean(dragRef.current.needsImmediatePreview) || armImmediatePreview,
+        // Keep last OSRM road geometry until the next preview arrives so the
+        // forming route stays on-screen while dragging.
       };
 
       if (moveRaf.current == null) {
@@ -525,12 +529,16 @@ export default function RouteEditorLayer({
               : prev,
           );
           if (s.movedEnough) {
+            const immediate =
+              Boolean(s.needsImmediatePreview) || !s.previewGeometry?.length;
+            dragRef.current.needsImmediatePreview = false;
             schedulePreview(
               s.lat,
               s.lng,
               s.segmentIndex,
               s.viaId || null,
               session,
+              { immediate },
             );
           }
         });
@@ -951,10 +959,10 @@ export default function RouteEditorLayer({
         positions={displayGeometry}
         pane="routeEdit"
         pathOptions={{
-          color: isDragging || isCommitting ? "#F9AB00" : "#1A73E8",
+          color: "#1A73E8",
           weight: 6,
-          opacity: 0.95,
-          dashArray: isDragging || isCommitting ? "10 8" : null,
+          opacity: isDragging || isCommitting ? 1 : 0.95,
+          dashArray: null,
           lineJoin: "round",
           lineCap: "round",
         }}
