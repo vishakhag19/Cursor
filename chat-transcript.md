@@ -8365,7 +8365,11 @@ Update the chat in the transcript
 
 ## Assistant
 
-*(used tools: Read, Shell, GetMcpTools, MCP)*
+I'll refresh `chat-transcript.md` from the latest cloud-agent transcript so you can copy the full chat.
+
+*(used tools: Read, Shell, GetMcpTools, MCP×2, Task)*
+
+Updated `/workspace/chat-transcript.md` from the live agent transcript (**352** user messages, **350** assistant turns). Open that file to copy the chat.
 
 ---
 
