@@ -4,7 +4,6 @@ import SearchPanel from "./components/SearchPanel";
 import DirectionsPanel from "./components/DirectionsPanel";
 import NavigationUI from "./components/NavigationUI";
 import ContextMenu from "./components/ContextMenu";
-import RouteAssistant from "./components/RouteAssistant";
 import RoutePrefsSheet from "./components/RoutePrefsSheet";
 import RoadRulesSheet from "./components/RoadRulesSheet";
 import { reverseGeocode, haversineMeters, searchPlaces, resolveSaveEndpointName } from "./api/geocode";
@@ -20,7 +19,6 @@ import {
   seedViasFromStops,
 } from "./utils/routeEdit";
 import {
-  assistantReply,
   buildAvoidVia,
   findStepsForRoad,
   geometryMidpoint,
@@ -201,20 +199,9 @@ export default function App() {
   const [acceptedReroute, setAcceptedReroute] = useState(false);
   /** After yes/no (or tap fallback), do not auto-offer the demo prompt again. */
   const [reroutePromptSettled, setReroutePromptSettled] = useState(false);
+  const [navVoiceBusy, setNavVoiceBusy] = useState(false);
+  const [navVoiceStatus, setNavVoiceStatus] = useState("");
   const [savedRoutes, setSavedRoutes] = useState(() => loadSavedRoutes());
-  const [assistantOpen, setAssistantOpen] = useState(false);
-  /** Open assistant and start the mic for avoid/prefer. */
-  const [assistantAutoListen, setAssistantAutoListen] = useState(false);
-  const [assistantBusy, setAssistantBusy] = useState(false);
-  const [assistantMessages, setAssistantMessages] = useState(() => [
-    {
-      id: "welcome",
-      role: "agent",
-      text: "I can reshape your route. Tap the mic and say “avoid Oak St” or “prefer Main St” — I’ll confirm out loud. You can also type, or ask to reroute, undo, or save.",
-      spoken:
-        "I can reshape your route. Say avoid a street or prefer a road, and I’ll confirm. You can also ask to reroute, undo, or save.",
-    },
-  ]);
 
   const [flyTarget, setFlyTarget] = useState(null);
   const [fitKey, setFitKey] = useState(0);
@@ -1088,7 +1075,12 @@ export default function App() {
   const avoidStreetAt = useCallback(
     async (
       latlng,
-      { roadName = null, reshapeRoute = true, focus: focusOverride = null } = {},
+      {
+        roadName = null,
+        reshapeRoute = true,
+        focus: focusOverride = null,
+        keepNavigating = false,
+      } = {},
     ) => {
       let name = roadName;
       let focus = focusOverride || { lat: latlng.lat, lng: latlng.lng };
@@ -1129,13 +1121,18 @@ export default function App() {
         name: avoidVia.name,
       };
       await enqueueEdit(async () => {
-        ensureEditSession();
+        ensureEditSession({ keepNavigating });
         const next = [...editViasRef.current, via];
         await rebuildFromVias(next, {
           pushHistory: true,
           preserveOrder: true,
         });
       });
+      if (keepNavigating) {
+        setNavigating(true);
+        setNavStepIndex(0);
+        setPanelOpen(false);
+      }
       return name;
     },
     [
@@ -1149,9 +1146,9 @@ export default function App() {
     ],
   );
 
-  /** Pull the route onto a named street (assistant / prefer action). */
+  /** Pull the route onto a named street (voice prefer / map actions). */
   const preferStreetNamed = useCallback(
-    async (streetName) => {
+    async (streetName, { keepNavigating = false } = {}) => {
       const geometry = routeGeometryRef.current;
       if (!geometry?.length) {
         throw new Error("Get directions first");
@@ -1179,15 +1176,20 @@ export default function App() {
       } catch {
         /* keep place coords */
       }
-      ensureEditSession();
-      const via = { id: uid(), ...point };
       await enqueueEdit(async () => {
+        ensureEditSession({ keepNavigating });
+        const via = { id: uid(), ...point };
         const next = [...editViasRef.current, via];
         await rebuildFromVias(next, {
           pushHistory: true,
           preserveOrder: false,
         });
       });
+      if (keepNavigating) {
+        setNavigating(true);
+        setNavStepIndex(0);
+        setPanelOpen(false);
+      }
       return point.name || streetName;
     },
     [
@@ -1489,115 +1491,18 @@ export default function App() {
     return true;
   }, [showStatus]);
 
-  const pushAssistant = useCallback((role, reply) => {
-    const payload =
-      typeof reply === "string" ? assistantReply(reply) : reply;
-    setAssistantMessages((prev) => [
-      ...prev,
-      {
-        id: uid(),
-        role,
-        text: payload.text,
-        spoken: payload.spoken || payload.text,
-      },
-    ]);
-  }, []);
-
-  const handleAssistantMessage = useCallback(
-    async (raw, opts = {}) => {
+  /**
+   * Live-nav voice: “avoid X” / “prefer X” → reshape while staying in navigation,
+   * then speak a short confirmation.
+   */
+  const handleNavVoiceCommand = useCallback(
+    async (raw) => {
       const text = String(raw || "").trim();
-      if (!text) return;
-      const fromVoice = Boolean(opts?.voice);
-      pushAssistant("user", text);
-      setAssistantBusy(true);
-
-      const replyAgent = async (reply, { speakReply = false } = {}) => {
-        const payload =
-          typeof reply === "string" ? assistantReply(reply) : reply;
-        pushAssistant("agent", payload);
-        if (speakReply || fromVoice) {
-          await speak(payload.spoken || payload.text);
-        }
-      };
-
+      if (!text || !navigating) return;
+      setNavVoiceBusy(true);
+      setNavVoiceStatus("Updating route…");
       try {
         const intent = parseRouteAssistantIntent(text);
-
-        if (intent.type === "help") {
-          await replyAgent(
-            assistantReply(
-              "I can avoid or block a street, prefer one road over another, try a detour when you mention traffic, undo the last edit, or save this route. Tap the mic and say avoid or prefer a road — I’ll confirm out loud.",
-              {
-                spoken:
-                  "I can avoid or prefer a road when you say so, and I’ll confirm out loud. You can also ask to reroute, undo, or save.",
-              },
-            ),
-            { speakReply: fromVoice },
-          );
-          return;
-        }
-
-        if (intent.type === "undo") {
-          if (!editHistoryRef.current.length) {
-            await replyAgent(assistantReply("Nothing to undo yet."), {
-              speakReply: fromVoice,
-            });
-            return;
-          }
-          undoEdit();
-          await replyAgent(assistantReply("Undid the last route edit."), {
-            speakReply: fromVoice,
-          });
-          return;
-        }
-
-        if (intent.type === "save") {
-          const from = await resolveSaveEndpointName(stops[0], "Start");
-          const to = await resolveSaveEndpointName(
-            stops[stops.length - 1],
-            "Destination",
-          );
-          saveCurrentRoute(`${from} to ${to}`);
-          await replyAgent(
-            assistantReply(`Saved “${from} to ${to}” on this device.`, {
-              spoken: `Saved ${from} to ${to}.`,
-            }),
-            { speakReply: fromVoice },
-          );
-          return;
-        }
-
-        if (intent.type === "reroute") {
-          if (!routeGeometryRef.current?.length) {
-            await replyAgent(
-              assistantReply(
-                "Set a start and destination first, then ask me to reroute.",
-              ),
-              { speakReply: fromVoice },
-            );
-            return;
-          }
-          await replyAgent(
-            assistantReply(
-              "I don’t have live traffic feeds yet. I’ll bend the route onto a quieter corridor — confirm by watching the map update.",
-              {
-                confirm: true,
-                spoken:
-                  "I don’t have live traffic yet. I’ll bend the route onto a quieter corridor.",
-              },
-            ),
-            { speakReply: fromVoice },
-          );
-          await rerouteAroundCorridor();
-          await replyAgent(
-            assistantReply(
-              "Detour applied. Say “undo” if you want the previous path back.",
-              { spoken: "Detour applied." },
-            ),
-            { speakReply: fromVoice },
-          );
-          return;
-        }
 
         if (intent.type === "avoid") {
           const selected =
@@ -1618,27 +1523,20 @@ export default function App() {
             const found = await searchPlaces(intent.street, { limit: 5, near });
             const hit = found[0];
             if (!hit) {
-              await replyAgent(
-                assistantReply(
-                  `I couldn’t find “${intent.street}” near this trip. Open Route options → Your road rules → Pick on map, then tap that road.`,
-                  {
-                    spoken: `I couldn’t find ${intent.street} near this trip. Try picking that road on the map instead.`,
-                  },
-                ),
-                { speakReply: true },
-              );
+              const msg = `I couldn’t find ${intent.street} near this trip.`;
+              setNavVoiceStatus(msg);
+              await speak(msg);
               return;
             }
             focus = { lat: hit.lat, lng: hit.lng };
           }
-          const name = await avoidStreetAt(focus, { roadName: intent.street });
-          await replyAgent(
-            assistantReply(
-              `Avoiding ${name}. The route now detours around it. You can also use Route options → Pick on map to Prefer, Avoid, or Never a road.`,
-              { spoken: `Okay. Avoiding ${name}.` },
-            ),
-            { speakReply: true },
-          );
+          const name = await avoidStreetAt(focus, {
+            roadName: intent.street,
+            keepNavigating: true,
+          });
+          const spoken = `Okay. Avoiding ${name}.`;
+          setNavVoiceStatus(spoken);
+          await speak(spoken);
           return;
         }
 
@@ -1654,60 +1552,40 @@ export default function App() {
               if (mid.lat != null) {
                 await avoidStreetAt(
                   { lat: mid.lat, lng: mid.lng },
-                  { roadName: intent.avoid },
+                  { roadName: intent.avoid, keepNavigating: true },
                 );
               }
             }
           }
           const street =
             intent.type === "prefer_instead" ? intent.prefer : intent.street;
-          const used = await preferStreetNamed(street);
-          const extra =
-            intent.type === "prefer_instead" && intent.avoid
-              ? ` and steering clear of ${intent.avoid}`
-              : "";
+          const used = await preferStreetNamed(street, {
+            keepNavigating: true,
+          });
           const spokenExtra =
             intent.type === "prefer_instead" && intent.avoid
               ? `, and avoiding ${intent.avoid}`
               : "";
-          await replyAgent(
-            assistantReply(`Routing via ${used}${extra}.`, {
-              spoken: `Okay. Preferring ${used}${spokenExtra}.`,
-            }),
-            { speakReply: true },
-          );
+          const spoken = `Okay. Preferring ${used}${spokenExtra}.`;
+          setNavVoiceStatus(spoken);
+          await speak(spoken);
           return;
         }
 
-        await replyAgent(
-          assistantReply(
-            "I didn’t catch that. Try “avoid Oak St”, “prefer Main St”, “take Main instead of 5th”, “reroute”, “undo”, or “save route”.",
-            {
-              spoken:
-                "I didn’t catch that. Say avoid a road, or prefer a road.",
-            },
-          ),
-          { speakReply: fromVoice },
-        );
+        const help =
+          "Say avoid a road, or prefer a road — for example, avoid Oak Street.";
+        setNavVoiceStatus(help);
+        await speak(help);
       } catch (err) {
-        await replyAgent(
-          assistantReply(err.message || "Couldn’t update the route."),
-          { speakReply: fromVoice },
-        );
+        const msg = err.message || "Couldn’t update the route.";
+        setNavVoiceStatus(msg);
+        await speak(msg);
       } finally {
-        setAssistantBusy(false);
+        setNavVoiceBusy(false);
+        setTimeout(() => setNavVoiceStatus(""), 4200);
       }
     },
-    [
-      pushAssistant,
-      undoEdit,
-      saveCurrentRoute,
-      rerouteAroundCorridor,
-      avoidStreetAt,
-      preferStreetNamed,
-      stops,
-      userLocation,
-    ],
+    [navigating, avoidStreetAt, preferStreetNamed, stops, userLocation],
   );
 
   const goToMyLocation = useCallback(async () => {
@@ -1784,7 +1662,6 @@ export default function App() {
     setRoadPickReturnTo(returnTo);
     setPrefsOpen(false);
     setRoadRulesOpen(false);
-    setAssistantOpen(false);
     setCtx(null);
     setPanelOpen(false);
     setRoadPickMode(true);
@@ -1811,7 +1688,6 @@ export default function App() {
     setRoadPickMode(false);
     setCtx(null);
     setRoadPickReturnTo(null);
-    setAssistantOpen(false);
     setRoadRulesOpen(false);
     setPanelOpen(true);
     if (ruleId) {
@@ -2049,6 +1925,8 @@ export default function App() {
     setAcceptedReroute(false);
     setReroutePromptSettled(false);
     setNavOriginalRoute(null);
+    setNavVoiceBusy(false);
+    setNavVoiceStatus("");
   }, []);
 
   /**
@@ -2228,7 +2106,6 @@ export default function App() {
     if (panelOpen) return;
     setPrefsOpen(false);
     setRoadRulesOpen(false);
-    setAssistantOpen(false);
   }, [panelOpen]);
 
   // Leave directions / start navigating → dismiss Route options.
@@ -2242,7 +2119,6 @@ export default function App() {
   const closeDirectionsView = useCallback(() => {
     setPrefsOpen(false);
     setRoadRulesOpen(false);
-    setAssistantOpen(false);
     setView("search");
     clearRoutes();
   }, [clearRoutes]);
@@ -2253,7 +2129,6 @@ export default function App() {
     roadPickMode,
     roadPickReturnTo,
     rerouteSuggestion,
-    assistantOpen,
     prefsOpen,
     roadRulesOpen,
     showSteps,
@@ -2268,7 +2143,6 @@ export default function App() {
     if (s.ctx) n += 1;
     if (s.roadPickMode) n += 1;
     if (s.rerouteSuggestion) n += 1;
-    if (s.assistantOpen) n += 1;
     if (s.prefsOpen || s.roadRulesOpen) n += 1;
     if (s.showSteps) n += 1;
     if (s.navigating) n += 1;
@@ -2304,10 +2178,6 @@ export default function App() {
     if (s.rerouteSuggestion) {
       setRerouteSuggestion(null);
       return countBackableUi({ rerouteSuggestion: null }) > 0;
-    }
-    if (s.assistantOpen) {
-      setAssistantOpen(false);
-      return countBackableUi({ assistantOpen: false }) > 0;
     }
     if (s.prefsOpen || s.roadRulesOpen) {
       setPrefsOpen(false);
@@ -2392,7 +2262,6 @@ export default function App() {
     roadPickMode,
     roadPickReturnTo,
     rerouteSuggestion,
-    assistantOpen,
     prefsOpen,
     roadRulesOpen,
     showSteps,
@@ -2563,17 +2432,6 @@ export default function App() {
             }}
             savedRoutes={savedRoutes}
             onStart={startNavigation}
-            onOpenAssistant={() => {
-              setPrefsOpen(false);
-              setAssistantAutoListen(false);
-              setAssistantOpen((open) => !open);
-            }}
-            onOpenVoiceAssistant={() => {
-              setPrefsOpen(false);
-              setAssistantAutoListen(true);
-              setAssistantOpen(true);
-            }}
-            assistantOpen={assistantOpen}
             onOpenPrefs={() => setPrefsOpen((open) => !open)}
             prefsOpen={prefsOpen}
             hasCustomEdits={hasCustomEdits}
@@ -2896,6 +2754,9 @@ export default function App() {
               showStatus("No alternate routes available");
             }
           }}
+          onVoiceCommand={handleNavVoiceCommand}
+          voiceBusy={navVoiceBusy}
+          voiceStatus={navVoiceStatus}
         />
       ) : null}
 
@@ -2906,18 +2767,6 @@ export default function App() {
         title="Choose a road rule"
       />
 
-      <RouteAssistant
-        open={assistantOpen}
-        onClose={() => {
-          setAssistantOpen(false);
-          setAssistantAutoListen(false);
-        }}
-        messages={assistantMessages}
-        busy={assistantBusy}
-        onSend={handleAssistantMessage}
-        autoListen={assistantAutoListen}
-        onAutoListenConsumed={() => setAssistantAutoListen(false)}
-      />
 
       <RoutePrefsSheet
         open={prefsOpen}
@@ -2982,7 +2831,6 @@ export default function App() {
         />
       ) : null}
 
-      {/* Assistant entry lives beside Route options in the Drive top bar. */}
     </div>
   );
 }

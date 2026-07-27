@@ -140,10 +140,6 @@ export default function DirectionsPanel({
   onSaveRoute = null,
   onUnsaveRoute = null,
   savedRoutes = [],
-  onOpenAssistant = null,
-  /** Opens assistant and starts mic for avoid/prefer. */
-  onOpenVoiceAssistant = null,
-  assistantOpen = false,
   onOpenPrefs = null,
   prefsOpen = false,
   hasCustomEdits = false,
@@ -980,31 +976,6 @@ export default function DirectionsPanel({
                       onClick={onOpenPrefs}
                     >
                       <md-icon>tune</md-icon>
-                    </md-icon-button>
-                  </ActionTip>
-                ) : null}
-                {onOpenVoiceAssistant ? (
-                  <ActionTip tip="Say avoid or prefer a road">
-                    <md-icon-button
-                      type="button"
-                      class="dir-voice-btn"
-                      aria-label="Say avoid or prefer a road"
-                      onClick={onOpenVoiceAssistant}
-                    >
-                      <md-icon>mic</md-icon>
-                    </md-icon-button>
-                  </ActionTip>
-                ) : null}
-                {onOpenAssistant ? (
-                  <ActionTip tip={assistantOpen ? "Close assistant" : "Ask route assistant"}>
-                    <md-icon-button
-                      type="button"
-                      class={`dir-assistant-btn ${assistantOpen ? "is-active" : ""}`}
-                      aria-label={assistantOpen ? "Close assistant" : "Ask route assistant"}
-                      aria-pressed={assistantOpen ? "true" : "false"}
-                      onClick={onOpenAssistant}
-                    >
-                      <md-icon>auto_awesome</md-icon>
                     </md-icon-button>
                   </ActionTip>
                 ) : null}

@@ -1,11 +1,12 @@
 import { createPortal } from "react-dom";
 import { formatDistance, formatDuration } from "../utils/format";
 import ReroutePrompt from "./ReroutePrompt";
+import { useNavRoadVoice } from "./NavRoadVoice";
 
 /**
  * Active turn-by-turn navigation — Google Maps mobile layout:
- * dark teal maneuver banner + bottom bar with close, ETA, alt routes.
- * Reroute offers are audio-first (speak + yes/no); UI is a compact listener.
+ * dark teal maneuver banner + bottom bar with close, ETA, voice mic, alt routes.
+ * Reroute offers and avoid/prefer road commands are audio-first.
  * Portaled to document.body so map / panel stacking cannot swallow Exit.
  */
 export default function NavigationUI({
@@ -19,13 +20,24 @@ export default function NavigationUI({
   canReturnToOriginal = false,
   onReturnToOriginal = null,
   onShowAlternatives = null,
+  onVoiceCommand = null,
+  voiceBusy = false,
+  voiceStatus = "",
 }) {
+  const showPrompt = Boolean(rerouteSuggestion);
+  const { pill: voicePill, micButton } = useNavRoadVoice({
+    active: Boolean(active && route),
+    busy: voiceBusy,
+    disabled: showPrompt,
+    statusText: voiceStatus,
+    onCommand: onVoiceCommand,
+  });
+
   if (!route || !active || typeof document === "undefined") return null;
 
   const steps = route.steps || [];
   const step = steps[currentStepIndex] || steps[0];
   const nextStep = steps[currentStepIndex + 1];
-  const showPrompt = Boolean(rerouteSuggestion);
 
   function handleExit(e) {
     e?.preventDefault?.();
@@ -50,14 +62,14 @@ export default function NavigationUI({
               {step?.instruction || "Continue on the route"}
             </div>
           </div>
-        <button
-          type="button"
-          className="nav-banner-close"
-          aria-label="Exit navigation"
-          onClick={handleExit}
-        >
-          <md-icon>close</md-icon>
-        </button>
+          <button
+            type="button"
+            className="nav-banner-close"
+            aria-label="Exit navigation"
+            onClick={handleExit}
+          >
+            <md-icon>close</md-icon>
+          </button>
         </div>
         {nextStep ? (
           <div className="nav-banner-then" aria-label="Then">
@@ -74,7 +86,9 @@ export default function NavigationUI({
           onAccept={onAcceptReroute}
           onReject={onRejectReroute}
         />
-      ) : null}
+      ) : (
+        voicePill
+      )}
 
       <div className="nav-footer">
         <button
@@ -108,18 +122,21 @@ export default function NavigationUI({
           ) : null}
         </div>
 
-        {onShowAlternatives ? (
-          <button
-            type="button"
-            className="nav-footer-alts"
-            aria-label="Show alternate routes"
-            onClick={onShowAlternatives}
-          >
-            <md-icon>alt_route</md-icon>
-          </button>
-        ) : (
-          <span className="nav-footer-alts-spacer" aria-hidden />
-        )}
+        <div className="nav-footer-trailing">
+          {micButton}
+          {onShowAlternatives ? (
+            <button
+              type="button"
+              className="nav-footer-alts"
+              aria-label="Show alternate routes"
+              onClick={onShowAlternatives}
+            >
+              <md-icon>alt_route</md-icon>
+            </button>
+          ) : (
+            <span className="nav-footer-alts-spacer" aria-hidden />
+          )}
+        </div>
       </div>
     </div>,
     document.body,

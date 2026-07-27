@@ -97,7 +97,6 @@ export default function usePullToRefresh({
             ".ctx-backdrop",
             ".map-controls",
             ".nav-active",
-            ".route-assistant",
             "md-dialog",
             "[role='dialog']",
           ].join(", "),
