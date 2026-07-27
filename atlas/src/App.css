@@ -3843,17 +3843,16 @@ md-text-button {
     max-height: none;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s20 {
-    height: max(20dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
-    max-height: max(20dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
+    height: 20dvh;
+    max-height: 20dvh;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s30 {
-    height: max(30dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
-    max-height: max(30dvh, calc(156px + env(safe-area-inset-bottom, 0px)));
+    height: 30dvh;
+    max-height: 30dvh;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s40 {
-    /* Title + modes + chips + Start must fit; plain 40dvh often clips Start. */
-    height: max(40dvh, calc(300px + env(safe-area-inset-bottom, 0px)));
-    max-height: max(40dvh, calc(300px + env(safe-area-inset-bottom, 0px)));
+    height: 40dvh;
+    max-height: 40dvh;
   }
   .panel.is-directions-chrome .dir-drive-sheet.is-s50 {
     height: 50dvh;
@@ -3899,9 +3898,23 @@ md-text-button {
     max-height: none;
   }
 
+  /* Mid snaps (2nd/3rd from bottom): size to title + modes + chips + Start —
+   * no empty gap below the chips. */
+  .panel.is-directions-chrome .dir-drive-sheet.is-s20.is-chrome-compact,
+  .panel.is-directions-chrome .dir-drive-sheet.is-s30.is-chrome-compact {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-bottom-actions,
   .panel.is-directions-chrome .dir-drive-sheet.is-chrome-compact .dir-bottom-actions {
     margin-top: auto;
+    border-top: 1px solid var(--atlas-surface-pressed);
+    padding-top: 10px;
+  }
+
+  .panel.is-directions-chrome .dir-drive-sheet.is-chrome-only .dir-bottom-actions {
     border-top: none;
     padding-top: 4px;
   }
