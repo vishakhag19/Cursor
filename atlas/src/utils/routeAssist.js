@@ -118,20 +118,20 @@ export function parseRouteAssistantIntent(raw) {
     };
   }
 
-  // "take / use / go via X Street"
-  const take = text.match(
-    /(?:take|use|go via|go on|prefer|route via)\s+(.+?)(?:[.?!]|$)/i,
-  );
-  if (take && !/\binstead\b/i.test(take[1])) {
-    return { type: "prefer", street: cleanStreetPhrase(take[1]) };
-  }
-
-  // "avoid / block / don't use X"
+  // "avoid / block / don't use X" (check before prefer — “prefer to avoid” is rare)
   const avoid = text.match(
     /(?:avoid|block|skip|stay off|don'?t use|do not use|never use)\s+(.+?)(?:[.?!]|$)/i,
   );
   if (avoid) {
     return { type: "avoid", street: cleanStreetPhrase(avoid[1]) };
+  }
+
+  // "prefer X" / "take / use / go via X Street"
+  const take = text.match(
+    /(?:prefer|take|use|go via|go on|route via)\s+(.+?)(?:[.?!]|$)/i,
+  );
+  if (take && !/\binstead\b/i.test(take[1])) {
+    return { type: "prefer", street: cleanStreetPhrase(take[1]) };
   }
 
   return { type: "unknown", text };

@@ -179,3 +179,103 @@ export function buildRerouteVoicePrompt(suggestion) {
   );
   return `${reason}.${save} Would you like to reroute? Please say yes or no.`;
 }
+
+/**
+ * Listen for a free-form phrase (e.g. “avoid Oak Street”).
+ * Resolves with the final transcript, or rejects on timeout / error.
+ * @returns {{ promise: Promise<string>, stop: () => void }}
+ */
+export function listenPhrase({
+  lang = "en-US",
+  timeoutMs = 12000,
+} = {}) {
+  let recognition = null;
+  let timer = null;
+  let settled = false;
+  let interim = "";
+
+  const stop = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    try {
+      recognition?.stop();
+    } catch {
+      /* ignore */
+    }
+    recognition = null;
+  };
+
+  const promise = new Promise((resolve, reject) => {
+    const SR =
+      typeof window !== "undefined"
+        ? window.SpeechRecognition || window.webkitSpeechRecognition
+        : null;
+    if (!SR) {
+      reject(new Error("Speech recognition is not supported"));
+      return;
+    }
+
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      stop();
+      fn(value);
+    };
+
+    recognition = new SR();
+    recognition.lang = lang;
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 3;
+
+    recognition.onresult = (event) => {
+      let finalText = "";
+      interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const piece = event.results[i][0]?.transcript || "";
+        if (event.results[i].isFinal) finalText += `${piece} `;
+        else interim += `${piece} `;
+      }
+      const trimmed = finalText.trim();
+      if (trimmed) finish(resolve, trimmed);
+    };
+
+    recognition.onerror = (event) => {
+      const err = event?.error || "recognition-error";
+      if (err === "aborted") {
+        finish(reject, new Error("aborted"));
+        return;
+      }
+      if (err === "no-speech") return;
+      finish(reject, new Error(err));
+    };
+
+    recognition.onend = () => {
+      if (settled) return;
+      const fallback = interim.trim();
+      if (fallback) {
+        finish(resolve, fallback);
+        return;
+      }
+      finish(reject, new Error("recognition-ended"));
+    };
+
+    timer = setTimeout(() => {
+      const fallback = interim.trim();
+      if (fallback) finish(resolve, fallback);
+      else finish(reject, new Error("timeout"));
+    }, timeoutMs);
+
+    try {
+      // Avoid picking up any leftover TTS.
+      cancelSpeech();
+      recognition.start();
+    } catch (err) {
+      finish(reject, err instanceof Error ? err : new Error(String(err)));
+    }
+  });
+
+  return { promise, stop };
+}

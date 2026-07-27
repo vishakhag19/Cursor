@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  cancelSpeech,
+  listenPhrase,
+  speechRecognitionSupported,
+} from "../utils/voiceConfirm";
 
 /**
  * Text chat for the routing assistant.
- * Mobile: full-screen overlay. Desktop: floating card.
- * Messages may include `spoken` for a future voice / TTS layer.
+ * Mic: say “avoid …” / “prefer …” — the system confirms aloud after applying.
  */
 export default function RouteAssistant({
   open,
@@ -12,18 +16,28 @@ export default function RouteAssistant({
   messages,
   busy = false,
   onSend,
+  /** When true on open, start listening once for a voice command. */
+  autoListen = false,
+  onAutoListenConsumed = null,
 }) {
   const [draft, setDraft] = useState("");
+  const [listening, setListening] = useState(false);
+  const [voiceHint, setVoiceHint] = useState("");
   const listRef = useRef(null);
   const inputRef = useRef(null);
+  const stopListenRef = useRef(null);
+  const voiceSupported = speechRecognitionSupported();
 
   useEffect(() => {
     if (!open) return;
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-    const t = setTimeout(() => inputRef.current?.focus?.(), 80);
-    return () => clearTimeout(t);
-  }, [open, messages.length, busy]);
+    if (!listening) {
+      const t = setTimeout(() => inputRef.current?.focus?.(), 80);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [open, messages.length, busy, listening]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -34,14 +48,75 @@ export default function RouteAssistant({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) {
+      stopListenRef.current?.();
+      stopListenRef.current = null;
+      setListening(false);
+      setVoiceHint("");
+      cancelSpeech();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !autoListen) return undefined;
+    onAutoListenConsumed?.();
+    const t = setTimeout(() => {
+      startListening();
+    }, 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- start once per autoListen pulse
+  }, [open, autoListen]);
+
+  async function startListening() {
+    if (busy || listening) return;
+    if (!voiceSupported) {
+      setVoiceHint("Voice isn’t supported in this browser — type instead.");
+      return;
+    }
+    setVoiceHint("Listening… say “avoid Oak St” or “prefer Main St”.");
+    setListening(true);
+    const session = listenPhrase({ timeoutMs: 12000 });
+    stopListenRef.current = session.stop;
+    try {
+      const heard = await session.promise;
+      setVoiceHint("");
+      setListening(false);
+      stopListenRef.current = null;
+      setDraft("");
+      if (heard && !busy) onSend?.(heard, { voice: true });
+    } catch (err) {
+      setListening(false);
+      stopListenRef.current = null;
+      const msg = err?.message || "";
+      if (msg === "aborted") {
+        setVoiceHint("");
+        return;
+      }
+      setVoiceHint(
+        msg === "timeout"
+          ? "Didn’t catch that — tap the mic and try again."
+          : "Couldn’t hear you — tap the mic or type instead.",
+      );
+    }
+  }
+
+  function stopListening() {
+    stopListenRef.current?.();
+    stopListenRef.current = null;
+    setListening(false);
+    setVoiceHint("");
+  }
+
   if (!open) return null;
 
   function submit(e) {
     e?.preventDefault?.();
     const text = draft.trim();
-    if (!text || busy) return;
+    if (!text || busy || listening) return;
     setDraft("");
-    onSend?.(text);
+    setVoiceHint("");
+    onSend?.(text, { voice: false });
   }
 
   const ui = (
@@ -59,7 +134,7 @@ export default function RouteAssistant({
             <div>
               <div className="md-typescale-title-small">Route assistant</div>
               <div className="md-typescale-body-small route-assistant-sub">
-                Ask in plain language · say yes/no on nav reroutes
+                Say “avoid …” or “prefer …” — I’ll confirm out loud
               </div>
             </div>
           </div>
@@ -87,7 +162,19 @@ export default function RouteAssistant({
               <span className="md-typescale-body-small">Updating route…</span>
             </div>
           ) : null}
+          {listening ? (
+            <div className="route-assistant-bubble is-agent is-listening">
+              <md-icon>mic</md-icon>
+              <span className="md-typescale-body-small">Listening for a road…</span>
+            </div>
+          ) : null}
         </div>
+
+        {voiceHint ? (
+          <p className="route-assistant-voice-hint md-typescale-body-small" role="status">
+            {voiceHint}
+          </p>
+        ) : null}
 
         <form className="route-assistant-compose" onSubmit={submit}>
           <input
@@ -96,15 +183,25 @@ export default function RouteAssistant({
             type="text"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder='Try “avoid Oak St” or “take Main instead of 5th”'
-            disabled={busy || undefined}
+            placeholder='Try “avoid Oak St” or “prefer Main St”'
+            disabled={busy || listening || undefined}
             aria-label="Message the route assistant"
             autoComplete="off"
           />
           <md-icon-button
+            type="button"
+            class={`route-assistant-mic${listening ? " is-listening" : ""}`}
+            aria-label={listening ? "Stop listening" : "Speak avoid or prefer a road"}
+            aria-pressed={listening ? "true" : "false"}
+            disabled={busy || undefined}
+            onClick={() => (listening ? stopListening() : startListening())}
+          >
+            <md-icon>{listening ? "stop" : "mic"}</md-icon>
+          </md-icon-button>
+          <md-icon-button
             type="submit"
             aria-label="Send"
-            disabled={!draft.trim() || busy || undefined}
+            disabled={!draft.trim() || busy || listening || undefined}
           >
             <md-icon>send</md-icon>
           </md-icon-button>
@@ -117,15 +214,15 @@ export default function RouteAssistant({
         >
           {[
             "Avoid this traffic — reroute",
-            "Take a quieter road",
+            "Prefer a quieter road",
             "Undo last change",
           ].map((hint) => (
             <button
               key={hint}
               type="button"
               className="route-assistant-chip"
-              disabled={busy || undefined}
-              onClick={() => onSend?.(hint)}
+              disabled={busy || listening || undefined}
+              onClick={() => onSend?.(hint, { voice: false })}
             >
               {hint}
             </button>

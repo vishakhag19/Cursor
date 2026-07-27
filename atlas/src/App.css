@@ -3643,6 +3643,25 @@ md-icon-button.expand-panel:hover,
   color: #5f6368;
 }
 
+.route-assistant-bubble.is-listening {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--atlas-accent-pressed, #174ea6);
+  background: var(--atlas-accent-container, #d2e3fc);
+}
+
+.route-assistant-bubble.is-listening md-icon {
+  color: var(--atlas-accent, #1a73e8);
+}
+
+.route-assistant-voice-hint {
+  margin: 0;
+  padding: 0 16px 8px;
+  color: #5f6368;
+  background: #fff;
+}
+
 .route-assistant-compose {
   display: flex;
   align-items: center;
@@ -3650,6 +3669,15 @@ md-icon-button.expand-panel:hover,
   padding: 8px 8px 4px 12px;
   border-top: 1px solid var(--atlas-surface-pressed);
   background: #fff;
+}
+
+.route-assistant-mic.is-listening {
+  color: #c5221f;
+}
+
+.dir-voice-btn.is-active,
+.dir-voice-btn[aria-pressed="true"] {
+  color: var(--atlas-accent, #1a73e8);
 }
 
 .route-assistant-input {
