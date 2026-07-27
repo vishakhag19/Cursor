@@ -3882,17 +3882,14 @@ md-text-button {
   }
 
   /*
-   * Sheet layout: grabber + scrollable stack + Start.
+   * Sheet layout: grabber + content stack + Start.
    * Content is always one-after-another (height hug).
-   * When the sheet is shorter than content, only .dir-sheet-scroll clips.
+   * No internal scrolling — when the sheet is shorter than content, clip.
    */
   .panel.is-directions-chrome .dir-sheet-scroll {
     flex: 1 1 auto;
     min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
   }
