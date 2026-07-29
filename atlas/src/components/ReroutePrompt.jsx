@@ -135,16 +135,10 @@ export default function ReroutePrompt({
     return () => {
       cancelled = true;
       stopListen?.();
+      cancelSpeech();
     };
     // promptKey identifies this offer; handlers via refs.
   }, [visible, promptKey, suggestion]);
-
-  useEffect(
-    () => () => {
-      cancelSpeech();
-    },
-    [],
-  );
 
   if (!visible) return null;
 

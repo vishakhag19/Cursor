@@ -45,8 +45,8 @@ export function useNavRoadVoice({
   useEffect(
     () => () => {
       stopListenRef.current?.();
-      // Do not cancelSpeech here: Strict Mode remount / prompt handoff would
-      // kill the mid-nav reroute offer mid-utterance.
+      // NavigationUI often unmounts without flipping active→false first.
+      cancelSpeech();
     },
     [],
   );

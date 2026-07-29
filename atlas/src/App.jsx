@@ -25,7 +25,7 @@ import {
   parseRouteAssistantIntent,
   roadNamesMatch,
 } from "./utils/routeAssist";
-import { speak } from "./utils/voiceConfirm";
+import { speak, cancelSpeech } from "./utils/voiceConfirm";
 import {
   DEFAULT_ROUTE_PREFS,
   excludesFromPrefs,
@@ -1922,6 +1922,7 @@ export default function App() {
   }, [selectedRoute, userLocation, refreshLocation, showStatus]);
 
   const exitNavigation = useCallback(() => {
+    cancelSpeech();
     setNavigating(false);
     setNavStepIndex(0);
     setShowSteps(false);

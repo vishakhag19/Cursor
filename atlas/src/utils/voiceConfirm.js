@@ -17,7 +17,13 @@ export function speechRecognitionSupported() {
   return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
+/** Invalidates in-flight speak() retries when cancelSpeech() runs. */
+let speechEpoch = 0;
+
 export function cancelSpeech() {
+  // Bump epoch so in-flight speak() retries do not restart after an intentional stop
+  // (e.g. exiting live navigation).
+  speechEpoch += 1;
   try {
     window.speechSynthesis?.cancel();
   } catch {
@@ -51,14 +57,17 @@ function waitForVoices(timeoutMs = 800) {
 
 /**
  * Speak `text` aloud. Resolves when utterance ends (or immediately if unsupported).
- * Retries once after Chrome's cancel()/paused quirks.
+ * Retries once after Chrome's cancel()/paused quirks, unless cancelSpeech() ran.
  * @returns {Promise<boolean>} true if something was spoken
  */
 export function speak(text, { lang = "en-US", rate = 1 } = {}) {
-  async function speakOnce(attempt) {
-    if (!speechSynthesisSupported() || !text) return false;
+  const epochAtStart = speechEpoch;
+  const stillCurrent = () => speechEpoch === epochAtStart;
 
-    // Chrome often drops the next utterance if speak() follows cancel() immediately.
+  async function speakOnce(attempt) {
+    if (!speechSynthesisSupported() || !text || !stillCurrent()) return false;
+
+    // Soft-clear the queue without bumping epoch (so our own retry can proceed).
     if (attempt === 0) {
       try {
         window.speechSynthesis.cancel();
@@ -66,6 +75,7 @@ export function speak(text, { lang = "en-US", rate = 1 } = {}) {
         /* ignore */
       }
       await new Promise((r) => setTimeout(r, 60));
+      if (!stillCurrent()) return false;
     }
 
     try {
@@ -75,6 +85,8 @@ export function speak(text, { lang = "en-US", rate = 1 } = {}) {
     }
 
     const voices = await waitForVoices();
+    if (!stillCurrent()) return false;
+
     const preferred =
       voices.find((v) => v.lang === lang) ||
       voices.find((v) => String(v.lang || "").startsWith(lang.slice(0, 2))) ||
@@ -83,6 +95,11 @@ export function speak(text, { lang = "en-US", rate = 1 } = {}) {
       null;
 
     return new Promise((resolve) => {
+      if (!stillCurrent()) {
+        resolve(false);
+        return;
+      }
+
       const utter = new SpeechSynthesisUtterance(String(text));
       utter.lang = lang;
       utter.rate = rate;
@@ -91,14 +108,14 @@ export function speak(text, { lang = "en-US", rate = 1 } = {}) {
       let settled = false;
       const safety = setTimeout(() => {
         // Some engines never fire onend after a soft cancel — don't hang callers.
-        finish(window.speechSynthesis.speaking ? true : false);
+        finish(Boolean(window.speechSynthesis.speaking) && stillCurrent());
       }, Math.min(20000, 2500 + String(text).length * 80));
 
       const finish = (ok) => {
         if (settled) return;
         settled = true;
         clearTimeout(safety);
-        resolve(ok);
+        resolve(Boolean(ok) && stillCurrent());
       };
 
       utter.onend = () => finish(true);
@@ -120,8 +137,10 @@ export function speak(text, { lang = "en-US", rate = 1 } = {}) {
 
   return (async () => {
     const first = await speakOnce(0);
+    if (!stillCurrent()) return false;
     if (first) return true;
     await new Promise((r) => setTimeout(r, 120));
+    if (!stillCurrent()) return false;
     return speakOnce(1);
   })();
 }
