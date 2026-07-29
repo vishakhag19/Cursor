@@ -482,6 +482,10 @@ export default function App() {
       setNavigating(false);
       setNavStepIndex(0);
       setShowSteps(false);
+    } else if (prevId && prevId !== opt.id) {
+      // Stay in live nav on a different path — restart turn guidance.
+      setNavStepIndex(0);
+      setRerouteSuggestion(null);
     }
     if (opt.edited) {
       const fromOpt =
@@ -2407,7 +2411,7 @@ export default function App() {
             routeOptions={routeOptions}
             selectedRouteId={selectedRouteId}
             onSelectRoute={(opt) => {
-              selectRoute(opt);
+              selectRoute(opt, { keepNavigating: navigating });
             }}
             loading={dirLoading}
             error={dirError}
@@ -2555,7 +2559,7 @@ export default function App() {
           selectedRouteId={selectedRouteId}
           onSelectRoute={(opt) => {
             suppressMapClickUntil.current = Date.now() + 900;
-            selectRoute(opt);
+            selectRoute(opt, { keepNavigating: navigating });
           }}
           routePrefs={routePrefs}
           routeEditable={routeEditable}
@@ -2753,8 +2757,7 @@ export default function App() {
               (r) => r.id !== selectedRoute.id && !r.edited,
             );
             if (alt) {
-              setSelectedRouteId(alt.id);
-              setRerouteSuggestion(null);
+              selectRoute(alt, { keepNavigating: true });
               showStatus(`Switched to ${alt.label || "alternate route"}`);
             } else {
               showStatus("No alternate routes available");
