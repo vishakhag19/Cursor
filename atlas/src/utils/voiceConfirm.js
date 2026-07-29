@@ -25,34 +25,105 @@ export function cancelSpeech() {
   }
 }
 
+function waitForVoices(timeoutMs = 800) {
+  return new Promise((resolve) => {
+    if (!speechSynthesisSupported()) {
+      resolve([]);
+      return;
+    }
+    const existing = window.speechSynthesis.getVoices();
+    if (existing?.length) {
+      resolve(existing);
+      return;
+    }
+    let done = false;
+    const finish = (voices) => {
+      if (done) return;
+      done = true;
+      window.speechSynthesis.removeEventListener?.("voiceschanged", onChange);
+      resolve(voices || []);
+    };
+    const onChange = () => finish(window.speechSynthesis.getVoices());
+    window.speechSynthesis.addEventListener?.("voiceschanged", onChange);
+    setTimeout(() => finish(window.speechSynthesis.getVoices()), timeoutMs);
+  });
+}
+
 /**
  * Speak `text` aloud. Resolves when utterance ends (or immediately if unsupported).
+ * Retries once after Chrome's cancel()/paused quirks.
  * @returns {Promise<boolean>} true if something was spoken
  */
 export function speak(text, { lang = "en-US", rate = 1 } = {}) {
-  return new Promise((resolve) => {
-    if (!speechSynthesisSupported() || !text) {
-      resolve(false);
-      return;
+  async function speakOnce(attempt) {
+    if (!speechSynthesisSupported() || !text) return false;
+
+    // Chrome often drops the next utterance if speak() follows cancel() immediately.
+    if (attempt === 0) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        /* ignore */
+      }
+      await new Promise((r) => setTimeout(r, 60));
     }
-    cancelSpeech();
-    const utter = new SpeechSynthesisUtterance(String(text));
-    utter.lang = lang;
-    utter.rate = rate;
-    let settled = false;
-    const finish = (ok) => {
-      if (settled) return;
-      settled = true;
-      resolve(ok);
-    };
-    utter.onend = () => finish(true);
-    utter.onerror = () => finish(false);
+
     try {
-      window.speechSynthesis.speak(utter);
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
     } catch {
-      finish(false);
+      /* ignore */
     }
-  });
+
+    const voices = await waitForVoices();
+    const preferred =
+      voices.find((v) => v.lang === lang) ||
+      voices.find((v) => String(v.lang || "").startsWith(lang.slice(0, 2))) ||
+      voices.find((v) => v.default) ||
+      voices[0] ||
+      null;
+
+    return new Promise((resolve) => {
+      const utter = new SpeechSynthesisUtterance(String(text));
+      utter.lang = lang;
+      utter.rate = rate;
+      if (preferred) utter.voice = preferred;
+
+      let settled = false;
+      const safety = setTimeout(() => {
+        // Some engines never fire onend after a soft cancel — don't hang callers.
+        finish(window.speechSynthesis.speaking ? true : false);
+      }, Math.min(20000, 2500 + String(text).length * 80));
+
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(safety);
+        resolve(ok);
+      };
+
+      utter.onend = () => finish(true);
+      utter.onerror = () => finish(false);
+
+      try {
+        window.speechSynthesis.speak(utter);
+        // Chrome can leave synth paused after tab switches.
+        try {
+          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        } catch {
+          /* ignore */
+        }
+      } catch {
+        finish(false);
+      }
+    });
+  }
+
+  return (async () => {
+    const first = await speakOnce(0);
+    if (first) return true;
+    await new Promise((r) => setTimeout(r, 120));
+    return speakOnce(1);
+  })();
 }
 
 export function parseYesNo(transcript) {

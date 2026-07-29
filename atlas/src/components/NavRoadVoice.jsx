@@ -31,16 +31,25 @@ export function useNavRoadVoice({
   }, []);
 
   useEffect(() => {
-    if (!active || disabled) {
+    if (!active) {
       stopListening();
       cancelSpeech();
+      return;
+    }
+    if (disabled) {
+      // ReroutePrompt owns TTS while the mic is disabled — only stop listening.
+      stopListening();
     }
   }, [active, disabled, stopListening]);
 
-  useEffect(() => () => {
-    stopListenRef.current?.();
-    cancelSpeech();
-  }, []);
+  useEffect(
+    () => () => {
+      stopListenRef.current?.();
+      // Do not cancelSpeech here: Strict Mode remount / prompt handoff would
+      // kill the mid-nav reroute offer mid-utterance.
+    },
+    [],
+  );
 
   const startListening = useCallback(async () => {
     if (!active || busy || listening || disabled) return;

@@ -76,14 +76,27 @@ export default function ReroutePrompt({
       setErrorHint("");
       const prompt = buildRerouteVoicePrompt(suggestion);
 
-      if (speechSynthesisSupported()) {
-        await speak(prompt);
-      } else {
+      if (!speechSynthesisSupported()) {
         setErrorHint("Voice unavailable — tap Yes or No.");
         setPhase("fallback");
         return;
       }
+
+      // Speak the full reroute offer before opening the mic. Retry once if the
+      // first attempt was interrupted (e.g. mic disable handoff).
+      let spoken = await speak(prompt);
       if (cancelled) return;
+      if (!spoken) {
+        await new Promise((r) => setTimeout(r, 150));
+        if (cancelled) return;
+        spoken = await speak(prompt);
+      }
+      if (cancelled) return;
+      if (!spoken) {
+        setErrorHint("Couldn’t play the offer — tap Yes or No.");
+        setPhase("fallback");
+        return;
+      }
 
       if (!speechRecognitionSupported()) {
         setErrorHint("Mic unavailable — tap Yes or No.");
@@ -122,10 +135,16 @@ export default function ReroutePrompt({
     return () => {
       cancelled = true;
       stopListen?.();
-      cancelSpeech();
     };
     // promptKey identifies this offer; handlers via refs.
   }, [visible, promptKey, suggestion]);
+
+  useEffect(
+    () => () => {
+      cancelSpeech();
+    },
+    [],
+  );
 
   if (!visible) return null;
 
