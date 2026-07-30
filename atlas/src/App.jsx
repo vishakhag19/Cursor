@@ -157,7 +157,6 @@ function orderViasAlongGeometry(vias, geometry) {
 export default function App() {
   const [view, setView] = useState("search"); // search | directions
   const [panelOpen, setPanelOpen] = useState(true);
-  const isCompact = useIsCompact();
   const systemBackEnabled = useSystemBackEnabled();
   const [layer, setLayer] = useState("map");
   const [status, setStatus] = useState(null);
