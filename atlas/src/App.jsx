@@ -129,18 +129,30 @@ function cloneGeometry(geometry) {
   return geometry.map((p) => (Array.isArray(p) ? [...p] : p));
 }
 
+function cloneVias(vias) {
+  if (!vias?.length) return [];
+  return vias.map((v) => ({ ...v }));
+}
+
+function cloneEditHistory(history) {
+  if (!history?.length) return [];
+  return history.map((entry) => ({
+    vias: cloneVias(entry.vias),
+    routeId: entry.routeId,
+    geometry: cloneGeometry(entry.geometry),
+    options: entry.options ? cloneRouteOptions(entry.options) : entry.options,
+  }));
+}
+
 function cloneRouteOptions(options) {
   if (!options?.length) return [];
   return options.map((r) => ({
     ...r,
     geometry: cloneGeometry(r.geometry),
     steps: r.steps ? r.steps.map((s) => ({ ...s })) : r.steps,
+    vias: r.vias ? cloneVias(r.vias) : r.vias,
+    editHistory: r.editHistory ? cloneEditHistory(r.editHistory) : r.editHistory,
   }));
-}
-
-function cloneVias(vias) {
-  if (!vias?.length) return [];
-  return vias.map((v) => ({ ...v }));
 }
 
 function orderViasAlongGeometry(vias, geometry) {
@@ -456,14 +468,19 @@ export default function App() {
     if (!opt) return;
     setSelectedViaId(null);
 
-    // Stash current vias onto the edited route we're leaving.
+    // Stash vias + undo stack onto the edited route we're leaving so they
+    // come back when that custom route is reselected.
     const prevId = selectedRouteIdRef.current;
     if (prevId && prevId !== opt.id) {
-      const prevVias = cloneVias(editViasRef.current);
-      if (prevVias.length > 0) {
+      const prevRoute = routeOptionsRef.current.find((r) => r.id === prevId);
+      if (prevRoute?.edited) {
+        const prevVias = cloneVias(editViasRef.current);
+        const prevHistory = cloneEditHistory(editHistoryRef.current);
         setRouteOptions((prev) => {
           const next = prev.map((r) =>
-            r.id === prevId && r.edited ? { ...r, vias: prevVias } : r,
+            r.id === prevId && r.edited
+              ? { ...r, vias: prevVias, editHistory: prevHistory }
+              : r,
           );
           routeOptionsRef.current = next;
           return next;
@@ -487,19 +504,27 @@ export default function App() {
     }
     if (opt.edited) {
       const fromOpt =
-        routeOptionsRef.current.find((r) => r.id === opt.id)?.vias ||
-        opt.vias ||
-        [];
-      const restored = cloneVias(fromOpt);
+        routeOptionsRef.current.find((r) => r.id === opt.id) || opt;
+      const restored = cloneVias(fromOpt.vias || opt.vias || []);
       editViasRef.current = restored;
       setEditVias(restored);
+      const restoredHistory = cloneEditHistory(
+        fromOpt.editHistory || opt.editHistory || [],
+      );
+      editHistoryRef.current = restoredHistory;
+      setEditHistory(restoredHistory);
       setEditPreview(null);
     } else {
-      setBaselineRoute(opt);
+      // Browse an alternate without discarding the custom route's undo stack
+      // (already stashed above) or the original baseline for Reset.
       editViasRef.current = [];
       setEditVias([]);
       clearEditHistory();
       setEditPreview(null);
+      const hasEdited = routeOptionsRef.current.some((r) => r.edited);
+      if (!hasEdited) {
+        setBaselineRoute(opt);
+      }
     }
   }, [clearEditHistory]);
 
@@ -2095,12 +2120,12 @@ export default function App() {
     editHistory.length > 0 ||
     Boolean(editPreview?.active) ||
     editBusy;
-  // Undo/reset only after a reshape in this session — not for opened saved routes.
+  // Undo/reset after a reshape — keep visible when revisiting a custom route.
   const showEditBar =
     view === "directions" &&
     !navigating &&
-    editHistory.length > 0 &&
-    Boolean(selectedRoute);
+    Boolean(selectedRoute) &&
+    (editHistory.length > 0 || Boolean(selectedRoute?.edited));
 
   // Keep mid-stops in the reshape via list as soon as the route is editable
   // so live drag preview and the first commit both honor them.
