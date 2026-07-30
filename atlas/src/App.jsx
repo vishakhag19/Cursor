@@ -47,7 +47,6 @@ import {
   pushRecentSearch,
 } from "./utils/storage";
 import useGeolocation, { toCurrentLocationPlace } from "./hooks/useGeolocation";
-import usePullToRefresh from "./hooks/usePullToRefresh";
 import ActionTip from "./components/ActionTip";
 import "./App.css";
 
@@ -2319,40 +2318,10 @@ export default function App() {
     return { top: 48, right: 72, bottom: 48, left: 420 };
   }, [panelOpen, view, sheetHeightFrac]);
 
-  const pullToRefreshEnabled = isCompact && !navigating && !roadPickMode;
-
-  const reloadApp = useCallback(() => {
-    window.location.reload();
-  }, []);
-
-  const {
-    pullPx: ptrPullPx,
-    refreshing: ptrRefreshing,
-    armed: ptrArmed,
-  } = usePullToRefresh({
-    enabled: pullToRefreshEnabled,
-    onRefresh: reloadApp,
-  });
-
   return (
     <div
-      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${navigating && rerouteSuggestion ? "has-reroute-prompt" : ""} ${roadPickMode ? "road-pick-mode" : ""} ${showRouteOnboarding ? "has-route-onboard" : ""} ${ptrPullPx > 0 || ptrRefreshing ? "is-pulling-refresh" : ""}`}
+      className={`app ${panelOpen ? "" : "panel-collapsed"} ${navigating ? "nav-mode" : ""} ${navigating && rerouteSuggestion ? "has-reroute-prompt" : ""} ${roadPickMode ? "road-pick-mode" : ""} ${showRouteOnboarding ? "has-route-onboard" : ""}`}
     >
-      {pullToRefreshEnabled && (ptrPullPx > 0 || ptrRefreshing) ? (
-        <div
-          className={`pull-to-refresh ${ptrArmed ? "is-armed" : ""} ${ptrRefreshing ? "is-refreshing" : ""}`}
-          style={{ height: `${Math.max(ptrPullPx, ptrRefreshing ? 48 : 0)}px` }}
-          aria-hidden
-        >
-          <div className="pull-to-refresh-inner">
-            <md-circular-progress
-              indeterminate={ptrRefreshing || undefined}
-              value={ptrArmed || ptrRefreshing ? 1 : Math.min(1, ptrPullPx / 72)}
-              aria-label="Pull to refresh"
-            />
-          </div>
-        </div>
-      ) : null}
       <aside
         className={`panel m3-surface ${view === "search" ? "is-search-chrome" : "is-directions-chrome"}`}
         aria-label="Map tools"

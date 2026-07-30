@@ -34,50 +34,6 @@
   --panel-control-size: 40px;
 }
 
-/* Mobile: pull-down gesture reloads (native PTR is blocked by overflow:hidden). */
-.pull-to-refresh {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 40;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  pointer-events: none;
-  overflow: hidden;
-  background: transparent;
-  transition: none;
-}
-
-.pull-to-refresh-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 4px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow:
-    0 1px 2px rgba(60, 64, 67, 0.16),
-    0 4px 12px rgba(60, 64, 67, 0.14);
-}
-
-.pull-to-refresh md-circular-progress {
-  width: 24px;
-  height: 24px;
-  --md-circular-progress-size: 24px;
-  --md-circular-progress-active-indicator-width: 3px;
-}
-
-.pull-to-refresh.is-armed .pull-to-refresh-inner,
-.pull-to-refresh.is-refreshing .pull-to-refresh-inner {
-  box-shadow:
-    0 1px 2px rgba(26, 115, 232, 0.2),
-    0 4px 14px rgba(26, 115, 232, 0.22);
-}
-
 .map-stage {
   position: absolute;
   inset: 0;
