@@ -435,6 +435,8 @@ export default function App() {
   const applyEditedRoute = useCallback((route, vias, { pushHistory = true, epoch = null } = {}) => {
     if (epoch != null && epoch !== editEpochRef.current) return false;
 
+    if (pushHistory) pushEditHistory();
+
     const edited = {
       ...route,
       id: `edited-${Math.round(route.distance)}-${Math.round(route.duration)}-${vias.length}-${Date.now()}`,
@@ -442,11 +444,10 @@ export default function App() {
       badge: "Edited route",
       rank: 0,
       edited: true,
-      // Keep reshape points with the route so they return when reselected.
+      // Keep reshape points + undo stack with the route so they return when reselected.
       vias: cloneVias(vias),
+      editHistory: cloneEditHistory(editHistoryRef.current),
     };
-
-    if (pushHistory) pushEditHistory();
 
     editViasRef.current = vias;
     setEditVias(vias);
