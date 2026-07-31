@@ -148,8 +148,9 @@ export function scoreRoute(route, prefs = DEFAULT_ROUTE_PREFS, roadRules = []) {
     route.metrics?.scenicShare ?? estimateScenicShare(route.steps);
   const traffic = route.traffic?.id || "moderate";
 
-  // Base: blend duration (sec) with a light distance term.
-  let cost = (route.duration || 0) + (route.distance || 0) / 20;
+  // Base: shortest distance wins by default; duration is only a light tie-break.
+  // (Previously duration-led, so the selected card often wasn’t the smallest.)
+  let cost = (route.distance || 0) + (route.duration || 0) / 20;
 
   // Soft avoid bias (public OSRM can't hard-exclude). Strong enough that a
   // longer surface / toll-free / land route still ranks above a shorter
