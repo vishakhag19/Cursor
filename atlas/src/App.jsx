@@ -453,7 +453,8 @@ export default function App() {
     setEditVias(vias);
     setRouteOptions((prev) => {
       const withoutEdited = prev.filter((r) => !r.edited);
-      const next = [edited, ...withoutEdited];
+      // Keep exactly five cards: custom route + four alternatives.
+      const next = [edited, ...withoutEdited].slice(0, 5);
       routeOptionsRef.current = next;
       return next;
     });
