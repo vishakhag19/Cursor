@@ -1,0 +1,98 @@
+import { useEffect, useRef } from "react";
+
+/**
+ * Mobile save-route bottom sheet — replaces the Drive sheet while open.
+ * Dismiss via Save, X, or Escape; Drive sheet reappears underneath.
+ */
+export default function SaveRouteSheet({
+  open,
+  name = "",
+  error = "",
+  onNameChange,
+  onSave,
+  onClose,
+}) {
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function onKey(e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose?.();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    const focusId = window.setTimeout(() => {
+      inputRef.current?.focus?.();
+      inputRef.current?.select?.();
+    }, 80);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.clearTimeout(focusId);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  function handleSave(e) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    onSave?.();
+  }
+
+  return (
+    <div
+      className="save-route-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Save route"
+    >
+      <div className="save-route-sheet-handle" aria-hidden>
+        <div className="save-route-sheet-grabber" />
+      </div>
+      <div className="save-route-sheet-header">
+        <h2 className="md-typescale-title-medium save-route-sheet-title">
+          Save route
+        </h2>
+        <md-icon-button type="button" aria-label="Close" onClick={onClose}>
+          <md-icon>close</md-icon>
+        </md-icon-button>
+      </div>
+      <form className="save-route-sheet-body" onSubmit={handleSave}>
+        <div className={`dir-save-field${error ? " is-error" : ""}`}>
+          <input
+            ref={inputRef}
+            id="save-route-sheet-name"
+            className="dir-save-field-input"
+            type="text"
+            value={name}
+            maxLength={80}
+            placeholder="Route name"
+            aria-label="Route name"
+            aria-invalid={error ? "true" : "false"}
+            onChange={(e) => onNameChange?.(e.target.value)}
+          />
+        </div>
+        {error ? (
+          <p
+            className="dir-save-field-error md-typescale-body-small"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+        {/* type=button + onClick: MD submitters are unreliable inside React forms */}
+        <md-filled-button
+          type="button"
+          class="save-route-sheet-submit"
+          disabled={Boolean(error) || undefined}
+          onClick={handleSave}
+        >
+          Save
+        </md-filled-button>
+      </form>
+    </div>
+  );
+}
