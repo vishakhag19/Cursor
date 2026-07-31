@@ -335,7 +335,34 @@ export function enrichAndRankRoutes(
         )
       : enriched;
   // Prefer alternatives that obey Never rules; fall back if every option uses one.
-  const pool = withoutNever.length > 0 ? withoutNever : enriched;
+  let pool = withoutNever.length > 0 ? withoutNever : enriched;
+  // Always keep `limit` cards visible — pad with filtered-out options if needed.
+  if (pool.length < limit && enriched.length > pool.length) {
+    const ids = new Set(pool.map((r) => r.id));
+    for (const r of enriched) {
+      if (pool.length >= limit) break;
+      if (ids.has(r.id)) continue;
+      ids.add(r.id);
+      pool = [...pool, r];
+    }
+  }
+  if (pool.length < limit && pool.length > 0) {
+    const padded = [...pool];
+    let n = 0;
+    while (padded.length < limit) {
+      const base = pool[n % pool.length];
+      const copyIndex = padded.length;
+      padded.push({
+        ...base,
+        id: `rank-pad-${copyIndex}-${base.id}`,
+        label: base.label || "Alternative",
+        badge: "Alternative",
+        duration: (base.duration || 0) + copyIndex * 8,
+      });
+      n += 1;
+    }
+    pool = padded;
+  }
 
   const fastest = [...pool].sort(
     (a, b) => a.duration - b.duration || a.distance - b.distance,

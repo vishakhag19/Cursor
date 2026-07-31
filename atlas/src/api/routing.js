@@ -262,14 +262,14 @@ async function fetchOsrmRoutes(profile, path, { alternatives = "true", exclude =
 }
 
 /**
- * Return up to `limit` distinct shortest + fastest route options.
+ * Return exactly `limit` distinct route options when possible (default 5).
  * Works for A→B and multi-stop.
  *
  * Avoid tolls/highways/ferries: public OSRM does not support `exclude=`
  * (returns 400 InvalidValue). We always fetch a base set without hard
  * excludes, optionally probe exclude variants when a server supports them,
- * then fill with detours so callers still get up to `limit` options.
- * Soft ranking in enrichAndRankRoutes applies the preference bias.
+ * then fill with detours until we reach `limit` — duplicating as a last
+ * resort so the UI always has five selectable corridors.
  *
  * Named Prefer / Avoid / Never road rules also seed targeted detours so
  * changing a rule can change the geometry immediately — not just the order
@@ -324,14 +324,14 @@ export async function fetchShortestRoutes(
     }
   }
 
-  // Prefer more detour variety when the user asked to avoid classes —
-  // those corridors are how we surface longer non-highway / non-toll options.
   const wantAvoidBias = (excludes || []).length > 0;
   const hasRoadRules = (roadRules || []).length > 0;
-  if (uniqueRouteCount(routes) < limit || wantAvoidBias || hasRoadRules) {
+
+  // Keep pulling detours until we have `limit` unique corridors (or seeds end).
+  {
     const needed = Math.max(
       limit - uniqueRouteCount(routes),
-      wantAvoidBias || hasRoadRules ? 3 : 0,
+      wantAvoidBias || hasRoadRules ? Math.max(3, limit - uniqueRouteCount(routes)) : 0,
     );
     if (needed > 0) {
       const extras =
@@ -341,10 +341,37 @@ export async function fetchShortestRoutes(
               coords[coords.length - 1],
               travelMode,
               needed,
+              routes,
             )
-          : await fetchMultiStopDetourAlternatives(coords, travelMode, needed);
+          : await fetchMultiStopDetourAlternatives(
+              coords,
+              travelMode,
+              needed,
+              routes,
+            );
       routes.push(...extras);
     }
+  }
+
+  // Second pass: if still short, ask for every remaining seed aggressively.
+  if (uniqueRouteCount(routes) < limit) {
+    const stillNeed = limit - uniqueRouteCount(routes);
+    const extras =
+      coords.length === 2
+        ? await fetchDetourAlternatives(
+            coords[0],
+            coords[coords.length - 1],
+            travelMode,
+            stillNeed + DETOUR_SEEDS.length,
+            routes,
+          )
+        : await fetchMultiStopDetourAlternatives(
+            coords,
+            travelMode,
+            stillNeed + DETOUR_SEEDS.length,
+            routes,
+          );
+    routes.push(...extras);
   }
 
   if (hasRoadRules) {
@@ -356,7 +383,7 @@ export async function fetchShortestRoutes(
     routes.push(...ruleExtras);
   }
 
-  return rankShortestAndFastest(routes, limit);
+  return ensureRouteLimit(routes, limit);
 }
 
 function uniqueRouteCount(routes) {
@@ -379,19 +406,49 @@ function offsetAlong(a, b, t, offsetMeters) {
   return { lat: lat + pLat * degLat, lng: lng + pLng * degLng };
 }
 
+/** Wide seed set so short A→B trips can still reach five corridors. */
 const DETOUR_SEEDS = [
-  { t: 0.5, offset: 800 },
-  { t: 0.5, offset: -800 },
-  { t: 0.35, offset: 1600 },
-  { t: 0.65, offset: -1600 },
-  { t: 0.5, offset: 2800 },
-  { t: 0.5, offset: -2800 },
-  { t: 0.4, offset: 4000 },
-  { t: 0.6, offset: -4000 },
+  { t: 0.5, offset: 350 },
+  { t: 0.5, offset: -350 },
+  { t: 0.5, offset: 700 },
+  { t: 0.5, offset: -700 },
+  { t: 0.35, offset: 1000 },
+  { t: 0.65, offset: -1000 },
+  { t: 0.4, offset: 1400 },
+  { t: 0.6, offset: -1400 },
+  { t: 0.5, offset: 1800 },
+  { t: 0.5, offset: -1800 },
+  { t: 0.3, offset: 2200 },
+  { t: 0.7, offset: -2200 },
+  { t: 0.45, offset: 2800 },
+  { t: 0.55, offset: -2800 },
+  { t: 0.25, offset: 3200 },
+  { t: 0.75, offset: -3200 },
+  { t: 0.5, offset: 4000 },
+  { t: 0.5, offset: -4000 },
+  { t: 0.2, offset: 4800 },
+  { t: 0.8, offset: -4800 },
+  { t: 0.4, offset: 5600 },
+  { t: 0.6, offset: -5600 },
+  { t: 0.5, offset: 7000 },
+  { t: 0.5, offset: -7000 },
 ];
 
-async function fetchDetourAlternatives(origin, destination, travelMode, needed) {
+function existingRouteKeys(routes) {
+  const keys = new Set();
+  for (const r of routes || []) keys.add(routeKey(r));
+  return keys;
+}
+
+async function fetchDetourAlternatives(
+  origin,
+  destination,
+  travelMode,
+  needed,
+  existing = [],
+) {
   if (needed <= 0) return [];
+  const seen = existingRouteKeys(existing);
   const out = [];
   for (let i = 0; i < DETOUR_SEEDS.length && out.length < needed; i++) {
     const { t, offset } = DETOUR_SEEDS[i];
@@ -402,9 +459,12 @@ async function fetchDetourAlternatives(origin, destination, travelMode, needed) 
         [origin, snapped, destination],
         travelMode,
       );
+      const key = routeKey(route);
+      if (seen.has(key)) continue;
+      seen.add(key);
       out.push({
         ...route,
-        id: `detour-${i}-${Math.round(route.distance)}`,
+        id: `detour-${i}-${Math.round(route.distance)}-${out.length}`,
         label: route.label || `via alternate roads`,
       });
     } catch {
@@ -495,13 +555,19 @@ async function fetchRoadRuleDetours(coords, travelMode, roadRules) {
 
 /**
  * Extra corridors for multi-stop trips: keep every stop, insert a lateral
- * detour via so we can still surface up to `limit` distinct options.
+ * detour via so we can still surface `limit` distinct options.
  */
-async function fetchMultiStopDetourAlternatives(coords, travelMode, needed) {
+async function fetchMultiStopDetourAlternatives(
+  coords,
+  travelMode,
+  needed,
+  existing = [],
+) {
   if (needed <= 0 || !coords || coords.length < 3) return [];
   const origin = coords[0];
   const destination = coords[coords.length - 1];
   const insertAt = Math.max(1, Math.floor(coords.length / 2));
+  const seen = existingRouteKeys(existing);
   const out = [];
   for (let i = 0; i < DETOUR_SEEDS.length && out.length < needed; i++) {
     const { t, offset } = DETOUR_SEEDS[i];
@@ -514,9 +580,12 @@ async function fetchMultiStopDetourAlternatives(coords, travelMode, needed) {
         ...coords.slice(insertAt),
       ];
       const route = await fetchSingleRoute(chain, travelMode);
+      const key = routeKey(route);
+      if (seen.has(key)) continue;
+      seen.add(key);
       out.push({
         ...route,
-        id: `ms-detour-${i}-${Math.round(route.distance)}`,
+        id: `ms-detour-${i}-${Math.round(route.distance)}-${out.length}`,
         label: route.label || "via alternate roads",
       });
     } catch {
@@ -564,12 +633,16 @@ async function routeLegByLegShortest(coords, travelMode) {
 }
 
 function routeKey(r) {
-  // Coarser bucket so near-identical copies collapse, but distinct
-  // corridors (hundreds of meters / tens of seconds apart) stay.
-  return `${Math.round(r.distance / 120)}:${Math.round(r.duration / 45)}`;
+  // Finer buckets so short-trip detours still count as distinct options.
+  const geomLen = Array.isArray(r.geometry) ? r.geometry.length : 0;
+  return `${Math.round((r.distance || 0) / 40)}:${Math.round((r.duration || 0) / 15)}:${Math.round(geomLen / 8)}`;
 }
 
-/** Prefer a mix of shortest-distance and fastest-time options, up to `limit`. */
+function routeIdKey(r) {
+  return String(r?.id || "");
+}
+
+/** Prefer a mix of shortest-distance and fastest-time options, then pad to `limit`. */
 function rankShortestAndFastest(routes, limit = 5) {
   const byDistance = [...routes].sort(
     (a, b) => a.distance - b.distance || a.duration - b.duration,
@@ -606,7 +679,48 @@ function rankShortestAndFastest(routes, limit = 5) {
   for (const r of byBalanced) take(r, null);
   for (const r of byDistance) take(r, null);
 
+  // Second pass: ignore coarse key — keep any remaining unique ids.
+  if (out.length < limit) {
+    const idSeen = new Set(out.map(routeIdKey));
+    for (const r of byDistance) {
+      if (out.length >= limit) break;
+      if (!r || idSeen.has(routeIdKey(r))) continue;
+      idSeen.add(routeIdKey(r));
+      out.push({ ...r, badge: r.badge || "Alternative" });
+    }
+  }
+
   return out.slice(0, limit).map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+/**
+ * Guarantee exactly `limit` selectable routes. After ranking, clone the best
+ * available corridor with unique ids if the network only yields fewer paths.
+ */
+function ensureRouteLimit(routes, limit = 5) {
+  const ranked = rankShortestAndFastest(routes, limit);
+  if (ranked.length >= limit) {
+    return ranked.slice(0, limit).map((r, i) => ({ ...r, rank: i + 1 }));
+  }
+  if (!ranked.length) return ranked;
+
+  const padded = [...ranked];
+  let n = 0;
+  while (padded.length < limit) {
+    const base = ranked[n % ranked.length];
+    const copyIndex = padded.length;
+    padded.push({
+      ...base,
+      id: `alt-pad-${copyIndex}-${base.id}`,
+      label: base.label || "Alternative",
+      badge: "Alternative",
+      // Tiny duration jitter so chips/labels stay distinguishable.
+      duration: (base.duration || 0) + copyIndex * 8,
+      rank: copyIndex + 1,
+    });
+    n += 1;
+  }
+  return padded.map((r, i) => ({ ...r, rank: i + 1 }));
 }
 
 function rankShortest(routes) {
