@@ -362,10 +362,18 @@ export function enrichAndRankRoutes(
   const bestFuelCost = bestFuel ? fuelCostOf(bestFuel) : 0;
   const bestNamed = bestQuality?.metrics?.namedShare ?? 0;
 
-  const ranked = [...pool].sort(
-    (a, b) =>
-      scoreRoute(a, prefs, roadRules) - scoreRoute(b, prefs, roadRules),
-  );
+  const ranked = [...pool].sort((a, b) => {
+    const scoreDiff =
+      scoreRoute(a, prefs, roadRules) - scoreRoute(b, prefs, roadRules);
+    // Strong prefer/avoid / road-rule gaps still win. Otherwise default to the
+    // smallest (shortest-distance) route so #1 matches user expectation.
+    if (Math.abs(scoreDiff) >= 400) return scoreDiff;
+    return (
+      (a.distance || 0) - (b.distance || 0) ||
+      (a.duration || 0) - (b.duration || 0) ||
+      scoreDiff
+    );
+  });
 
   return ranked.slice(0, limit).map((r, i) => {
     const reason = buildReason(
@@ -377,8 +385,14 @@ export function enrichAndRankRoutes(
       fewest?.id,
     );
     let badge = r.badge || null;
-    if (i === 0) badge = badge || "Recommended";
-    else if (r.id === fastest?.id) badge = "Fastest";
+    if (i === 0) {
+      badge =
+        r.id === shortest?.id
+          ? r.id === fastest?.id
+            ? "Shortest & fastest"
+            : "Shortest"
+          : badge || "Recommended";
+    } else if (r.id === fastest?.id) badge = "Fastest";
     else if (r.id === shortest?.id) badge = "Shortest";
     else if (prefs.fewestTurns && r.id === fewest?.id) badge = "Fewest turns";
     const suggestFuelEfficient =
