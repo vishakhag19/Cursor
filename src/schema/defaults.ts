@@ -1,0 +1,393 @@
+import type {
+  ColorScale,
+  DesignSystemDocument,
+  SemanticColor,
+  TokenValue,
+} from './types'
+import { SCHEMA_VERSION } from './types'
+
+const lit = (value: string): TokenValue => ({ type: 'literal', value })
+const ref = (path: string): TokenValue => ({ type: 'ref', path })
+
+function scale(name: string, stops: Record<string, string>): ColorScale {
+  return {
+    id: name.toLowerCase(),
+    name,
+    stops: Object.entries(stops).map(([step, value]) => ({ step, value })),
+  }
+}
+
+function now() {
+  return new Date().toISOString()
+}
+
+const primitives: ColorScale[] = [
+  scale('Neutral', {
+    '0': '#FFFFFF',
+    '50': '#F7F7F5',
+    '100': '#EFEFED',
+    '200': '#E0E0DC',
+    '300': '#C8C8C2',
+    '400': '#A3A39C',
+    '500': '#7A7A74',
+    '600': '#5C5C57',
+    '700': '#40403C',
+    '800': '#2A2A27',
+    '900': '#1A1A18',
+    '950': '#0F0F0E',
+  }),
+  scale('Brand', {
+    '50': '#EEF6F3',
+    '100': '#D5EBE3',
+    '200': '#AED7C8',
+    '300': '#7CBCAB',
+    '400': '#4F9F8C',
+    '500': '#2F7F6E',
+    '600': '#246557',
+    '700': '#1D5146',
+    '800': '#183F38',
+    '900': '#12332D',
+  }),
+  scale('Accent', {
+    '50': '#FBF4EC',
+    '100': '#F5E4D0',
+    '200': '#EAC7A1',
+    '300': '#DFA572',
+    '400': '#D1854A',
+    '500': '#B86A32',
+    '600': '#965428',
+    '700': '#74411F',
+    '800': '#533016',
+    '900': '#3A220F',
+  }),
+  scale('Success', {
+    '50': '#EDF8F1',
+    '100': '#D1EEDC',
+    '200': '#A5DDBA',
+    '300': '#6FC492',
+    '400': '#42A86E',
+    '500': '#2A8A54',
+    '600': '#206F43',
+    '700': '#1A5836',
+    '800': '#144229',
+    '900': '#0E2E1C',
+  }),
+  scale('Warning', {
+    '50': '#FFF8EB',
+    '100': '#FFEDC7',
+    '200': '#FFD88A',
+    '300': '#FFBF4D',
+    '400': '#F5A623',
+    '500': '#D9890B',
+    '600': '#B06C08',
+    '700': '#865207',
+    '800': '#5C3805',
+    '900': '#3D2503',
+  }),
+  scale('Error', {
+    '50': '#FDF1F1',
+    '100': '#F9DADA',
+    '200': '#F2B0B0',
+    '300': '#E67E7E',
+    '400': '#D64F4F',
+    '500': '#C03434',
+    '600': '#9C2828',
+    '700': '#7A2020',
+    '800': '#581818',
+    '900': '#3C1010',
+  }),
+  scale('Info', {
+    '50': '#EFF5FB',
+    '100': '#D6E6F5',
+    '200': '#ADCDEB',
+    '300': '#7BAED9',
+    '400': '#4E90C4',
+    '500': '#3474A8',
+    '600': '#285C87',
+    '700': '#1F486A',
+    '800': '#16334C',
+    '900': '#0F2335',
+  }),
+]
+
+const semantics: SemanticColor[] = [
+  { id: 'bg', name: 'Background', light: ref('color.primitive.neutral.0'), dark: ref('color.primitive.neutral.950') },
+  { id: 'surface', name: 'Surface', light: ref('color.primitive.neutral.50'), dark: ref('color.primitive.neutral.900') },
+  { id: 'surface-raised', name: 'Surface Raised', light: ref('color.primitive.neutral.0'), dark: ref('color.primitive.neutral.800') },
+  { id: 'text', name: 'Text', light: ref('color.primitive.neutral.900'), dark: ref('color.primitive.neutral.50') },
+  { id: 'text-muted', name: 'Text Muted', light: ref('color.primitive.neutral.500'), dark: ref('color.primitive.neutral.400') },
+  { id: 'border', name: 'Border', light: ref('color.primitive.neutral.200'), dark: ref('color.primitive.neutral.700') },
+  { id: 'border-strong', name: 'Border Strong', light: ref('color.primitive.neutral.300'), dark: ref('color.primitive.neutral.600') },
+  { id: 'primary', name: 'Primary', light: ref('color.primitive.brand.600'), dark: ref('color.primitive.brand.400') },
+  { id: 'primary-fg', name: 'Primary Foreground', light: lit('#FFFFFF'), dark: ref('color.primitive.neutral.950') },
+  { id: 'secondary', name: 'Secondary', light: ref('color.primitive.neutral.100'), dark: ref('color.primitive.neutral.800') },
+  { id: 'secondary-fg', name: 'Secondary Foreground', light: ref('color.primitive.neutral.900'), dark: ref('color.primitive.neutral.50') },
+  { id: 'accent', name: 'Accent', light: ref('color.primitive.accent.500'), dark: ref('color.primitive.accent.400') },
+  { id: 'accent-fg', name: 'Accent Foreground', light: lit('#FFFFFF'), dark: ref('color.primitive.neutral.950') },
+  { id: 'success', name: 'Success', light: ref('color.primitive.success.500'), dark: ref('color.primitive.success.400') },
+  { id: 'warning', name: 'Warning', light: ref('color.primitive.warning.500'), dark: ref('color.primitive.warning.400') },
+  { id: 'error', name: 'Error', light: ref('color.primitive.error.500'), dark: ref('color.primitive.error.400') },
+  { id: 'info', name: 'Information', light: ref('color.primitive.info.500'), dark: ref('color.primitive.info.400') },
+  { id: 'focus', name: 'Focus', light: ref('color.primitive.brand.500'), dark: ref('color.primitive.brand.400') },
+  { id: 'disabled', name: 'Disabled', light: ref('color.primitive.neutral.300'), dark: ref('color.primitive.neutral.600') },
+  { id: 'disabled-fg', name: 'Disabled Foreground', light: ref('color.primitive.neutral.500'), dark: ref('color.primitive.neutral.500') },
+]
+
+export const CORE_COMPONENT_IDS = [
+  'button',
+  'icon-button',
+  'input',
+  'select',
+  'checkbox',
+  'radio-group',
+  'switch',
+  'tabs',
+  'card',
+  'badge',
+  'dialog',
+  'tooltip',
+] as const
+
+export function createDefaultDesignSystem(
+  overrides?: Partial<Pick<DesignSystemDocument, 'metadata'>>,
+): DesignSystemDocument {
+  const timestamp = now()
+  return {
+    version: SCHEMA_VERSION,
+    metadata: {
+      id: crypto.randomUUID(),
+      name: 'Forge Default',
+      description:
+        'A polished starter system with warm neutrals, a deep teal brand, and accessible interactive components.',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      ...overrides?.metadata,
+    },
+    foundations: {
+      colors: { primitives, semantics },
+      typography: {
+        families: [
+          {
+            id: 'sans',
+            name: 'Sans',
+            family: 'Source Sans 3',
+            fallback: 'system-ui, sans-serif',
+            source: 'google',
+            weights: [400, 500, 600, 700],
+          },
+          {
+            id: 'display',
+            name: 'Display',
+            family: 'Fraunces',
+            fallback: 'Georgia, serif',
+            source: 'google',
+            weights: [500, 600, 700],
+          },
+          {
+            id: 'mono',
+            name: 'Mono',
+            family: 'IBM Plex Mono',
+            fallback: 'ui-monospace, monospace',
+            source: 'google',
+            weights: [400, 500],
+          },
+        ],
+        styles: [
+          { id: 'display-1', name: 'Display 1', role: 'display', fontFamilyId: 'display', fontSize: '3.5rem', fontWeight: 600, lineHeight: '1.1', letterSpacing: '-0.02em', textTransform: 'none' },
+          { id: 'display-2', name: 'Display 2', role: 'display', fontFamilyId: 'display', fontSize: '2.75rem', fontWeight: 600, lineHeight: '1.15', letterSpacing: '-0.02em', textTransform: 'none' },
+          { id: 'heading-1', name: 'Heading 1', role: 'heading', fontFamilyId: 'sans', fontSize: '2rem', fontWeight: 650, lineHeight: '1.25', letterSpacing: '-0.015em', textTransform: 'none' },
+          { id: 'heading-2', name: 'Heading 2', role: 'heading', fontFamilyId: 'sans', fontSize: '1.5rem', fontWeight: 600, lineHeight: '1.3', letterSpacing: '-0.01em', textTransform: 'none' },
+          { id: 'heading-3', name: 'Heading 3', role: 'heading', fontFamilyId: 'sans', fontSize: '1.25rem', fontWeight: 600, lineHeight: '1.35', letterSpacing: '-0.01em', textTransform: 'none' },
+          { id: 'body-lg', name: 'Body Large', role: 'body', fontFamilyId: 'sans', fontSize: '1.125rem', fontWeight: 400, lineHeight: '1.6', letterSpacing: '0', textTransform: 'none' },
+          { id: 'body', name: 'Body', role: 'body', fontFamilyId: 'sans', fontSize: '1rem', fontWeight: 400, lineHeight: '1.55', letterSpacing: '0', textTransform: 'none' },
+          { id: 'body-sm', name: 'Body Small', role: 'body', fontFamilyId: 'sans', fontSize: '0.875rem', fontWeight: 400, lineHeight: '1.5', letterSpacing: '0', textTransform: 'none' },
+          { id: 'label', name: 'Label', role: 'label', fontFamilyId: 'sans', fontSize: '0.8125rem', fontWeight: 500, lineHeight: '1.4', letterSpacing: '0.01em', textTransform: 'none' },
+          { id: 'caption', name: 'Caption', role: 'caption', fontFamilyId: 'sans', fontSize: '0.75rem', fontWeight: 400, lineHeight: '1.4', letterSpacing: '0.01em', textTransform: 'none' },
+          { id: 'code', name: 'Code', role: 'monospace', fontFamilyId: 'mono', fontSize: '0.875rem', fontWeight: 400, lineHeight: '1.5', letterSpacing: '0', textTransform: 'none' },
+        ],
+      },
+      spacing: {
+        baseUnit: 4,
+        tokens: [
+          { id: '0', name: '0', value: '0' },
+          { id: '1', name: '1', value: '4px' },
+          { id: '2', name: '2', value: '8px' },
+          { id: '3', name: '3', value: '12px' },
+          { id: '4', name: '4', value: '16px' },
+          { id: '5', name: '5', value: '20px' },
+          { id: '6', name: '6', value: '24px' },
+          { id: '8', name: '8', value: '32px' },
+          { id: '10', name: '10', value: '40px' },
+          { id: '12', name: '12', value: '48px' },
+          { id: '16', name: '16', value: '64px' },
+        ],
+      },
+      sizing: {
+        tokens: [
+          { id: 'control-sm', name: 'Control SM', value: '28px', semantic: 'control' },
+          { id: 'control-md', name: 'Control MD', value: '36px', semantic: 'control' },
+          { id: 'control-lg', name: 'Control LG', value: '44px', semantic: 'control' },
+          { id: 'icon-sm', name: 'Icon SM', value: '14px', semantic: 'icon' },
+          { id: 'icon-md', name: 'Icon MD', value: '16px', semantic: 'icon' },
+          { id: 'icon-lg', name: 'Icon LG', value: '20px', semantic: 'icon' },
+        ],
+      },
+      radius: {
+        tokens: [
+          { id: 'none', name: 'None', value: '0' },
+          { id: 'sm', name: 'SM', value: '4px' },
+          { id: 'md', name: 'MD', value: '8px' },
+          { id: 'lg', name: 'LG', value: '12px' },
+          { id: 'xl', name: 'XL', value: '16px' },
+          { id: 'full', name: 'Full', value: '9999px' },
+        ],
+      },
+      borders: {
+        widths: [
+          { id: '0', name: '0', value: '0' },
+          { id: '1', name: '1', value: '1px' },
+          { id: '2', name: '2', value: '2px' },
+        ],
+        styles: [
+          { id: 'solid', name: 'Solid', value: 'solid' },
+          { id: 'dashed', name: 'Dashed', value: 'dashed' },
+        ],
+      },
+      shadows: [
+        {
+          id: 'sm',
+          name: 'SM',
+          layers: [{ x: '0', y: '1px', blur: '2px', spread: '0', color: '#1A1A18', opacity: 0.06 }],
+        },
+        {
+          id: 'md',
+          name: 'MD',
+          layers: [
+            { x: '0', y: '2px', blur: '4px', spread: '0', color: '#1A1A18', opacity: 0.06 },
+            { x: '0', y: '4px', blur: '12px', spread: '-2px', color: '#1A1A18', opacity: 0.08 },
+          ],
+        },
+        {
+          id: 'lg',
+          name: 'LG',
+          layers: [
+            { x: '0', y: '4px', blur: '8px', spread: '0', color: '#1A1A18', opacity: 0.06 },
+            { x: '0', y: '12px', blur: '28px', spread: '-4px', color: '#1A1A18', opacity: 0.12 },
+          ],
+        },
+      ],
+      motion: {
+        durations: [
+          { id: 'instant', name: 'Instant', value: '0ms' },
+          { id: 'fast', name: 'Fast', value: '120ms' },
+          { id: 'normal', name: 'Normal', value: '200ms' },
+          { id: 'slow', name: 'Slow', value: '320ms' },
+        ],
+        easings: [
+          { id: 'standard', name: 'Standard', value: 'cubic-bezier(0.2, 0, 0, 1)' },
+          { id: 'emphasized', name: 'Emphasized', value: 'cubic-bezier(0.3, 0, 0, 1)' },
+          { id: 'enter', name: 'Enter', value: 'cubic-bezier(0, 0, 0.2, 1)' },
+          { id: 'exit', name: 'Exit', value: 'cubic-bezier(0.4, 0, 1, 1)' },
+        ],
+        presets: [
+          { id: 'hover', name: 'Hover', durationId: 'fast', easingId: 'standard' },
+          { id: 'overlay', name: 'Overlay', durationId: 'normal', easingId: 'emphasized' },
+          { id: 'enter', name: 'Enter', durationId: 'normal', easingId: 'enter' },
+          { id: 'exit', name: 'Exit', durationId: 'fast', easingId: 'exit' },
+        ],
+      },
+      breakpoints: [
+        { id: 'sm', name: 'SM', minWidth: '640px' },
+        { id: 'md', name: 'MD', minWidth: '768px' },
+        { id: 'lg', name: 'LG', minWidth: '1024px' },
+        { id: 'xl', name: 'XL', minWidth: '1280px' },
+      ],
+    },
+    icons: {
+      libraryId: 'lucide',
+      sizes: [
+        { id: 'sm', name: 'SM', value: '14px' },
+        { id: 'md', name: 'MD', value: '16px' },
+        { id: 'lg', name: 'LG', value: '20px' },
+        { id: 'xl', name: 'XL', value: '24px' },
+      ],
+      strokeWidth: 1.75,
+      includedIds: [
+        'ArrowLeft',
+        'ArrowRight',
+        'Menu',
+        'X',
+        'Search',
+        'Plus',
+        'Pencil',
+        'Trash2',
+        'Settings',
+        'CircleCheck',
+        'TriangleAlert',
+        'CircleX',
+        'Info',
+        'LoaderCircle',
+      ],
+      customSvgs: [],
+      semanticMap: {
+        'navigation.back': 'ArrowLeft',
+        'navigation.forward': 'ArrowRight',
+        'navigation.menu': 'Menu',
+        'navigation.close': 'X',
+        'action.search': 'Search',
+        'action.add': 'Plus',
+        'action.edit': 'Pencil',
+        'action.delete': 'Trash2',
+        'action.settings': 'Settings',
+        'feedback.success': 'CircleCheck',
+        'feedback.warning': 'TriangleAlert',
+        'feedback.error': 'CircleX',
+        'feedback.info': 'Info',
+        'feedback.loading': 'LoaderCircle',
+      },
+    },
+    themes: [
+      { id: 'light', name: 'Light', mode: 'light', overrides: {} },
+      { id: 'dark', name: 'Dark', mode: 'dark', overrides: {} },
+    ],
+    components: {
+      selectedIds: [...CORE_COMPONENT_IDS],
+      overrides: {},
+    },
+  }
+}
+
+export function createBlankDesignSystem(): DesignSystemDocument {
+  const doc = createDefaultDesignSystem({
+    metadata: {
+      id: crypto.randomUUID(),
+      name: 'Untitled System',
+      description: 'Started from scratch.',
+      createdAt: now(),
+      updatedAt: now(),
+    },
+  })
+  doc.foundations.colors.primitives = [
+    scale('Neutral', {
+      '50': '#FAFAFA',
+      '100': '#F5F5F5',
+      '500': '#737373',
+      '900': '#171717',
+    }),
+    scale('Brand', {
+      '500': '#3B82F6',
+      '600': '#2563EB',
+    }),
+  ]
+  doc.foundations.colors.semantics = [
+    { id: 'bg', name: 'Background', light: lit('#FFFFFF'), dark: lit('#0A0A0A') },
+    { id: 'surface', name: 'Surface', light: lit('#FAFAFA'), dark: lit('#171717') },
+    { id: 'text', name: 'Text', light: lit('#171717'), dark: lit('#FAFAFA') },
+    { id: 'border', name: 'Border', light: lit('#E5E5E5'), dark: lit('#404040') },
+    { id: 'primary', name: 'Primary', light: ref('color.primitive.brand.600'), dark: ref('color.primitive.brand.500') },
+    { id: 'primary-fg', name: 'Primary Foreground', light: lit('#FFFFFF'), dark: lit('#FFFFFF') },
+    { id: 'focus', name: 'Focus', light: ref('color.primitive.brand.500'), dark: ref('color.primitive.brand.500') },
+  ]
+  doc.components.selectedIds = ['button', 'input', 'card']
+  return doc
+}
