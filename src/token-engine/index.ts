@@ -140,6 +140,9 @@ export function emitCssVariables(
   for (const size of doc.icons.sizes) {
     vars[`--icon-size-${size.id}`] = size.value
   }
+  for (const token of doc.foundations.opacity ?? []) {
+    vars[`--opacity-${token.id}`] = token.value
+  }
   vars['--icon-stroke'] = String(doc.icons.strokeWidth)
 
   vars['--bg'] = vars['--color-bg'] ?? '#fff'

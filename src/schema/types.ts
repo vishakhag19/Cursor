@@ -32,6 +32,15 @@ export interface SemanticColor {
   dark: TokenValue
 }
 
+export type FontSemanticRole =
+  | 'primary'
+  | 'body'
+  | 'display'
+  | 'heading'
+  | 'ui'
+  | 'monospace'
+  | 'custom'
+
 export interface FontFamily {
   id: string
   name: string
@@ -39,6 +48,8 @@ export interface FontFamily {
   fallback: string
   source: 'google' | 'system' | 'custom'
   weights: number[]
+  /** Semantic role this family fills in the system */
+  role: FontSemanticRole
 }
 
 export interface TypographyStyle {
@@ -139,13 +150,20 @@ export interface CustomIcon {
   svg: string
 }
 
+export type IconStyleVariant = 'outline' | 'filled' | 'duotone' | 'rounded' | 'sharp'
+
 export interface IconSystem {
   libraryId: IconLibraryId
   sizes: NamedToken[]
   strokeWidth: number
+  styleVariant: IconStyleVariant
+  /** Semantic color token id used for default icon color */
+  defaultColorSemanticId: string
   includedIds: string[]
+  /** Mappings that need review after a library switch */
+  reviewFlags: SemanticIconRole[]
   customSvgs: CustomIcon[]
-  semanticMap: Record<SemanticIconRole, string>
+  semanticMap: Record<string, string>
 }
 
 export interface ThemeDefinition {
@@ -192,6 +210,7 @@ export interface Foundations {
   borders: BorderTokens
   shadows: ShadowToken[]
   motion: MotionTokens
+  opacity: NamedToken[]
   breakpoints: BreakpointToken[]
 }
 
@@ -215,12 +234,22 @@ export type EditorSection =
   | 'borders'
   | 'shadows'
   | 'motion'
+  | 'opacity'
   | 'breakpoints'
   | 'icons'
   | 'components'
   | 'themes'
   | 'ai'
   | 'export'
+
+export type IconsSubPanel =
+  | 'library'
+  | 'browser'
+  | 'sizes'
+  | 'stroke'
+  | 'colors'
+  | 'semantic'
+  | 'custom'
 
 export type PreviewMode =
   | 'individual'

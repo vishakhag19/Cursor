@@ -118,6 +118,21 @@ export function ScaleInspector({ kind }: { kind: 'spacing' | 'sizing' | 'radius'
       >
         Add token
       </button>
+      {tokens.length > 1 && (
+        <button
+          type="button"
+          className="fe-btn"
+          onClick={() => {
+            updateDocument((d) => {
+              if (kind === 'spacing') d.foundations.spacing.tokens.pop()
+              else if (kind === 'sizing') d.foundations.sizing.tokens.pop()
+              else d.foundations.radius.tokens.pop()
+            }, `Remove last ${kind} token`)
+          }}
+        >
+          Remove last token
+        </button>
+      )}
     </div>
   )
 }

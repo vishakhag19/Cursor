@@ -11,6 +11,7 @@ import {
   Smile,
   Component,
   SwatchBook,
+  Droplets,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/editor-store'
 import { getComponentsByCategory } from '@/components/registry'
@@ -25,6 +26,7 @@ const foundations: Array<{ id: EditorSection; label: string; icon: typeof Palett
   { id: 'borders', label: 'Borders', icon: Square },
   { id: 'shadows', label: 'Shadows', icon: Eclipse },
   { id: 'motion', label: 'Motion', icon: Wind },
+  { id: 'opacity', label: 'Opacity', icon: Droplets },
   { id: 'breakpoints', label: 'Breakpoints', icon: Columns },
   { id: 'icons', label: 'Icons', icon: Smile },
 ]

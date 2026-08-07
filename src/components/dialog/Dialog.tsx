@@ -1,8 +1,9 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import type { ReactNode } from 'react'
 import { Button } from '../button/Button'
-import { X } from 'lucide-react'
 import { IconButton } from '../icon-button/IconButton'
+import { SemanticIcon } from '../semantic-icon/SemanticIcon'
+import { useEditorStore } from '@/store/editor-store'
 
 export interface DialogProps {
   trigger?: ReactNode
@@ -21,6 +22,8 @@ export function Dialog({
   open,
   onOpenChange,
 }: DialogProps) {
+  const icons = useEditorStore((s) => s.doc.icons)
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger>}
@@ -38,7 +41,12 @@ export function Dialog({
             </div>
             <DialogPrimitive.Close asChild>
               <IconButton label="Close">
-                <X size={16} strokeWidth={1.75} />
+                <SemanticIcon
+                  role="navigation.close"
+                  map={icons.semanticMap}
+                  strokeWidth={icons.strokeWidth}
+                  size={16}
+                />
               </IconButton>
             </DialogPrimitive.Close>
           </div>

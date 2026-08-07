@@ -12,6 +12,7 @@ import { ExportInspector } from './panels/ExportInspector'
 import { AiInspector } from './panels/AiInspector'
 import { BreakpointsInspector } from './panels/BreakpointsInspector'
 import { BordersInspector } from './panels/BordersInspector'
+import { OpacityInspector } from './panels/OpacityInspector'
 
 const tabs: InspectorTab[] = ['visual', 'tokens', 'code']
 
@@ -65,6 +66,8 @@ function InspectorContent() {
       return <ShadowsInspector />
     case 'motion':
       return <MotionInspector />
+    case 'opacity':
+      return <OpacityInspector />
     case 'breakpoints':
       return <BreakpointsInspector />
     case 'icons':

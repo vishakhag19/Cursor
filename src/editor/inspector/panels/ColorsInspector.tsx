@@ -250,6 +250,61 @@ export function ColorsInspector() {
       >
         Regenerate brand scale from 600
       </button>
+      <button
+        type="button"
+        className="fe-btn"
+        onClick={() => {
+          updateDocument((d) => {
+            const id = `scale-${Date.now()}`
+            d.foundations.colors.primitives.push({
+              id,
+              name: 'Custom scale',
+              stops: [
+                { step: '100', value: '#F5F5F5' },
+                { step: '500', value: '#737373' },
+                { step: '900', value: '#171717' },
+              ],
+            })
+          }, 'Add color scale')
+        }}
+      >
+        Add primitive scale
+      </button>
+      {scale && (
+        <button
+          type="button"
+          className="fe-btn"
+          disabled={doc.foundations.colors.primitives.length <= 1}
+          onClick={() => {
+            updateDocument((d) => {
+              d.foundations.colors.primitives = d.foundations.colors.primitives.filter(
+                (p) => p.id !== scaleId,
+              )
+            }, 'Delete color scale')
+            const next = doc.foundations.colors.primitives.find((p) => p.id !== scaleId)
+            if (next) setScaleId(next.id)
+          }}
+        >
+          Delete current scale
+        </button>
+      )}
+      <button
+        type="button"
+        className="fe-btn"
+        onClick={() => {
+          updateDocument((d) => {
+            const sc = d.foundations.colors.primitives.find((p) => p.id === scaleId)
+            if (!sc) return
+            const last = sc.stops[sc.stops.length - 1]
+            sc.stops.push({
+              step: String(Number(last?.step || 500) + 50),
+              value: last?.value ?? '#888888',
+            })
+          }, 'Add color stop')
+        }}
+      >
+        Add color stop
+      </button>
     </div>
   )
 }

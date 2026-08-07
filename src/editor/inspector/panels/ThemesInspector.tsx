@@ -73,15 +73,30 @@ export function ThemesInspector() {
           key={preset.id}
           type="button"
           className="fe-btn"
-          style={{ height: 'auto', padding: '8px 10px', textAlign: 'left', display: 'block' }}
+          style={{ height: 'auto', padding: '10px', textAlign: 'left', display: 'block' }}
           onClick={() => replaceDocument(preset.create(), `Load preset ${preset.name}`)}
         >
           <div style={{ fontWeight: 600 }}>{preset.name}</div>
           <div className="fe-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-            {preset.attribution} · {preset.license}
+            {preset.attribution}
           </div>
           <div className="fe-muted" style={{ fontSize: 11.5, marginTop: 4 }}>
             {preset.description}
+          </div>
+          <div className="fe-tertiary" style={{ fontSize: 11, marginTop: 6 }}>
+            {preset.philosophy}
+          </div>
+          <div className="fe-inline" style={{ marginTop: 6 }}>
+            <span className="fe-badge">{preset.license}</span>
+            <a
+              href={preset.docsUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{ fontSize: 11, color: 'var(--fe-accent)' }}
+            >
+              Docs
+            </a>
           </div>
         </button>
       ))}

@@ -1,5 +1,6 @@
 import { get, set } from 'idb-keyval'
 import type { DesignSystemDocument } from '@/schema/types'
+import { migrateDocument } from '@/schema/migrate'
 
 const KEY = 'forge:design-system:v1'
 
@@ -7,7 +8,7 @@ export async function loadDocument(): Promise<DesignSystemDocument | null> {
   try {
     const doc = await get<DesignSystemDocument>(KEY)
     if (!doc || typeof doc.version !== 'number') return null
-    return doc
+    return migrateDocument(doc)
   } catch {
     return null
   }
