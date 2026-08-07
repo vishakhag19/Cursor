@@ -2,8 +2,6 @@ import {
   Undo2,
   Redo2,
   Download,
-  Moon,
-  Sun,
   Sparkles,
   Layers,
 } from 'lucide-react'
@@ -16,8 +14,6 @@ export function Toolbar() {
   const redo = useEditorStore((s) => s.redo)
   const history = useEditorStore((s) => s.history)
   const future = useEditorStore((s) => s.future)
-  const previewTheme = useEditorStore((s) => s.previewTheme)
-  const setPreviewTheme = useEditorStore((s) => s.setPreviewTheme)
   const setSelection = useEditorStore((s) => s.setSelection)
   const loadDefault = useEditorStore((s) => s.loadDefault)
   const loadBlank = useEditorStore((s) => s.loadBlank)
@@ -57,25 +53,6 @@ export function Toolbar() {
         </button>
         <button type="button" className="fe-btn fe-btn-icon" disabled={future.length === 0} onClick={redo} aria-label="Redo">
           <Redo2 size={15} />
-        </button>
-      </div>
-
-      <div className="fe-seg" role="group" aria-label="Preview theme">
-        <button
-          type="button"
-          data-active={previewTheme === 'light'}
-          onClick={() => setPreviewTheme('light')}
-          aria-label="Light preview"
-        >
-          <Sun size={13} />
-        </button>
-        <button
-          type="button"
-          data-active={previewTheme === 'dark'}
-          onClick={() => setPreviewTheme('dark')}
-          aria-label="Dark preview"
-        >
-          <Moon size={13} />
         </button>
       </div>
 
