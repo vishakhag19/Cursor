@@ -1,3 +1,4 @@
+import dsCss from '@/components/ds.css?raw'
 import JSZip from 'jszip'
 import type { DesignSystemDocument } from '@/schema/types'
 import {
@@ -7,19 +8,18 @@ import {
   emitThemeCss,
   emitTokenCss,
 } from './codegen'
-import { COMPONENT_REGISTRY } from '@/components/registry'
 import { getAvailableComponents } from '@/components/registry'
 
-// Pull DS CSS as text for export — duplicated minimal globals bridge
 const GLOBALS = `/* Design system globals */
-@import './../tokens/colors.css';
-@import './../tokens/typography.css';
-@import './../tokens/spacing.css';
-@import './../tokens/radius.css';
-@import './../tokens/shadows.css';
-@import './../tokens/motion.css';
-@import './../themes/light.css';
-@import './../themes/dark.css';
+@import '../tokens/colors.css';
+@import '../tokens/typography.css';
+@import '../tokens/spacing.css';
+@import '../tokens/radius.css';
+@import '../tokens/shadows.css';
+@import '../tokens/motion.css';
+@import '../themes/light.css';
+@import '../themes/dark.css';
+@import './components.css';
 
 :root {
   --bg: var(--color-bg);
@@ -71,13 +71,7 @@ export async function downloadDesignSystemZip(doc: DesignSystemDocument): Promis
 
   const styles = root.folder('styles')!
   styles.file('globals.css', GLOBALS)
-
-  // Include component stylesheet by fetching from the running app isn't possible;
-  // embed a note + components that self-reference class names from docs.
-  styles.file(
-    'components.css',
-    '/* Copy src/components/ds.css from the Forge repository into your project as styles/components.css */\n',
-  )
+  styles.file('components.css', dsCss)
 
   const components = root.folder('components')!
   const availableIds = new Set(getAvailableComponents().map((c) => c.id))
@@ -111,12 +105,6 @@ export async function downloadDesignSystemZip(doc: DesignSystemDocument): Promis
     }
   }
 
-  // Also attach full DS CSS from known classes for usability
-  const dsCssModule = await import('@/components/ds.css?raw').catch(() => null)
-  if (dsCssModule && typeof dsCssModule.default === 'string') {
-    styles.file('components.css', dsCssModule.default)
-  }
-
   const blob = await zip.generateAsync({ type: 'blob' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -129,6 +117,3 @@ export async function downloadDesignSystemZip(doc: DesignSystemDocument): Promis
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
-
-// silence unused in some builds
-void COMPONENT_REGISTRY
