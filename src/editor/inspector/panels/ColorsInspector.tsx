@@ -21,11 +21,13 @@ export function ColorsInspector() {
   const updateDocument = useEditorStore((s) => s.updateDocument)
   const inspectorTab = useEditorStore((s) => s.inspectorTab)
   const previewTheme = useEditorStore((s) => s.previewTheme)
-  const [scaleId, setScaleId] = useState(doc.foundations.colors.primitives[0]?.id ?? 'brand')
-  const [stopStep, setStopStep] = useState(
-    doc.foundations.colors.primitives[0]?.stops[5]?.step ?? '600',
+  const [scaleId, setScaleId] = useState(
+    doc.foundations.colors.primitives.find((p) => p.id === 'brand')?.id
+      ?? doc.foundations.colors.primitives[0]?.id
+      ?? 'brand',
   )
-  const [semanticId, setSemanticId] = useState(doc.foundations.colors.semantics[0]?.id ?? 'primary')
+  const [stopStep, setStopStep] = useState('600')
+  const [semanticId, setSemanticId] = useState(doc.foundations.colors.semantics.find((s) => s.id === 'primary')?.id ?? 'primary')
 
   const scale = doc.foundations.colors.primitives.find((p) => p.id === scaleId)
   const stop = scale?.stops.find((s) => s.step === stopStep)
