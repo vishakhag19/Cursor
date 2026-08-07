@@ -41,29 +41,29 @@ button {
 }
 
 .forge-editor {
-  --fe-bg: #e8e8e4;
-  --fe-chrome: #f4f4f1;
-  --fe-panel: #fafaf8;
-  --fe-panel-2: #f0f0ec;
-  --fe-border: rgba(26, 26, 24, 0.1);
-  --fe-border-strong: rgba(26, 26, 24, 0.18);
-  --fe-text: #1a1a18;
-  --fe-text-secondary: #5c5c57;
-  --fe-text-tertiary: #8a8a84;
+  --fe-bg: #e5e5e3;
+  --fe-chrome: #f3f3f0;
+  --fe-panel: #fbfbf9;
+  --fe-panel-2: #f1f1ed;
+  --fe-border: rgba(26, 26, 24, 0.09);
+  --fe-border-strong: rgba(26, 26, 24, 0.16);
+  --fe-text: #1c1c1a;
+  --fe-text-secondary: #5a5a55;
+  --fe-text-tertiary: #8b8b85;
   --fe-accent: #2f7f6e;
   --fe-accent-soft: rgba(47, 127, 110, 0.12);
   --fe-danger: #c03434;
-  --fe-selected: rgba(47, 127, 110, 0.14);
-  --fe-hover: rgba(26, 26, 24, 0.05);
+  --fe-selected: rgba(47, 127, 110, 0.12);
+  --fe-hover: rgba(26, 26, 24, 0.045);
   --fe-radius: 6px;
   --fe-radius-sm: 4px;
-  --fe-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 1px 2px rgba(26, 26, 24, 0.06);
+  --fe-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.7) inset, 0 1px 1px rgba(26, 26, 24, 0.05);
   --fe-font: 'IBM Plex Sans', system-ui, sans-serif;
   --fe-mono: 'IBM Plex Mono', ui-monospace, monospace;
-  --fe-row: 28px;
-  --fe-toolbar: 44px;
-  --fe-sidebar: 232px;
-  --fe-inspector: 300px;
+  --fe-row: 26px;
+  --fe-toolbar: 42px;
+  --fe-sidebar: 220px;
+  --fe-inspector: 308px;
 
   height: 100%;
   display: grid;
