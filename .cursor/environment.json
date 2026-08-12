@@ -1,0 +1,17 @@
+{
+  "name": "Forge",
+  "install": "npm install",
+  "terminals": [
+    {
+      "name": "forge-dev",
+      "command": "npm run dev -- --host 0.0.0.0 --port 5173",
+      "description": "Forge design-system editor (Vite) on port 5173"
+    }
+  ],
+  "ports": [
+    {
+      "name": "forge",
+      "port": 5173
+    }
+  ]
+}
