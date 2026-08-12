@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
+const basePath = process.env.VITE_BASE_PATH ?? '/'
+
 export default defineConfig({
+  base: basePath,
   plugins: [react()],
   resolve: {
     alias: {
@@ -15,5 +18,11 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    strictPort: true,
+  },
+  preview: {
+    host: true,
+    port: 5173,
+    strictPort: true,
   },
 })
