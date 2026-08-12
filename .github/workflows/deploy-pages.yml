@@ -30,7 +30,7 @@ jobs:
       - name: Build for GitHub Pages
         run: npm run build
         env:
-          VITE_BASE_PATH: /cursor/
+          VITE_BASE_PATH: /Cursor/
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -8,7 +8,7 @@ Open the app and you land directly in the editor with a polished default system.
 
 After GitHub Pages is enabled for this repo (**Settings → Pages → Source: GitHub Actions**), the app is published at:
 
-**https://vishakhag19.github.io/cursor/**
+**https://vishakhag19.github.io/Cursor/**
 
 Use that URL if Cloud Agent port forwarding does not work on your machine.
 
