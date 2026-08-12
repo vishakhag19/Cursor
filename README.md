@@ -4,22 +4,12 @@
 
 Open the app and you land directly in the editor with a polished default system.
 
-## Live demo
-
-After GitHub Pages is enabled for this repo (**Settings → Pages → Source: GitHub Actions**), the app is published at:
-
-**https://vishakhag19.github.io/Cursor/**
-
-Use that URL if Cloud Agent port forwarding does not work on your machine.
-
-## Quick start (local)
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
-
-Open **http://localhost:5173** in your browser.
 
 Build:
 
@@ -27,18 +17,6 @@ Build:
 npm run build
 npm run preview
 ```
-
-## Cloud Agent preview
-
-When running inside a Cursor Cloud Agent, `localhost:5173` on **your computer** only works if the port is forwarded from the remote VM:
-
-1. Open this agent from **Cursor Desktop** (Agents window), not only the web dashboard.
-2. Confirm the dev server is running (this repo’s `.cursor/environment.json` starts it on port **5173**).
-3. Click the **plug icon** (top-right of the agent panel) or open the **Ports** tab in the terminal area.
-4. Forward port **5173** manually if it is not listed automatically.
-5. Open the forwarded local URL shown in the Ports panel (often `http://localhost:5173`, or another port if 5173 is busy locally).
-
-If forwarding still fails, clone the repo locally and run `npm install && npm run dev`, or use the **GitHub Pages** demo link above.
 
 ## What you can do
 
