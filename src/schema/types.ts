@@ -223,7 +223,7 @@ export interface DesignSystemDocument {
   components: ComponentSelection
 }
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export type EditorSection =
   | 'colors'

@@ -1,5 +1,87 @@
 /* Editor chrome only — never applied inside .ds-preview */
+
 :root {
+  --card: oklch(1.00 0 0);
+  --ring: oklch(0 0 0);
+  --input: oklch(0.94 0 0);
+  --muted: oklch(0.97 0 0);
+  --accent: oklch(0.94 0 0);
+  --border: oklch(0.92 0 0);
+  --radius: 0.5rem;
+  --chart-1: oklch(0.81 0.17 75.35);
+  --chart-2: oklch(0.55 0.22 264.53);
+  --chart-3: oklch(0.72 0 0);
+  --chart-4: oklch(0.92 0 0);
+  --chart-5: oklch(0.56 0 0);
+  --popover: oklch(0.99 0 0);
+  --primary: oklch(0 0 0);
+  --sidebar: oklch(0.99 0 0);
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --secondary: oklch(0.94 0 0);
+  --background: oklch(0.99 0 0);
+  --font-serif: Georgia, serif;
+  --foreground: oklch(0 0 0);
+  --destructive: oklch(0.63 0.19 23.03);
+  --shadow-blur: 2px;
+  --shadow-color: hsl(0 0% 0%);
+  --sidebar-ring: oklch(0 0 0);
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.18;
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-border: oklch(0.94 0 0);
+  --card-foreground: oklch(0 0 0);
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 1px;
+  --sidebar-primary: oklch(0 0 0);
+  --muted-foreground: oklch(0.44 0 0);
+  --accent-foreground: oklch(0 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary-foreground: oklch(1.00 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --secondary-foreground: oklch(0 0 0);
+  --destructive-foreground: oklch(1.00 0 0);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-primary-foreground: oklch(1.00 0 0);
+  color-scheme: light;
+}
+
+.dark {
+  --card: oklch(0.14 0 0);
+  --ring: oklch(0.72 0 0);
+  --input: oklch(0.32 0 0);
+  --muted: oklch(0.23 0 0);
+  --accent: oklch(0.32 0 0);
+  --border: oklch(0.26 0 0);
+  --chart-1: oklch(0.81 0.17 75.35);
+  --chart-2: oklch(0.58 0.21 260.84);
+  --chart-3: oklch(0.56 0 0);
+  --chart-4: oklch(0.44 0 0);
+  --chart-5: oklch(0.92 0 0);
+  --popover: oklch(0.18 0 0);
+  --primary: oklch(1.00 0 0);
+  --sidebar: oklch(0.18 0 0);
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --secondary: oklch(0.25 0 0);
+  --background: oklch(0 0 0);
+  --font-serif: Georgia, serif;
+  --foreground: oklch(1.00 0 0);
+  --destructive: oklch(0.69 0.20 23.91);
+  --sidebar-ring: oklch(0.72 0 0);
+  --sidebar-accent: oklch(0.32 0 0);
+  --sidebar-border: oklch(0.32 0 0);
+  --card-foreground: oklch(1.00 0 0);
+  --sidebar-primary: oklch(1.00 0 0);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent-foreground: oklch(1.00 0 0);
+  --popover-foreground: oklch(1.00 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --sidebar-foreground: oklch(1.00 0 0);
+  --secondary-foreground: oklch(1.00 0 0);
+  --destructive-foreground: oklch(0 0 0);
+  --sidebar-accent-foreground: oklch(1.00 0 0);
+  --sidebar-primary-foreground: oklch(0 0 0);
   color-scheme: dark;
 }
 
@@ -17,11 +99,11 @@ body,
 }
 
 body {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  background: #161618;
-  color: #f5f5f3;
+  background: var(--background);
+  color: var(--foreground);
 }
 
 button,
@@ -36,30 +118,32 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid #3d7a6c;
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
 .forge-editor {
-  --fe-bg: #161618;
-  --fe-chrome: #1e1e20;
-  --fe-panel: #252528;
-  --fe-panel-2: #1e1e20;
-  --fe-border: rgba(255, 255, 255, 0.08);
-  --fe-border-strong: rgba(255, 255, 255, 0.14);
-  --fe-text: #f5f5f3;
-  --fe-text-secondary: #a8a8a2;
-  --fe-text-tertiary: #737370;
-  --fe-accent: #4db89f;
-  --fe-accent-soft: rgba(77, 184, 159, 0.18);
-  --fe-danger: #e05555;
-  --fe-selected: rgba(77, 184, 159, 0.16);
-  --fe-hover: rgba(255, 255, 255, 0.06);
-  --fe-radius: 6px;
-  --fe-radius-sm: 4px;
-  --fe-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.35);
-  --fe-font: 'IBM Plex Sans', system-ui, sans-serif;
-  --fe-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --fe-bg: var(--background);
+  --fe-chrome: var(--popover);
+  --fe-panel: var(--sidebar);
+  --fe-panel-2: var(--muted);
+  --fe-border: var(--sidebar-border);
+  --fe-border-strong: var(--border);
+  --fe-text: var(--sidebar-foreground);
+  --fe-text-secondary: var(--muted-foreground);
+  --fe-text-tertiary: var(--chart-3);
+  --fe-accent: var(--primary);
+  --fe-accent-soft: color-mix(in oklch, var(--primary) 14%, transparent);
+  --fe-danger: var(--destructive);
+  --fe-selected: var(--sidebar-accent);
+  --fe-hover: var(--accent);
+  --fe-radius: var(--radius);
+  --fe-radius-sm: calc(var(--radius) - 2px);
+  --fe-shadow:
+    var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-spread)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
+  --fe-font: var(--font-sans);
+  --fe-mono: var(--font-mono);
   --fe-row: 26px;
   --fe-toolbar: 42px;
   --fe-sidebar: 220px;
@@ -79,7 +163,7 @@ button {
 
 .forge-editor * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 40%, transparent) transparent;
 }
 
 .fe-toolbar {
@@ -87,7 +171,7 @@ button {
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  background: linear-gradient(180deg, #252528 0%, #1e1e20 100%);
+  background: var(--fe-chrome);
   border-bottom: 1px solid var(--fe-border);
   box-shadow: var(--fe-shadow);
   z-index: 10;
@@ -106,11 +190,11 @@ button {
 .fe-brand-mark {
   width: 22px;
   height: 22px;
-  border-radius: 5px;
-  background: #f5f5f3;
+  border-radius: var(--fe-radius-sm);
+  background: var(--sidebar-primary);
   display: grid;
   place-items: center;
-  color: #161618;
+  color: var(--sidebar-primary-foreground);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -163,13 +247,13 @@ button {
 }
 
 .fe-btn-primary {
-  background: var(--fe-accent);
-  color: #fff;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border-color: transparent;
 }
 
 .fe-btn-primary:hover {
-  background: #3da088;
+  opacity: 0.9;
 }
 
 .fe-btn-ghost {
@@ -190,7 +274,7 @@ button {
 .fe-seg {
   display: inline-flex;
   padding: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--muted);
   border-radius: var(--fe-radius);
   gap: 1px;
 }
@@ -207,9 +291,9 @@ button {
 }
 
 .fe-seg button[data-active='true'] {
-  background: var(--fe-panel);
-  color: var(--fe-text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: var(--fe-shadow);
 }
 
 .fe-body {
@@ -290,7 +374,7 @@ button {
 
 .fe-nav-item[data-active='true'] {
   background: var(--fe-selected);
-  color: var(--fe-accent);
+  color: var(--sidebar-accent-foreground);
   font-weight: 500;
 }
 
@@ -312,20 +396,20 @@ button {
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.03), transparent 55%),
+    radial-gradient(ellipse at top, color-mix(in oklch, var(--foreground) 4%, transparent), transparent 55%),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 11px,
-      rgba(255, 255, 255, 0.025) 11px,
-      rgba(255, 255, 255, 0.025) 12px
+      color-mix(in oklch, var(--foreground) 3%, transparent) 11px,
+      color-mix(in oklch, var(--foreground) 3%, transparent) 12px
     ),
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 11px,
-      rgba(255, 255, 255, 0.025) 11px,
-      rgba(255, 255, 255, 0.025) 12px
+      color-mix(in oklch, var(--foreground) 3%, transparent) 11px,
+      color-mix(in oklch, var(--foreground) 3%, transparent) 12px
     ),
     var(--fe-bg);
 }
@@ -336,7 +420,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(30, 30, 32, 0.85);
+  background: color-mix(in oklch, var(--popover) 85%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--fe-border);
   flex-shrink: 0;
@@ -358,10 +442,10 @@ button {
   color: var(--fg);
   background: var(--bg);
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  border-radius: 12px;
+  border-radius: var(--radius);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 12px 32px rgba(0, 0, 0, 0.06);
+    var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-spread)
+    color-mix(in srgb, var(--shadow-color) calc(var(--shadow-opacity) * 100%), transparent);
   width: 100%;
   max-width: 920px;
   min-height: 420px;
@@ -384,7 +468,7 @@ button {
   background: var(--bg);
   color: var(--fg);
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 24px;
   min-height: 400px;
 }
@@ -408,7 +492,7 @@ button {
   padding: 0 8px;
   border-radius: var(--fe-radius-sm);
   border: 1px solid var(--fe-border-strong);
-  background: var(--fe-panel-2);
+  background: var(--input);
   color: var(--fe-text);
   width: 100%;
 }
@@ -416,8 +500,8 @@ button {
 .fe-input:focus,
 .fe-select:focus {
   outline: none;
-  border-color: var(--fe-accent);
-  box-shadow: 0 0 0 3px var(--fe-accent-soft);
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 20%, transparent);
 }
 
 .fe-textarea {
@@ -425,7 +509,7 @@ button {
   padding: 8px;
   border-radius: var(--fe-radius-sm);
   border: 1px solid var(--fe-border-strong);
-  background: var(--fe-panel-2);
+  background: var(--input);
   color: var(--fe-text);
   width: 100%;
   resize: vertical;
@@ -437,8 +521,9 @@ button {
   font-family: var(--fe-mono);
   font-size: 11px;
   line-height: 1.5;
-  background: #1a1a18;
-  color: #e8e8e2;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
   border-radius: var(--fe-radius);
   padding: 12px;
   overflow: auto;
@@ -449,8 +534,8 @@ button {
 .fe-swatch {
   width: 20px;
   height: 20px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: calc(var(--radius) - 4px);
+  border: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -480,9 +565,9 @@ button {
 }
 
 .fe-warn {
-  color: #f0b429;
-  background: rgba(240, 180, 41, 0.12);
-  border: 1px solid rgba(240, 180, 41, 0.28);
+  color: var(--chart-1);
+  background: color-mix(in oklch, var(--chart-1) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--chart-1) 28%, transparent);
   border-radius: var(--fe-radius-sm);
   padding: 8px 10px;
   font-size: 11.5px;
@@ -563,8 +648,8 @@ button {
 
 .fe-color-cell {
   aspect-ratio: 1;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: calc(var(--radius) - 4px);
+  border: 1px solid var(--border);
   cursor: pointer;
   position: relative;
 }

@@ -31,6 +31,7 @@
     "@radix-ui/react-tooltip": "^1.2.16",
     "clsx": "^2.1.1",
     "culori": "^4.0.2",
+    "geist": "^1.7.2",
     "idb-keyval": "^6.3.0",
     "immer": "^11.1.16",
     "jszip": "^3.10.1",

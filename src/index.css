@@ -1,4 +1,6 @@
 /* Global reset only — editor chrome and DS preview own their styles */
+@import './fonts/geist.css';
+
 html,
 body,
 #root {
