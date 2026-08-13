@@ -1,6 +1,6 @@
 /* Editor chrome only — never applied inside .ds-preview */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 *,
@@ -20,8 +20,8 @@ body {
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  background: #ecece8;
-  color: #1a1a18;
+  background: #161618;
+  color: #f5f5f3;
 }
 
 button,
@@ -41,23 +41,23 @@ button {
 }
 
 .forge-editor {
-  --fe-bg: #e5e5e3;
-  --fe-chrome: #f3f3f0;
-  --fe-panel: #fbfbf9;
-  --fe-panel-2: #f1f1ed;
-  --fe-border: rgba(26, 26, 24, 0.09);
-  --fe-border-strong: rgba(26, 26, 24, 0.16);
-  --fe-text: #1c1c1a;
-  --fe-text-secondary: #5a5a55;
-  --fe-text-tertiary: #8b8b85;
-  --fe-accent: #2f7f6e;
-  --fe-accent-soft: rgba(47, 127, 110, 0.12);
-  --fe-danger: #c03434;
-  --fe-selected: rgba(47, 127, 110, 0.12);
-  --fe-hover: rgba(26, 26, 24, 0.045);
+  --fe-bg: #161618;
+  --fe-chrome: #1e1e20;
+  --fe-panel: #252528;
+  --fe-panel-2: #1e1e20;
+  --fe-border: rgba(255, 255, 255, 0.08);
+  --fe-border-strong: rgba(255, 255, 255, 0.14);
+  --fe-text: #f5f5f3;
+  --fe-text-secondary: #a8a8a2;
+  --fe-text-tertiary: #737370;
+  --fe-accent: #4db89f;
+  --fe-accent-soft: rgba(77, 184, 159, 0.18);
+  --fe-danger: #e05555;
+  --fe-selected: rgba(77, 184, 159, 0.16);
+  --fe-hover: rgba(255, 255, 255, 0.06);
   --fe-radius: 6px;
   --fe-radius-sm: 4px;
-  --fe-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.7) inset, 0 1px 1px rgba(26, 26, 24, 0.05);
+  --fe-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.35);
   --fe-font: 'IBM Plex Sans', system-ui, sans-serif;
   --fe-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --fe-row: 26px;
@@ -79,7 +79,7 @@ button {
 
 .forge-editor * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(26, 26, 24, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 .fe-toolbar {
@@ -87,7 +87,7 @@ button {
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  background: linear-gradient(180deg, #f7f7f4 0%, #efefe9 100%);
+  background: linear-gradient(180deg, #252528 0%, #1e1e20 100%);
   border-bottom: 1px solid var(--fe-border);
   box-shadow: var(--fe-shadow);
   z-index: 10;
@@ -107,10 +107,10 @@ button {
   width: 22px;
   height: 22px;
   border-radius: 5px;
-  background: #1a1a18;
+  background: #f5f5f3;
   display: grid;
   place-items: center;
-  color: #f7f7f5;
+  color: #161618;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -169,7 +169,7 @@ button {
 }
 
 .fe-btn-primary:hover {
-  background: #27695b;
+  background: #3da088;
 }
 
 .fe-btn-ghost {
@@ -190,7 +190,7 @@ button {
 .fe-seg {
   display: inline-flex;
   padding: 2px;
-  background: rgba(26, 26, 24, 0.06);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: var(--fe-radius);
   gap: 1px;
 }
@@ -209,7 +209,7 @@ button {
 .fe-seg button[data-active='true'] {
   background: var(--fe-panel);
   color: var(--fe-text);
-  box-shadow: 0 1px 2px rgba(26, 26, 24, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .fe-body {
@@ -290,7 +290,7 @@ button {
 
 .fe-nav-item[data-active='true'] {
   background: var(--fe-selected);
-  color: #1f5c50;
+  color: var(--fe-accent);
   font-weight: 500;
 }
 
@@ -312,20 +312,20 @@ button {
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.55), transparent 55%),
+    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.03), transparent 55%),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 11px,
-      rgba(26, 26, 24, 0.03) 11px,
-      rgba(26, 26, 24, 0.03) 12px
+      rgba(255, 255, 255, 0.025) 11px,
+      rgba(255, 255, 255, 0.025) 12px
     ),
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 11px,
-      rgba(26, 26, 24, 0.03) 11px,
-      rgba(26, 26, 24, 0.03) 12px
+      rgba(255, 255, 255, 0.025) 11px,
+      rgba(255, 255, 255, 0.025) 12px
     ),
     var(--fe-bg);
 }
@@ -336,7 +336,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(250, 250, 248, 0.85);
+  background: rgba(30, 30, 32, 0.85);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--fe-border);
   flex-shrink: 0;
@@ -408,7 +408,7 @@ button {
   padding: 0 8px;
   border-radius: var(--fe-radius-sm);
   border: 1px solid var(--fe-border-strong);
-  background: #fff;
+  background: var(--fe-panel-2);
   color: var(--fe-text);
   width: 100%;
 }
@@ -425,7 +425,7 @@ button {
   padding: 8px;
   border-radius: var(--fe-radius-sm);
   border: 1px solid var(--fe-border-strong);
-  background: #fff;
+  background: var(--fe-panel-2);
   color: var(--fe-text);
   width: 100%;
   resize: vertical;
@@ -450,7 +450,7 @@ button {
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
 }
 
@@ -480,9 +480,9 @@ button {
 }
 
 .fe-warn {
-  color: #9a5b08;
-  background: #fff4df;
-  border: 1px solid #f0d7a8;
+  color: #f0b429;
+  background: rgba(240, 180, 41, 0.12);
+  border: 1px solid rgba(240, 180, 41, 0.28);
   border-radius: var(--fe-radius-sm);
   padding: 8px 10px;
   font-size: 11.5px;
@@ -564,13 +564,13 @@ button {
 .fe-color-cell {
   aspect-ratio: 1;
   border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   position: relative;
 }
 
 .fe-color-cell[data-active='true'] {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--fe-accent);
+  box-shadow: 0 0 0 2px var(--fe-panel), 0 0 0 4px var(--fe-accent);
 }
 
 .fe-stack {

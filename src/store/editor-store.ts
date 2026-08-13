@@ -63,7 +63,7 @@ export const useEditorStore = create<EditorState>()(
     hydrated: false,
     selection: { section: 'components', componentId: 'button' },
     previewMode: 'individual',
-    previewTheme: 'light',
+    previewTheme: 'dark',
     previewComponentId: 'button',
     inspectorTab: 'visual',
     compareTheme: false,
