@@ -1,0 +1,90 @@
+/** Curated subset of popular Google Fonts for searchable catalog. */
+export const GOOGLE_FONTS_CATALOG: Array<{
+  family: string
+  category: 'sans-serif' | 'serif' | 'display' | 'monospace' | 'handwriting'
+  weights: number[]
+}> = [
+  { family: 'Inter', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Roboto', category: 'sans-serif', weights: [300, 400, 500, 700] },
+  { family: 'Roboto Flex', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Open Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Source Sans 3', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Noto Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'IBM Plex Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Public Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Work Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'DM Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Manrope', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Outfit', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Sora', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Plus Jakarta Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Figtree', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Geist', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Space Grotesk', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Poppins', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Nunito Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Lato', category: 'sans-serif', weights: [400, 700] },
+  { family: 'Montserrat', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Raleway', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Karla', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Mulish', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Barlow', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Heebo', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Schibsted Grotesk', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Instrument Sans', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Red Hat Text', category: 'sans-serif', weights: [400, 500, 600, 700] },
+  { family: 'Atkinson Hyperlegible Next', category: 'sans-serif', weights: [400, 700] },
+  { family: 'Source Serif 4', category: 'serif', weights: [400, 600, 700] },
+  { family: 'IBM Plex Serif', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Lora', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Merriweather', category: 'serif', weights: [400, 700] },
+  { family: 'Libre Baskerville', category: 'serif', weights: [400, 700] },
+  { family: 'Newsreader', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Fraunces', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Playfair Display', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Cormorant Garamond', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'EB Garamond', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Spectral', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Literata', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Bitter', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'Roboto Slab', category: 'serif', weights: [400, 500, 600, 700] },
+  { family: 'IBM Plex Mono', category: 'monospace', weights: [400, 500, 600] },
+  { family: 'Source Code Pro', category: 'monospace', weights: [400, 500, 600, 700] },
+  { family: 'JetBrains Mono', category: 'monospace', weights: [400, 500, 600, 700] },
+  { family: 'Fira Code', category: 'monospace', weights: [400, 500, 600, 700] },
+  { family: 'Roboto Mono', category: 'monospace', weights: [400, 500, 600, 700] },
+  { family: 'Space Mono', category: 'monospace', weights: [400, 700] },
+  { family: 'Inconsolata', category: 'monospace', weights: [400, 500, 600, 700] },
+  { family: 'Red Hat Mono', category: 'monospace', weights: [400, 500, 600, 700] },
+  { family: 'Geist Mono', category: 'monospace', weights: [400, 500, 600, 700] },
+  { family: 'Abril Fatface', category: 'display', weights: [400] },
+  { family: 'Bebas Neue', category: 'display', weights: [400] },
+  { family: 'Oswald', category: 'display', weights: [400, 500, 600, 700] },
+  { family: 'Anton', category: 'display', weights: [400] },
+  { family: 'Archivo Black', category: 'display', weights: [400] },
+  { family: 'Syne', category: 'display', weights: [400, 500, 600, 700] },
+  { family: 'Unbounded', category: 'display', weights: [400, 500, 600, 700] },
+  { family: 'Cabinet Grotesk', category: 'display', weights: [400, 500, 700] },
+  { family: 'Instrument Serif', category: 'display', weights: [400] },
+  { family: 'Caveat', category: 'handwriting', weights: [400, 500, 600, 700] },
+  { family: 'Patrick Hand', category: 'handwriting', weights: [400] },
+  { family: 'Kalam', category: 'handwriting', weights: [300, 400, 700] },
+]
+
+export const FONT_ROLE_OPTIONS = [
+  { id: 'primary', label: 'Primary' },
+  { id: 'body', label: 'Body' },
+  { id: 'display', label: 'Display' },
+  { id: 'heading', label: 'Heading' },
+  { id: 'ui', label: 'UI / Interface' },
+  { id: 'monospace', label: 'Monospace / Code' },
+  { id: 'custom', label: 'Custom' },
+] as const
+
+export function searchGoogleFonts(query: string) {
+  const q = query.trim().toLowerCase()
+  if (!q) return GOOGLE_FONTS_CATALOG
+  return GOOGLE_FONTS_CATALOG.filter(
+    (f) => f.family.toLowerCase().includes(q) || f.category.includes(q),
+  )
+}

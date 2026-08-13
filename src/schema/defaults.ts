@@ -1,0 +1,452 @@
+import type {
+  ColorScale,
+  DesignSystemDocument,
+  SemanticColor,
+  TokenValue,
+} from './types'
+import { SCHEMA_VERSION } from './types'
+
+const lit = (value: string): TokenValue => ({ type: 'literal', value })
+const ref = (path: string): TokenValue => ({ type: 'ref', path })
+
+function scale(name: string, stops: Record<string, string>): ColorScale {
+  return {
+    id: name.toLowerCase(),
+    name,
+    stops: Object.entries(stops).map(([step, value]) => ({ step, value })),
+  }
+}
+
+function now() {
+  return new Date().toISOString()
+}
+
+const primitives: ColorScale[] = [
+  scale('Neutral', {
+    '0': 'oklch(1.00 0 0)',
+    '50': 'oklch(0.99 0 0)',
+    '100': 'oklch(0.97 0 0)',
+    '200': 'oklch(0.94 0 0)',
+    '300': 'oklch(0.92 0 0)',
+    '400': 'oklch(0.72 0 0)',
+    '500': 'oklch(0.56 0 0)',
+    '600': 'oklch(0.44 0 0)',
+    '700': 'oklch(0.32 0 0)',
+    '800': 'oklch(0.26 0 0)',
+    '900': 'oklch(0.18 0 0)',
+    '950': 'oklch(0.14 0 0)',
+    '1000': 'oklch(0 0 0)',
+  }),
+  scale('Brand', {
+    '50': 'oklch(0.97 0 0)',
+    '100': 'oklch(0.94 0 0)',
+    '200': 'oklch(0.92 0 0)',
+    '300': 'oklch(0.72 0 0)',
+    '400': 'oklch(0.56 0 0)',
+    '500': 'oklch(0.44 0 0)',
+    '600': 'oklch(0 0 0)',
+    '700': 'oklch(0 0 0)',
+    '800': 'oklch(0.14 0 0)',
+    '900': 'oklch(0 0 0)',
+  }),
+  scale('Accent', {
+    '50': 'oklch(0.97 0.02 75)',
+    '100': 'oklch(0.94 0.05 75)',
+    '200': 'oklch(0.90 0.09 75)',
+    '300': 'oklch(0.86 0.13 75)',
+    '400': 'oklch(0.81 0.17 75.35)',
+    '500': 'oklch(0.75 0.16 75)',
+    '600': 'oklch(0.65 0.14 75)',
+    '700': 'oklch(0.55 0.12 75)',
+    '800': 'oklch(0.45 0.10 75)',
+    '900': 'oklch(0.35 0.08 75)',
+  }),
+  scale('Success', {
+    '50': 'oklch(0.97 0.02 145)',
+    '100': 'oklch(0.93 0.04 145)',
+    '200': 'oklch(0.87 0.07 145)',
+    '300': 'oklch(0.78 0.10 145)',
+    '400': 'oklch(0.68 0.13 145)',
+    '500': 'oklch(0.58 0.14 145)',
+    '600': 'oklch(0.48 0.12 145)',
+    '700': 'oklch(0.40 0.10 145)',
+    '800': 'oklch(0.32 0.08 145)',
+    '900': 'oklch(0.24 0.06 145)',
+  }),
+  scale('Warning', {
+    '50': 'oklch(0.97 0.02 75)',
+    '100': 'oklch(0.94 0.05 75)',
+    '200': 'oklch(0.90 0.09 75)',
+    '300': 'oklch(0.86 0.13 75)',
+    '400': 'oklch(0.81 0.17 75.35)',
+    '500': 'oklch(0.72 0.15 75)',
+    '600': 'oklch(0.62 0.13 75)',
+    '700': 'oklch(0.52 0.11 75)',
+    '800': 'oklch(0.42 0.09 75)',
+    '900': 'oklch(0.32 0.07 75)',
+  }),
+  scale('Error', {
+    '50': 'oklch(0.97 0.02 23)',
+    '100': 'oklch(0.93 0.05 23)',
+    '200': 'oklch(0.86 0.09 23)',
+    '300': 'oklch(0.78 0.14 23)',
+    '400': 'oklch(0.69 0.20 23.91)',
+    '500': 'oklch(0.63 0.19 23.03)',
+    '600': 'oklch(0.55 0.17 23)',
+    '700': 'oklch(0.45 0.14 23)',
+    '800': 'oklch(0.36 0.11 23)',
+    '900': 'oklch(0.28 0.08 23)',
+  }),
+  scale('Info', {
+    '50': 'oklch(0.97 0.02 264)',
+    '100': 'oklch(0.92 0.05 264)',
+    '200': 'oklch(0.84 0.10 264)',
+    '300': 'oklch(0.72 0.15 264)',
+    '400': 'oklch(0.58 0.21 260.84)',
+    '500': 'oklch(0.55 0.22 264.53)',
+    '600': 'oklch(0.48 0.19 264)',
+    '700': 'oklch(0.40 0.16 264)',
+    '800': 'oklch(0.32 0.12 264)',
+    '900': 'oklch(0.24 0.08 264)',
+  }),
+]
+
+const semantics: SemanticColor[] = [
+  { id: 'bg', name: 'Background', light: lit('oklch(0.99 0 0)'), dark: lit('oklch(0 0 0)') },
+  { id: 'surface', name: 'Surface', light: lit('oklch(1.00 0 0)'), dark: lit('oklch(0.14 0 0)') },
+  { id: 'surface-raised', name: 'Surface Raised', light: lit('oklch(0.99 0 0)'), dark: lit('oklch(0.18 0 0)') },
+  { id: 'text', name: 'Text', light: lit('oklch(0 0 0)'), dark: lit('oklch(1.00 0 0)') },
+  { id: 'text-muted', name: 'Text Muted', light: lit('oklch(0.44 0 0)'), dark: lit('oklch(0.72 0 0)') },
+  { id: 'border', name: 'Border', light: lit('oklch(0.92 0 0)'), dark: lit('oklch(0.26 0 0)') },
+  { id: 'border-strong', name: 'Border Strong', light: lit('oklch(0.94 0 0)'), dark: lit('oklch(0.32 0 0)') },
+  { id: 'primary', name: 'Primary', light: lit('oklch(0 0 0)'), dark: lit('oklch(1.00 0 0)') },
+  { id: 'primary-fg', name: 'Primary Foreground', light: lit('oklch(1.00 0 0)'), dark: lit('oklch(0 0 0)') },
+  { id: 'secondary', name: 'Secondary', light: lit('oklch(0.94 0 0)'), dark: lit('oklch(0.25 0 0)') },
+  { id: 'secondary-fg', name: 'Secondary Foreground', light: lit('oklch(0 0 0)'), dark: lit('oklch(1.00 0 0)') },
+  { id: 'accent', name: 'Accent', light: lit('oklch(0.94 0 0)'), dark: lit('oklch(0.32 0 0)') },
+  { id: 'accent-fg', name: 'Accent Foreground', light: lit('oklch(0 0 0)'), dark: lit('oklch(1.00 0 0)') },
+  { id: 'success', name: 'Success', light: ref('color.primitive.success.500'), dark: ref('color.primitive.success.400') },
+  { id: 'warning', name: 'Warning', light: ref('color.primitive.warning.400'), dark: ref('color.primitive.warning.400') },
+  { id: 'error', name: 'Error', light: lit('oklch(0.63 0.19 23.03)'), dark: lit('oklch(0.69 0.20 23.91)') },
+  { id: 'info', name: 'Information', light: lit('oklch(0.55 0.22 264.53)'), dark: lit('oklch(0.58 0.21 260.84)') },
+  { id: 'focus', name: 'Focus', light: lit('oklch(0 0 0)'), dark: lit('oklch(0.72 0 0)') },
+  { id: 'disabled', name: 'Disabled', light: lit('oklch(0.92 0 0)'), dark: lit('oklch(0.32 0 0)') },
+  { id: 'disabled-fg', name: 'Disabled Foreground', light: lit('oklch(0.56 0 0)'), dark: lit('oklch(0.56 0 0)') },
+]
+
+export const CORE_COMPONENT_IDS = [
+  'button',
+  'icon-button',
+  'input',
+  'textarea',
+  'select',
+  'combobox',
+  'checkbox',
+  'radio-group',
+  'switch',
+  'slider',
+  'search',
+  'tabs',
+  'segmented-control',
+  'breadcrumbs',
+  'pagination',
+  'avatar',
+  'badge',
+  'chip',
+  'card',
+  'table',
+  'tooltip',
+  'popover',
+  'dropdown-menu',
+  'dialog',
+  'drawer',
+  'alert',
+  'toast',
+  'progress',
+  'skeleton',
+  'accordion',
+  'calendar',
+] as const
+
+export function createDefaultDesignSystem(
+  overrides?: Partial<Pick<DesignSystemDocument, 'metadata'>>,
+): DesignSystemDocument {
+  const timestamp = now()
+  return {
+    version: SCHEMA_VERSION,
+    metadata: {
+      id: crypto.randomUUID(),
+      name: 'Forge Default',
+      description:
+        'A monochrome Geist-based starter system with OKLCH tokens, black/white primary, and subtle shadows.',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      ...overrides?.metadata,
+    },
+    foundations: {
+      colors: { primitives, semantics },
+      typography: {
+        families: [
+          {
+            id: 'sans',
+            name: 'Body / Primary',
+            family: 'Geist',
+            fallback: 'system-ui, sans-serif',
+            source: 'custom',
+            weights: [400, 500, 600, 700],
+            role: 'body',
+          },
+          {
+            id: 'display',
+            name: 'Display',
+            family: 'Geist',
+            fallback: 'system-ui, sans-serif',
+            source: 'custom',
+            weights: [500, 600, 700],
+            role: 'display',
+          },
+          {
+            id: 'ui',
+            name: 'UI / Interface',
+            family: 'Geist',
+            fallback: 'system-ui, sans-serif',
+            source: 'custom',
+            weights: [400, 500, 600, 700],
+            role: 'ui',
+          },
+          {
+            id: 'mono',
+            name: 'Monospace / Code',
+            family: 'Geist Mono',
+            fallback: 'ui-monospace, monospace',
+            source: 'custom',
+            weights: [400, 500],
+            role: 'monospace',
+          },
+        ],
+        styles: [
+          { id: 'display-1', name: 'Display 1', role: 'display', fontFamilyId: 'display', fontSize: '3.5rem', fontWeight: 600, lineHeight: '1.1', letterSpacing: '-0.02em', textTransform: 'none' },
+          { id: 'display-2', name: 'Display 2', role: 'display', fontFamilyId: 'display', fontSize: '2.75rem', fontWeight: 600, lineHeight: '1.15', letterSpacing: '-0.02em', textTransform: 'none' },
+          { id: 'heading-1', name: 'Heading 1', role: 'heading', fontFamilyId: 'sans', fontSize: '2rem', fontWeight: 600, lineHeight: '1.25', letterSpacing: '-0.015em', textTransform: 'none' },
+          { id: 'heading-2', name: 'Heading 2', role: 'heading', fontFamilyId: 'sans', fontSize: '1.5rem', fontWeight: 600, lineHeight: '1.3', letterSpacing: '-0.01em', textTransform: 'none' },
+          { id: 'heading-3', name: 'Heading 3', role: 'heading', fontFamilyId: 'sans', fontSize: '1.25rem', fontWeight: 600, lineHeight: '1.35', letterSpacing: '-0.01em', textTransform: 'none' },
+          { id: 'body-lg', name: 'Body Large', role: 'body', fontFamilyId: 'sans', fontSize: '1.125rem', fontWeight: 400, lineHeight: '1.6', letterSpacing: '0', textTransform: 'none' },
+          { id: 'body', name: 'Body', role: 'body', fontFamilyId: 'sans', fontSize: '1rem', fontWeight: 400, lineHeight: '1.55', letterSpacing: '0', textTransform: 'none' },
+          { id: 'body-sm', name: 'Body Small', role: 'body', fontFamilyId: 'sans', fontSize: '0.875rem', fontWeight: 400, lineHeight: '1.5', letterSpacing: '0', textTransform: 'none' },
+          { id: 'label', name: 'Label', role: 'label', fontFamilyId: 'sans', fontSize: '0.8125rem', fontWeight: 500, lineHeight: '1.4', letterSpacing: '0.01em', textTransform: 'none' },
+          { id: 'caption', name: 'Caption', role: 'caption', fontFamilyId: 'sans', fontSize: '0.75rem', fontWeight: 400, lineHeight: '1.4', letterSpacing: '0.01em', textTransform: 'none' },
+          { id: 'code', name: 'Code', role: 'monospace', fontFamilyId: 'mono', fontSize: '0.875rem', fontWeight: 400, lineHeight: '1.5', letterSpacing: '0', textTransform: 'none' },
+        ],
+      },
+      spacing: {
+        baseUnit: 4,
+        tokens: [
+          { id: '0', name: '0', value: '0' },
+          { id: '1', name: '1', value: '4px' },
+          { id: '2', name: '2', value: '8px' },
+          { id: '3', name: '3', value: '12px' },
+          { id: '4', name: '4', value: '16px' },
+          { id: '5', name: '5', value: '20px' },
+          { id: '6', name: '6', value: '24px' },
+          { id: '8', name: '8', value: '32px' },
+          { id: '10', name: '10', value: '40px' },
+          { id: '12', name: '12', value: '48px' },
+          { id: '16', name: '16', value: '64px' },
+        ],
+      },
+      sizing: {
+        tokens: [
+          { id: 'control-sm', name: 'Control SM', value: '28px', semantic: 'control' },
+          { id: 'control-md', name: 'Control MD', value: '36px', semantic: 'control' },
+          { id: 'control-lg', name: 'Control LG', value: '44px', semantic: 'control' },
+          { id: 'icon-sm', name: 'Icon SM', value: '14px', semantic: 'icon' },
+          { id: 'icon-md', name: 'Icon MD', value: '16px', semantic: 'icon' },
+          { id: 'icon-lg', name: 'Icon LG', value: '20px', semantic: 'icon' },
+        ],
+      },
+      radius: {
+        tokens: [
+          { id: 'none', name: 'None', value: '0' },
+          { id: 'sm', name: 'SM', value: 'calc(0.5rem - 4px)' },
+          { id: 'md', name: 'MD', value: '0.5rem' },
+          { id: 'lg', name: 'LG', value: 'calc(0.5rem + 4px)' },
+          { id: 'xl', name: 'XL', value: 'calc(0.5rem + 8px)' },
+          { id: 'full', name: 'Full', value: '9999px' },
+        ],
+      },
+      borders: {
+        widths: [
+          { id: '0', name: '0', value: '0' },
+          { id: '1', name: '1', value: '1px' },
+          { id: '2', name: '2', value: '2px' },
+        ],
+        styles: [
+          { id: 'solid', name: 'Solid', value: 'solid' },
+          { id: 'dashed', name: 'Dashed', value: 'dashed' },
+        ],
+      },
+      shadows: [
+        {
+          id: 'sm',
+          name: 'SM',
+          layers: [{ x: '0px', y: '1px', blur: '2px', spread: '0px', color: 'hsl(0 0% 0%)', opacity: 0.18 }],
+        },
+        {
+          id: 'md',
+          name: 'MD',
+          layers: [
+            { x: '0px', y: '1px', blur: '2px', spread: '0px', color: 'hsl(0 0% 0%)', opacity: 0.18 },
+            { x: '0px', y: '4px', blur: '12px', spread: '-2px', color: 'hsl(0 0% 0%)', opacity: 0.12 },
+          ],
+        },
+        {
+          id: 'lg',
+          name: 'LG',
+          layers: [
+            { x: '0px', y: '2px', blur: '4px', spread: '0px', color: 'hsl(0 0% 0%)', opacity: 0.16 },
+            { x: '0px', y: '12px', blur: '28px', spread: '-4px', color: 'hsl(0 0% 0%)', opacity: 0.2 },
+          ],
+        },
+      ],
+      motion: {
+        durations: [
+          { id: 'instant', name: 'Instant', value: '0ms' },
+          { id: 'fast', name: 'Fast', value: '120ms' },
+          { id: 'normal', name: 'Normal', value: '200ms' },
+          { id: 'slow', name: 'Slow', value: '320ms' },
+        ],
+        easings: [
+          { id: 'standard', name: 'Standard', value: 'cubic-bezier(0.2, 0, 0, 1)' },
+          { id: 'emphasized', name: 'Emphasized', value: 'cubic-bezier(0.3, 0, 0, 1)' },
+          { id: 'enter', name: 'Enter', value: 'cubic-bezier(0, 0, 0.2, 1)' },
+          { id: 'exit', name: 'Exit', value: 'cubic-bezier(0.4, 0, 1, 1)' },
+        ],
+        presets: [
+          { id: 'hover', name: 'Hover', durationId: 'fast', easingId: 'standard' },
+          { id: 'overlay', name: 'Overlay', durationId: 'normal', easingId: 'emphasized' },
+          { id: 'enter', name: 'Enter', durationId: 'normal', easingId: 'enter' },
+          { id: 'exit', name: 'Exit', durationId: 'fast', easingId: 'exit' },
+        ],
+      },
+      breakpoints: [
+        { id: 'sm', name: 'SM', minWidth: '640px' },
+        { id: 'md', name: 'MD', minWidth: '768px' },
+        { id: 'lg', name: 'LG', minWidth: '1024px' },
+        { id: 'xl', name: 'XL', minWidth: '1280px' },
+      ],
+      opacity: [
+        { id: '0', name: '0', value: '0' },
+        { id: 'disabled', name: 'Disabled', value: '0.4', semantic: 'disabled' },
+        { id: 'subtle', name: 'Subtle', value: '0.6' },
+        { id: 'hover', name: 'Hover overlay', value: '0.08', semantic: 'overlay' },
+        { id: 'overlay', name: 'Overlay', value: '0.45', semantic: 'overlay' },
+        { id: '100', name: '100', value: '1' },
+      ],
+    },
+    icons: {
+      libraryId: 'lucide',
+      sizes: [
+        { id: 'sm', name: 'SM', value: '14px' },
+        { id: 'md', name: 'MD', value: '16px' },
+        { id: 'lg', name: 'LG', value: '20px' },
+        { id: 'xl', name: 'XL', value: '24px' },
+      ],
+      strokeWidth: 1.75,
+      styleVariant: 'outline',
+      defaultColorSemanticId: 'text',
+      includedIds: [
+        'ArrowLeft',
+        'ArrowRight',
+        'Menu',
+        'X',
+        'Search',
+        'Plus',
+        'Pencil',
+        'Trash2',
+        'Settings',
+        'CircleCheck',
+        'TriangleAlert',
+        'CircleX',
+        'Info',
+        'LoaderCircle',
+        'ChevronDown',
+        'ChevronRight',
+        'Home',
+        'User',
+        'Bell',
+        'Copy',
+        'ExternalLink',
+        'MoreHorizontal',
+      ],
+      reviewFlags: [],
+      customSvgs: [],
+      semanticMap: {
+        'navigation.back': 'ArrowLeft',
+        'navigation.forward': 'ArrowRight',
+        'navigation.menu': 'Menu',
+        'navigation.close': 'X',
+        'navigation.home': 'Home',
+        'action.search': 'Search',
+        'action.add': 'Plus',
+        'action.edit': 'Pencil',
+        'action.delete': 'Trash2',
+        'action.settings': 'Settings',
+        'action.copy': 'Copy',
+        'action.more': 'MoreHorizontal',
+        'action.external': 'ExternalLink',
+        'feedback.success': 'CircleCheck',
+        'feedback.warning': 'TriangleAlert',
+        'feedback.error': 'CircleX',
+        'feedback.info': 'Info',
+        'feedback.loading': 'LoaderCircle',
+        'disclosure.expand': 'ChevronDown',
+        'disclosure.next': 'ChevronRight',
+        'user.profile': 'User',
+        'communication.notification': 'Bell',
+      },
+    },
+    themes: [
+      { id: 'light', name: 'Light', mode: 'light', overrides: {} },
+      { id: 'dark', name: 'Dark', mode: 'dark', overrides: {} },
+    ],
+    components: {
+      selectedIds: [...CORE_COMPONENT_IDS],
+      overrides: {},
+    },
+  }
+}
+
+export function createBlankDesignSystem(): DesignSystemDocument {
+  const doc = createDefaultDesignSystem({
+    metadata: {
+      id: crypto.randomUUID(),
+      name: 'Untitled System',
+      description: 'Started from scratch.',
+      createdAt: now(),
+      updatedAt: now(),
+    },
+  })
+  doc.foundations.colors.primitives = [
+    scale('Neutral', {
+      '50': '#FAFAFA',
+      '100': '#F5F5F5',
+      '500': '#737373',
+      '900': '#171717',
+    }),
+    scale('Brand', {
+      '500': '#3B82F6',
+      '600': '#2563EB',
+    }),
+  ]
+  doc.foundations.colors.semantics = [
+    { id: 'bg', name: 'Background', light: lit('#FFFFFF'), dark: lit('#0A0A0A') },
+    { id: 'surface', name: 'Surface', light: lit('#FAFAFA'), dark: lit('#171717') },
+    { id: 'text', name: 'Text', light: lit('#171717'), dark: lit('#FAFAFA') },
+    { id: 'border', name: 'Border', light: lit('#E5E5E5'), dark: lit('#404040') },
+    { id: 'primary', name: 'Primary', light: ref('color.primitive.brand.600'), dark: ref('color.primitive.brand.500') },
+    { id: 'primary-fg', name: 'Primary Foreground', light: lit('#FFFFFF'), dark: lit('#FFFFFF') },
+    { id: 'focus', name: 'Focus', light: ref('color.primitive.brand.500'), dark: ref('color.primitive.brand.500') },
+  ]
+  doc.components.selectedIds = ['button', 'input', 'card']
+  return doc
+}
